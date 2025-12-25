@@ -1,0 +1,225 @@
+// import React from 'react';
+// import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+// import { 
+//   faTachometerAlt, 
+//   faBoxes, 
+//   faShoppingCart, 
+//   faChartBar, 
+//   faTruck, 
+//   faFire, 
+//   faBook 
+// } from '@fortawesome/free-solid-svg-icons';
+// import { TAB_NAMES } from './utils/constants';
+
+// const Sidebar = ({ activeTab, onTabChange, stats }) => {
+//   const tabs = [
+//     {
+//       id: TAB_NAMES.DASHBOARD,
+//       label: 'Dashboard',
+//       icon: faTachometerAlt,
+//       badge: null,
+//       badgeClass: ''
+//     },
+//     {
+//       id: TAB_NAMES.INVENTORY,
+//       label: 'Inventory',
+//       icon: faBoxes,
+//       badge: stats?.lowStockItems > 0 ? stats.lowStockItems : null,
+//       badgeClass: 'bg-warning'
+//     },
+//     {
+//       id: TAB_NAMES.ORDERS,
+//       label: 'Orders',
+//       icon: faShoppingCart,
+//       badge: stats?.processingOrders > 0 ? stats.processingOrders : null,
+//       badgeClass: 'bg-info'
+//     },
+//     {
+//       id: TAB_NAMES.REPORTS,
+//       label: 'Reports',
+//       icon: faChartBar,
+//       badge: null,
+//       badgeClass: ''
+//     },
+//     {
+//       id: TAB_NAMES.SUPPLIERS,
+//       label: 'Suppliers',
+//       icon: faTruck,
+//       badge: null,
+//       badgeClass: ''
+//     },
+//     {
+//       id: TAB_NAMES.POPULAR_BOOKS,
+//       label: 'Popular Books',
+//       icon: faFire,
+//       badge: stats?.featuredBooks > 0 ? stats.featuredBooks : null,
+//       badgeClass: 'bg-danger'
+//     },
+//     {
+//       id: TAB_NAMES.BOOK_REQUESTS,
+//       label: 'Book Requests',
+//       icon: faBook,
+//       badge: stats?.pendingRequests > 0 ? stats.pendingRequests : null,
+//       badgeClass: 'bg-danger'
+//     }
+//   ];
+
+//   const handleTabClick = (tabId) => {
+//     if (onTabChange && typeof onTabChange === 'function') {
+//       onTabChange(tabId);
+//     }
+//   };
+
+//   return (
+//     <div className="stock-manager-sidebar">
+//       <h5 className="mb-4">Stock Manager</h5>
+//       <ul className="nav nav-pills flex-column stock-manager-nav">
+//         {tabs.map(tab => (
+//           <li className="nav-item" key={tab.id}>
+//             <button
+//               className={`nav-link ${activeTab === tab.id ? 'active' : ''}`}
+//               onClick={() => handleTabClick(tab.id)}
+//               style={{
+//                 textAlign: 'left',
+//                 width: '100%',
+//                 border: 'none',
+//                 background: 'none',
+//                 cursor: 'pointer'
+//               }}
+//             >
+//               <FontAwesomeIcon icon={tab.icon} className="me-2" />
+//               {tab.label}
+//               {tab.badge !== null && tab.badge > 0 && (
+//                 <span className={`badge ${tab.badgeClass} ms-2`}>
+//                   {tab.badge}
+//                 </span>
+//               )}
+//             </button>
+//           </li>
+//         ))}
+//       </ul>
+//     </div>
+//   );
+// };
+
+// export default Sidebar;
+
+
+
+
+
+
+import React from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faTachometerAlt,
+  faBoxes,
+  faShoppingCart,
+  faChartBar,
+  faTruck,
+  faFire,
+  faBook,
+} from "@fortawesome/free-solid-svg-icons";
+
+const Sidebar = ({ 
+  activeTab, 
+  onTabChange, 
+  inventoryStats, 
+  orderStats, 
+  requestStats 
+}) => {
+  return (
+    <div className="col-lg-2">
+      <div className="stock-manager-sidebar">
+        <h5 className="mb-4">Stock Manager</h5>
+        <ul className="nav nav-pills flex-column stock-manager-nav">
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === "dashboard" ? "active" : ""}`}
+              onClick={() => onTabChange("dashboard")}
+            >
+              <FontAwesomeIcon icon={faTachometerAlt} className="me-2" />
+              Dashboard
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === "inventory" ? "active" : ""}`}
+              onClick={() => onTabChange("inventory")}
+            >
+              <FontAwesomeIcon icon={faBoxes} className="me-2" />
+              Inventory
+              {inventoryStats?.lowStockItems > 0 && (
+                <span className="badge bg-warning ms-2">
+                  {inventoryStats.lowStockItems}
+                </span>
+              )}
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === "orders" ? "active" : ""}`}
+              onClick={() => onTabChange("orders")}
+            >
+              <FontAwesomeIcon icon={faShoppingCart} className="me-2" />
+              Orders
+              {orderStats?.processing > 0 && (
+                <span className="badge bg-info ms-2">
+                  {orderStats.processing}
+                </span>
+              )}
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === "reports" ? "active" : ""}`}
+              onClick={() => onTabChange("reports")}
+            >
+              <FontAwesomeIcon icon={faChartBar} className="me-2" />
+              Reports
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === "suppliers" ? "active" : ""}`}
+              onClick={() => onTabChange("suppliers")}
+            >
+              <FontAwesomeIcon icon={faTruck} className="me-2" />
+              Suppliers
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === "popular-books" ? "active" : ""}`}
+              onClick={() => onTabChange("popular-books")}
+            >
+              <FontAwesomeIcon icon={faFire} className="me-2" />
+              Popular Books
+              {inventoryStats?.featuredBooks > 0 && (
+                <span className="badge bg-danger ms-2">
+                  {inventoryStats.featuredBooks}
+                </span>
+              )}
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === "book-requests" ? "active" : ""}`}
+              onClick={() => onTabChange("book-requests")}
+            >
+              <FontAwesomeIcon icon={faBook} className="me-2" />
+              Book Requests
+              {requestStats?.pending > 0 && (
+                <span className="badge bg-danger ms-2">
+                  {requestStats.pending}
+                </span>
+              )}
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  );
+};
+
+export default Sidebar;
