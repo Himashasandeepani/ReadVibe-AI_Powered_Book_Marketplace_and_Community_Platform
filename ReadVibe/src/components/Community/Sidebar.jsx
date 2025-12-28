@@ -1,11 +1,6 @@
 import React from "react";
-import { 
-  topContributors, 
-  popularTags, 
-  communityGuidelines 
-} from "./utils";
 
-const Sidebar = ({ onTagClick }) => {
+const Sidebar = ({ topContributors, popularTags, handleTagClick }) => {
   return (
     <div className="community-sidebar sidebar-sticky">
       <h5>
@@ -14,14 +9,10 @@ const Sidebar = ({ onTagClick }) => {
       <div id="topContributors">
         {topContributors.map((contributor, index) => (
           <div className="contributor-item" key={index}>
-            <div className="contributor-avatar">
-              {contributor.avatar}
-            </div>
+            <div className="contributor-avatar">{contributor.avatar}</div>
             <div className="contributor-info">
               <h6 className="mb-0">{contributor.name}</h6>
-              <small className="text-muted">
-                {contributor.posts} posts
-              </small>
+              <small className="text-muted">{contributor.posts} posts</small>
             </div>
           </div>
         ))}
@@ -35,7 +26,7 @@ const Sidebar = ({ onTagClick }) => {
           <span
             key={index}
             className="badge bg-light text-dark tag-badge"
-            onClick={() => onTagClick(tag)}
+            onClick={() => handleTagClick(tag)}
             style={{ cursor: "pointer", margin: "2px" }}
           >
             {tag}
@@ -50,12 +41,22 @@ const Sidebar = ({ onTagClick }) => {
         <div className="card border-0 bg-light mt-2">
           <div className="card-body p-3">
             <ul className="list-unstyled mb-0 small">
-              {communityGuidelines.map((guideline, index) => (
-                <li className="mb-2" key={index}>
-                  <i className="fas fa-check-circle text-success me-2"></i>
-                  {guideline}
-                </li>
-              ))}
+              <li className="mb-2">
+                <i className="fas fa-check-circle text-success me-2"></i>
+                Be respectful to all members
+              </li>
+              <li className="mb-2">
+                <i className="fas fa-check-circle text-success me-2"></i>
+                No spam or self-promotion
+              </li>
+              <li className="mb-2">
+                <i className="fas fa-check-circle text-success me-2"></i>
+                Stay on topic - book discussions only
+              </li>
+              <li>
+                <i className="fas fa-check-circle text-success me-2"></i>
+                Spoilers must be marked
+              </li>
             </ul>
           </div>
         </div>

@@ -3,20 +3,21 @@ import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 
-const GuestNotice = ({ currentUser }) => {
-  if (currentUser) return null;
-
+const GuestNotice = () => {
   return (
-    <div className="guest-restriction">
+    <div className="guest-restriction mb-4">
       <div className="d-flex align-items-center">
         <FontAwesomeIcon
           icon={faInfoCircle}
           className="me-2"
-          style={{ color: "var(--secondary-blue)" }}
+          style={{ color: "var(--secondary-blue)", fontSize: "1.2rem" }}
         />
         <div>
-          <strong>Guest Access:</strong> You can view posts but need to
-          <Link to="/login"> login</Link> to create posts, comment, or like.
+          <strong>Guest Access:</strong> You can view community but need to{" "}
+          <Link to="/login" className="text-primary fw-medium">
+            login
+          </Link>{" "}
+          to create posts, comment, like, and request books.
         </div>
       </div>
     </div>

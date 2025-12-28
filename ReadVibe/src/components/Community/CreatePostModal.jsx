@@ -1,26 +1,17 @@
 import React from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPaperPlane, faLightbulb } from "@fortawesome/free-solid-svg-icons";
 
 const CreatePostModal = ({
-  show,
-  onClose,
+  showCreatePostModal,
+  setShowCreatePostModal,
   postContent,
   setPostContent,
   postCategory,
   setPostCategory,
   selectedBook,
   setSelectedBook,
-  onCreatePost,
+  handleCreatePost,
 }) => {
-  if (!show) return null;
-
-  const books = [
-    "The Midnight Library by Matt Haig",
-    "Project Hail Mary by Andy Weir",
-    "Dune by Frank Herbert",
-    "The Hobbit by J.R.R. Tolkien"
-  ];
+  if (!showCreatePostModal) return null;
 
   return (
     <div className="modal fade show" style={{ display: "block" }} tabIndex="-1">
@@ -31,7 +22,7 @@ const CreatePostModal = ({
             <button
               type="button"
               className="btn-close"
-              onClick={onClose}
+              onClick={() => setShowCreatePostModal(false)}
             ></button>
           </div>
           <div className="modal-body">
@@ -53,7 +44,6 @@ const CreatePostModal = ({
                   <small className="text-muted">Max 1000 characters</small>
                 </div>
               </div>
-              
               <div className="row">
                 <div className="col-md-6 mb-3">
                   <label className="form-label fw-semibold">Category *</label>
@@ -70,7 +60,6 @@ const CreatePostModal = ({
                     <option value="Announcement">Announcement</option>
                   </select>
                 </div>
-                
                 <div className="col-md-6 mb-3">
                   <label className="form-label fw-semibold">
                     Add a book reference (optional)
@@ -81,13 +70,21 @@ const CreatePostModal = ({
                     onChange={(e) => setSelectedBook(e.target.value)}
                   >
                     <option value="">Select a book...</option>
-                    {books.map((book, index) => (
-                      <option key={index} value={book}>{book}</option>
-                    ))}
+                    <option value="The Midnight Library by Matt Haig">
+                      The Midnight Library by Matt Haig
+                    </option>
+                    <option value="Project Hail Mary by Andy Weir">
+                      Project Hail Mary by Andy Weir
+                    </option>
+                    <option value="Dune by Frank Herbert">
+                      Dune by Frank Herbert
+                    </option>
+                    <option value="The Hobbit by J.R.R. Tolkien">
+                      The Hobbit by J.R.R. Tolkien
+                    </option>
                   </select>
                 </div>
               </div>
-              
               <div className="mb-3">
                 <label className="form-label fw-semibold">
                   Add image (optional)
@@ -101,9 +98,8 @@ const CreatePostModal = ({
                   Max file size: 5MB. Supported formats: JPG, PNG, GIF
                 </small>
               </div>
-              
               <div className="alert alert-info">
-                <FontAwesomeIcon icon={faLightbulb} className="me-2" />
+                <i className="fas fa-lightbulb me-2"></i>
                 <small>
                   Note: All posts will be visible to the admin for content
                   moderation. Inappropriate posts may be removed by
@@ -112,22 +108,20 @@ const CreatePostModal = ({
               </div>
             </form>
           </div>
-          
           <div className="modal-footer">
             <button
               type="button"
               className="btn btn-outline-secondary"
-              onClick={onClose}
+              onClick={() => setShowCreatePostModal(false)}
             >
               Cancel
             </button>
             <button
               type="button"
               className="btn btn-primary"
-              onClick={onCreatePost}
+              onClick={handleCreatePost}
             >
-              <FontAwesomeIcon icon={faPaperPlane} className="me-2" />
-              Post to Community
+              <i className="fas fa-paper-plane me-2"></i>Post to Community
             </button>
           </div>
         </div>
