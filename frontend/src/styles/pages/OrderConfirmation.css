@@ -68,6 +68,12 @@
     border: 1px solid #e2e8f0;
 }
 
+/* Use non-sticky summary on confirmation so it does not cover content while scrolling */
+.order-confirmation-page .checkout-order-summary {
+    position: static;
+    top: auto;
+}
+
 .order-details-card h5 {
     color: var(--primary-blue);
     font-weight: 600;

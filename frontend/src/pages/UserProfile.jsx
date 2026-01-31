@@ -145,8 +145,15 @@ const UserProfile = () => {
       showNotification("Please write your review", "warning");
       return;
     }
+    if (!selectedBook) {
+      showNotification("Please select a book to review", "warning");
+      return;
+    }
 
-    const newReview = submitReview(user, selectedBook, reviewData, selectedOrderId);
+    // Ensure the review payload includes the book id required by submitReview
+    const reviewPayload = { ...reviewData, bookId: selectedBook.id };
+
+    const newReview = submitReview(user, selectedBook, reviewPayload, selectedOrderId);
     
     setMyReviews([...myReviews, newReview]);
     setUserStats((prev) => ({
