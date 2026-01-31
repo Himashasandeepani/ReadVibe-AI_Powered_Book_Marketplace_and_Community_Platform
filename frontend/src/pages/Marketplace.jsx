@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import {
   Container,
   Row,
@@ -27,12 +28,12 @@ import {
   books,
   formatPrice,
   generateStarRating,
-  addToCart,
   searchBooks,
   filterBooks,
   showNotification,
   addToWishlist,
 } from "../utils/helpers";
+import { addItem, setCart } from "../store/slices/cartSlice";
 import "../styles/pages/Marketplace.css";
 
 // Components
@@ -66,6 +67,7 @@ const DEFAULT_FILTERS = {
 };
 
 const Marketplace = () => {
+  const dispatch = useDispatch();
   const [filters, setFilters] = useState(() => ({ ...DEFAULT_FILTERS }));
   const [filteredBooks, setFilteredBooks] = useState(() =>
     filterBooks(DEFAULT_FILTERS, books)
@@ -177,7 +179,23 @@ const Marketplace = () => {
 
     if (!requireLogin("add items to cart")) return;
 
-    addToCart(bookId);
+    const targetBook = books.find((b) => b.id === bookId);
+    if (!targetBook) return;
+    if (!targetBook.inStock || targetBook.stock === 0) {
+      showNotification("This book is currently out of stock", "warning");
+      return;
+    }
+
+    dispatch(
+      addItem({
+        id: targetBook.id,
+        title: targetBook.title,
+        price: targetBook.price,
+        quantity: 1,
+        image: targetBook.image,
+        stock: targetBook.stock,
+      })
+    );
     showNotification("Book added to cart!", "success");
   };
 
@@ -186,7 +204,27 @@ const Marketplace = () => {
 
     if (!requireLogin("buy books")) return;
 
-    handleAddToCart(bookId);
+    const targetBook = books.find((b) => b.id === bookId);
+    if (!targetBook || !targetBook.inStock || targetBook.stock === 0) {
+      showNotification("This book is currently out of stock", "warning");
+      return;
+    }
+
+    // Set cart to this single item and persist for checkout flow
+    const payload = [
+      {
+        id: targetBook.id,
+        title: targetBook.title,
+        price: targetBook.price,
+        quantity: 1,
+        image: targetBook.image,
+        stock: targetBook.stock,
+      },
+    ];
+
+    dispatch(setCart(payload));
+    sessionStorage.setItem("checkoutCart", JSON.stringify(payload));
+    showNotification("Proceeding to delivery details", "success");
     navigate("/delivery-details");
   };
 

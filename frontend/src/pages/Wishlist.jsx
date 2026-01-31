@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 
 // Import Components
 import GuestRestriction from "../components/Wishlist/GuestRestriction";
@@ -22,6 +23,7 @@ import {
 } from "../components/Wishlist/utils.jsx";
 
 import { showNotification } from "../utils/helpers";
+import { addItem, selectCartItems, setCart } from "../store/slices/cartSlice";
 import "../styles/pages/Wishlist.css";
 
 const canAccessStorage = () =>
@@ -82,6 +84,8 @@ const seedWishlistForUser = (currentUser) => {
 
 const Wishlist = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const cartItems = useSelector(selectCartItems);
 
   // State management
   const [user, setUser] = useState(() => getStoredUser());
@@ -324,23 +328,17 @@ const Wishlist = () => {
       return;
     }
 
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const existingItem = cart.find((item) => item.id === bookId);
-
-    if (existingItem) {
-      existingItem.quantity += 1;
-    } else {
-      cart.push({
+    dispatch(
+      addItem({
         id: book.id,
         title: book.title,
         author: book.author,
         price: book.price,
         image: book.image,
         quantity: 1,
-      });
-    }
-
-    localStorage.setItem("cart", JSON.stringify(cart));
+        stock: book.stock,
+      })
+    );
 
     if (
       window.confirm(
@@ -365,26 +363,27 @@ const Wishlist = () => {
     if (
       window.confirm(`Add ${availableItems.length} available items to cart?`)
     ) {
-      const cart = JSON.parse(localStorage.getItem("cart")) || [];
+      const mergedCart = [...cartItems];
 
       availableItems.forEach((item) => {
-        const existingItem = cart.find((cartItem) => cartItem.id === item.id);
+        const existingItem = mergedCart.find((cartItem) => cartItem.id === item.id);
 
         if (existingItem) {
           existingItem.quantity += 1;
         } else {
-          cart.push({
+          mergedCart.push({
             id: item.id,
             title: item.title,
             author: item.author,
             price: item.price,
             image: item.image,
             quantity: 1,
+            stock: item.stock,
           });
         }
       });
 
-      localStorage.setItem("cart", JSON.stringify(cart));
+      dispatch(setCart(mergedCart));
 
       const updatedWishlist = wishlist.filter((item) => !item.inStock);
       setWishlist(updatedWishlist);

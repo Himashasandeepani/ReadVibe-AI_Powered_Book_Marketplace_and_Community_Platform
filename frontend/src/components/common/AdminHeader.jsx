@@ -11,13 +11,16 @@ import {
   faTachometerAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import { Dropdown } from "react-bootstrap";
-import { getCurrentUser, logout } from "../utils/auth";
-import "../styles/components/AdminHeaderFooter.css";
+import { getCurrentUser, logout } from "../../utils/auth";
+import { useDispatch } from "react-redux";
+import { logoutSuccess } from "../../store/slices/authSlice";
+import "../../styles/components/AdminHeaderFooter.css";
 
 const AdminHeader = () => {
   const [user, setUser] = useState(() => getCurrentUser());
   const [expanded, setExpanded] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -29,6 +32,7 @@ const AdminHeader = () => {
   }, []);
 
   const handleLogout = () => {
+    dispatch(logoutSuccess());
     logout();
     setExpanded(false);
     navigate("/login");
@@ -49,11 +53,9 @@ const AdminHeader = () => {
     navigate("/admin-panel");
   };
 
-
   return (
     <nav className="admin-header navbar navbar-expand-lg">
       <div className="container-fluid">
-        {/* Brand Logo */}
         <Link
           to="/admin-panel"
           className="navbar-brand admin-brand"
@@ -66,7 +68,6 @@ const AdminHeader = () => {
           </span>
         </Link>
 
-        {/* Admin Navigation Toggle */}
         <button
           className="navbar-toggler admin-toggler"
           type="button"
@@ -77,9 +78,7 @@ const AdminHeader = () => {
           <span className="navbar-toggler-icon"></span>
         </button>
 
-        {/* Admin Navigation */}
         <div className={`collapse navbar-collapse ${expanded ? "show" : ""}`}>
-          {/* Admin User Dropdown */}
           <div className="d-flex align-items-center admin-user-section">
             <div className="admin-user-info me-3 d-none d-md-block">
               <div className="admin-user-role">

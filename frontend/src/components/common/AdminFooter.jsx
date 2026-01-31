@@ -7,7 +7,7 @@ import {
   faCode,
   faHeart,
 } from "@fortawesome/free-solid-svg-icons";
-import "../styles/components/AdminHeaderFooter.css";
+import "../../styles/components/AdminHeaderFooter.css";
 
 const AdminFooter = () => {
   const currentYear = new Date().getFullYear();

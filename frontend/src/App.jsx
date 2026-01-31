@@ -1,11 +1,12 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "./App.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
-import ScrollToTop from "./components/ScrollToTop";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-import StockManagerHeader from "./components/StockManagerHeader";
-import StockManagerFooter from "./components/StockManagerFooter";
+import ScrollToTop from "./components/common/ScrollToTop";
+import Header from "./components/common/Header";
+import Footer from "./components/common/Footer";
+import StockManagerHeader from "./components/common/StockManagerHeader";
+import StockManagerFooter from "./components/common/StockManagerFooter";
+import ProtectedRoute from "./components/common/ProtectedRoute";
 import Home from "./pages/Home";
 import Marketplace from "./pages/Marketplace";
 import Community from "./pages/Community";
@@ -141,7 +142,14 @@ function App() {
               <AdminPanel />
             </AdminPanelLayout>
           } /> */}
-          <Route path="/admin-panel" element={<AdminPanel />} />
+          <Route
+            path="/admin-panel"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminPanel />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Stock Manager with special layout */}
           {/* <Route path="/stock-manager" element={
@@ -150,7 +158,14 @@ function App() {
             </StockManagerLayout>
           } /> */}
 
-          <Route path="/stock-manager" element={<StockManager />} />
+          <Route
+            path="/stock-manager"
+            element={
+              <ProtectedRoute requireStockManager>
+                <StockManager />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/privacy-policy"

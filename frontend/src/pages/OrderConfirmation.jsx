@@ -3,7 +3,10 @@ import { Container, Row, Col, Card } from "react-bootstrap";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBookOpen } from "@fortawesome/free-solid-svg-icons";
+import { useDispatch } from "react-redux";
 import { getCurrentUser } from "../utils/auth";
+import { showNotification } from "../utils/helpers";
+import { addItem } from "../store/slices/cartSlice";
 
 // Import Components
 import ProgressSteps from "../components/common/ProgressSteps";
@@ -38,6 +41,7 @@ import "../styles/pages/OrderConfirmation.css";
 const OrderConfirmation = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   // Modal states
   const [showTrackModal, setShowTrackModal] = useState(false);
@@ -124,7 +128,7 @@ const OrderConfirmation = () => {
   const handleAddToCart = (bookId, quantity = 1) => {
     const user = getCurrentUser();
     if (!user) {
-      alert("Please login to add items to cart");
+      showNotification("Please login to add items to cart", "warning");
       navigate("/login");
       return;
     }
@@ -132,24 +136,19 @@ const OrderConfirmation = () => {
     const book = books.find((b) => b.id === bookId);
     if (!book) return;
 
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const existingItem = cart.find((item) => item.id === bookId);
-
-    if (existingItem) {
-      existingItem.quantity += quantity;
-    } else {
-      cart.push({
+    dispatch(
+      addItem({
         id: book.id,
         title: book.title,
         author: book.author,
         price: book.price,
         image: book.image,
-        quantity: quantity,
-      });
-    }
+        quantity,
+        stock: book.stock,
+      })
+    );
 
-    localStorage.setItem("cart", JSON.stringify(cart));
-    alert("Book added to cart!");
+    showNotification("Book added to cart!", "success");
   };
 
   // Handle invoice download

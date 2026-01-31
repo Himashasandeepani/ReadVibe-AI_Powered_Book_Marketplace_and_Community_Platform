@@ -1,18 +1,5 @@
-// // Image mapping utility
-// export const getBookImage = (bookTitle) => {
-//   const imageMap = {
-//     "The Midnight Library": "/assets/The_Midnight_Library.jpeg",
-//     "Project Hail Mary": "/assets/project_hail_mary.jpg",
-//     "Dune": "/assets/dune.jpg",
-//     "The Hobbit": "/assets/the_hobbit.jpg",
-//     "The Silent Patient": "/assets/silent_patient.jpg",
-//     "Where the Crawdads Sing": "/assets/crawdads_sing.jpg",
-//     "Atomic Habits": "/assets/atomic_habits.jpg",
-//     "The Alchemist": "/assets/alchemist.jpg",
-//   };
-  
-//   return imageMap[bookTitle] || "/assets/default_book.jpg";
-// };
+import { addItem, setCart } from "../../store/slices/cartSlice";
+import { showNotification, formatPrice, generateStarRating, addToWishlist } from "../../utils/helpers";
 
 // // Book loading and formatting utilities
 // export const loadStockBooks = () => {
@@ -347,109 +334,106 @@ export const handleCommunityPostShare = (post, isLoggedIn, navigate) => {
 };
 
 // Book action utilities
-export const handleAddToCart = (bookId, featuredBooks, stockBooks, isLoggedIn, navigate) => {
+export const handleAddToCart = ({
+  bookId,
+  featuredBooks,
+  stockBooks,
+  isLoggedIn,
+  navigate,
+  dispatch,
+}) => {
   if (!isLoggedIn()) {
-    alert("Please login to add items to cart");
+    showNotification("Please login to add items to cart", "warning");
     navigate("/login");
     return false;
   }
 
-  // Find the book in featuredBooks or stockBooks
-  const book = featuredBooks.find(b => b.id === bookId) || 
-               stockBooks.find(b => b.id === bookId);
-  
+  const book =
+    featuredBooks.find((b) => b.id === bookId) ||
+    stockBooks.find((b) => b.id === bookId);
+
   if (!book) {
-    alert("Book not found in inventory");
+    showNotification("Book not found in inventory", "danger");
     return false;
   }
 
   if (book.stock === 0 || !book.inStock) {
-    alert("This book is currently out of stock");
+    showNotification("This book is currently out of stock", "warning");
     return false;
   }
 
-  // Check if it's from featuredBooks (with stock property) or from original books
-  if (book.stock !== undefined) {
-    // From stock manager
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const existingItem = cart.find(item => item.id === bookId);
-    
-    if (existingItem) {
-      if (existingItem.quantity >= book.stock) {
-        alert(`Only ${book.stock} items available in stock`);
-        return false;
-      }
-      existingItem.quantity += 1;
-    } else {
-      cart.push({
-        id: bookId,
-        title: book.title,
-        price: book.price,
-        quantity: 1,
-        image: book.image,
-        stock: book.stock
-      });
-    }
-    
-    localStorage.setItem("cart", JSON.stringify(cart));
-    window.dispatchEvent(new CustomEvent("cart-updated"));
-    return true;
+  if (!dispatch) {
+    console.warn("handleAddToCart called without dispatch");
+    return false;
   }
-  return false;
+
+  dispatch(
+    addItem({
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      price: book.price,
+      image: book.image,
+      quantity: 1,
+      stock: book.stock,
+    })
+  );
+
+  showNotification("Book added to cart!", "success");
+  return true;
 };
 
 // Direct Buy Now function
-export const directBuyNow = (bookId, featuredBooks, stockBooks, isLoggedIn, navigate) => {
+export const directBuyNow = ({
+  bookId,
+  featuredBooks,
+  stockBooks,
+  isLoggedIn,
+  navigate,
+  dispatch,
+}) => {
   if (!isLoggedIn()) {
-    alert("Please login to buy books");
+    showNotification("Please login to buy books", "warning");
     navigate("/login");
     return false;
   }
 
-  // Find the book in featuredBooks or stockBooks
-  const book = featuredBooks.find(b => b.id === bookId) || 
-               stockBooks.find(b => b.id === bookId);
-  
+  const book =
+    featuredBooks.find((b) => b.id === bookId) ||
+    stockBooks.find((b) => b.id === bookId);
+
   if (!book) {
-    alert("Book not found in inventory");
+    showNotification("Book not found in inventory", "danger");
     return false;
   }
 
   if (book.stock === 0 || !book.inStock) {
-    alert("This book is currently out of stock");
+    showNotification("This book is currently out of stock", "warning");
     return false;
   }
 
-  // Check if it's from featuredBooks (with stock property) or from original books
-  if (book.stock !== undefined) {
-    // From stock manager
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const existingItem = cart.find(item => item.id === bookId);
-    
-    if (existingItem) {
-      if (existingItem.quantity >= book.stock) {
-        alert(`Only ${book.stock} items available in stock`);
-        return false;
-      }
-      existingItem.quantity += 1;
-    } else {
-      cart.push({
-        id: bookId,
-        title: book.title,
-        price: book.price,
-        quantity: 1,
-        image: book.image,
-        stock: book.stock
-      });
-    }
-    
-    localStorage.setItem("cart", JSON.stringify(cart));
-    
-    // Navigate to delivery details immediately (no alert)
-    navigate("/delivery-details");
-    return true;
+  if (!dispatch) {
+    console.warn("directBuyNow called without dispatch");
+    return false;
   }
-  return false;
+
+  dispatch(
+    setCart([
+      {
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        price: book.price,
+        image: book.image,
+        quantity: 1,
+        stock: book.stock,
+      },
+    ])
+  );
+
+  showNotification("Ready to checkout", "success");
+  navigate("/delivery-details");
+  return true;
 };
 
 export const getStockBadge = (book) => {
@@ -462,5 +446,5 @@ export const getStockBadge = (book) => {
   }
 };
 
-// Import existing helpers
-export { formatPrice, generateStarRating, addToWishlist } from "../../utils/helpers";
+// Re-export common helpers for consumers
+export { formatPrice, generateStarRating, addToWishlist };

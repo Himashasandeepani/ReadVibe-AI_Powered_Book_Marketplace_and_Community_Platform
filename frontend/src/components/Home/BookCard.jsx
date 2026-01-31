@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import { Badge, Button, OverlayTrigger, Tooltip } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -14,10 +15,12 @@ import {
   faFire,
 } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
-import { formatPrice, generateStarRating, addToWishlist } from "../../utils/helpers";
+import { formatPrice, generateStarRating, addToWishlist, showNotification } from "../../utils/helpers";
+import { addItem, setCart } from "../../store/slices/cartSlice";
 
 const BookCard = ({ book, currentUser, onViewDetails }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const isLoggedIn = () => currentUser !== null;
 
@@ -37,7 +40,7 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
 
     addToWishlist(book.id, currentUser.id);
     window.dispatchEvent(new CustomEvent("wishlist-updated"));
-    alert("Book added to wishlist!");
+    showNotification("Book added to wishlist!", "success");
   };
 
   const handleAddToCart = (e) => {
@@ -49,33 +52,21 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
     }
 
     if (book.stock === 0 || !book.inStock) {
-      alert("This book is currently out of stock");
+      showNotification("This book is currently out of stock", "warning");
       return;
     }
 
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const existingItem = cart.find(item => item.id === book.id);
-    
-    if (existingItem) {
-      if (existingItem.quantity >= book.stock) {
-        alert(`Only ${book.stock} items available in stock`);
-        return;
-      }
-      existingItem.quantity += 1;
-    } else {
-      cart.push({
+    dispatch(
+      addItem({
         id: book.id,
         title: book.title,
         price: book.price,
         quantity: 1,
         image: book.image,
-        stock: book.stock
-      });
-    }
-    
-    localStorage.setItem("cart", JSON.stringify(cart));
-    window.dispatchEvent(new CustomEvent("cart-updated"));
-    alert("Book added to cart!");
+        stock: book.stock,
+      })
+    );
+    showNotification("Book added to cart!", "success");
   };
 
   const handleBuyNow = (e) => {
@@ -87,20 +78,31 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
     }
 
     if (book.stock === 0 || !book.inStock) {
-      alert("This book is currently out of stock");
+      showNotification("This book is currently out of stock", "warning");
       return;
     }
 
-    const cart = [{
-      id: book.id,
-      title: book.title,
-      price: book.price,
-      quantity: 1,
-      image: book.image,
-      stock: book.stock
-    }];
-    
-    localStorage.setItem("cart", JSON.stringify(cart));
+    dispatch(
+      setCart([
+        {
+          id: book.id,
+          title: book.title,
+          price: book.price,
+          quantity: 1,
+          image: book.image,
+          stock: book.stock,
+        },
+      ])
+    );
+    sessionStorage.setItem(
+      "checkoutCart",
+      JSON.stringify([
+        {
+          id: book.id,
+          quantity: 1,
+        },
+      ])
+    );
     navigate("/delivery-details");
   };
 

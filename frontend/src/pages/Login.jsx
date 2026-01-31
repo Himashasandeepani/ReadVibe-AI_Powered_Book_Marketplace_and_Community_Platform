@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { Container, Card, Row, Col } from "react-bootstrap";
 import { useNavigate, useLocation } from "react-router-dom";
-import { setCurrentUser, getCurrentUser } from "../utils/auth";
+import { getCurrentUser } from "../utils/auth";
+import { useDispatch } from "react-redux";
+import { loginSuccess } from "../store/slices/authSlice";
 
 // Import Components
 import LoginForm from "../components/Login/LoginForm";
@@ -37,6 +39,7 @@ const isSignupQuery = (searchParams) => {
 const Login = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const isSignupMode = useMemo(
     () => isSignupQuery(location.search),
@@ -108,7 +111,7 @@ const Login = () => {
         localStorage.setItem("rememberUser", "true");
       }
 
-      setCurrentUser(userWithoutPassword);
+      dispatch(loginSuccess(userWithoutPassword));
       redirectBasedOnRole(userWithoutPassword, navigate);
     } else {
       setFormErrors({ general: "Invalid username or password" });
@@ -135,7 +138,7 @@ const Login = () => {
     saveUserToStorage(newUser);
 
     const userWithoutPassword = removePasswordFromUser(newUser);
-    setCurrentUser(userWithoutPassword);
+    dispatch(loginSuccess(userWithoutPassword));
 
     navigate("/", { state: { welcome: true } });
   };

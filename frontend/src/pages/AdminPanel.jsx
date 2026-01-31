@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../styles/pages/AdminPanel.css";
-import AdminHeader from "../components/AdminHeader";
-import AdminFooter from "../components/AdminFooter";
+import AdminHeader from "../components/common/AdminHeader";
+import AdminFooter from "../components/common/AdminFooter";
 
 // Import Admin Components
 import AdminSidebar from "../components/Admin/AdminSidebar";

@@ -134,7 +134,6 @@ export const processPayment = async () => {
 
 // Clear checkout data from storage
 export const clearCheckoutData = () => {
-  localStorage.setItem("cart", JSON.stringify([]));
   sessionStorage.removeItem("deliveryData");
   sessionStorage.removeItem("checkoutCart");
   sessionStorage.removeItem("orderSummary");

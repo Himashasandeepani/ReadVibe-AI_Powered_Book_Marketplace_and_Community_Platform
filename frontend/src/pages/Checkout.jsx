@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Container, Row, Col, Card, Alert } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import { getCurrentUser } from "../utils/auth";
 import { showNotification } from "../utils/helpers";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -21,6 +22,7 @@ import {
   saveOrderToStorage,
   clearCheckoutData,
 } from "../components/Checkout/utils";
+import { clearCart } from "../store/slices/cartSlice";
 
 import "../styles/pages/Checkout.css";
 
@@ -68,7 +70,6 @@ const buildOrderData = () => {
     const book = SAMPLE_BOOKS.find((b) => b.id === item.id);
     return sum + (book?.price || 0) * item.quantity;
   }, 0);
-
   const shippingMethod = deliveryData.shipping?.shippingMethod;
   const shipping = shippingMethod === "standard"
     ? 500.0
@@ -103,6 +104,7 @@ const buildOrderData = () => {
 };
 
 const Checkout = () => {
+  const dispatch = useDispatch();
   const [user, setUser] = useState(() => getCurrentUser());
   const [paymentData, setPaymentData] = useState({
     cardNumber: "",
@@ -216,6 +218,9 @@ const Checkout = () => {
 
       // Save order
       saveOrderToStorage(order);
+
+      // Clear cart state
+      dispatch(clearCart());
 
       // Clear checkout data
       clearCheckoutData();

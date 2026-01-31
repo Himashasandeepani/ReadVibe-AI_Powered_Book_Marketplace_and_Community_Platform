@@ -834,8 +834,8 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "../styles/pages/StockManager.css";
 
 // Import Components
-import StockManagerHeader from "../components/StockManagerHeader";
-import StockManagerFooter from "../components/StockManagerFooter";
+import StockManagerHeader from "../components/common/StockManagerHeader";
+import StockManagerFooter from "../components/common/StockManagerFooter";
 import Sidebar from "../components/StockManager/Sidebar";
 import DashboardTab from "../components/StockManager/Tabs/DashboardTab";
 import InventoryTab from "../components/StockManager/Tabs/InventoryTab";

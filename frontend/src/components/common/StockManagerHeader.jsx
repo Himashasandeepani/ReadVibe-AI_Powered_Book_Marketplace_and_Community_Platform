@@ -11,13 +11,16 @@ import {
   faTachometerAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import { Dropdown } from "react-bootstrap";
-import { getCurrentUser, logout } from "../utils/auth";
-import "../styles/components/StockManagerHeaderFooter.css";
+import { getCurrentUser, logout } from "../../utils/auth";
+import { useDispatch } from "react-redux";
+import { logoutSuccess } from "../../store/slices/authSlice";
+import "../../styles/components/StockManagerHeaderFooter.css";
 
 const StockManagerHeader = () => {
   const [user, setUser] = useState(() => getCurrentUser());
   const [expanded, setExpanded] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -29,6 +32,7 @@ const StockManagerHeader = () => {
   }, []);
 
   const handleLogout = () => {
+    dispatch(logoutSuccess());
     logout();
     setExpanded(false);
     navigate("/login");
@@ -47,7 +51,6 @@ const StockManagerHeader = () => {
   return (
     <nav className="stock-manager-header navbar navbar-expand-lg">
       <div className="container-fluid">
-        {/* Brand Logo */}
         <Link
           to="/stock-manager"
           className="navbar-brand stock-manager-brand"
@@ -60,7 +63,6 @@ const StockManagerHeader = () => {
           </span>
         </Link>
 
-        {/* stock-manager Navigation Toggle */}
         <button
           className="navbar-toggler stock-manager-toggler"
           type="button"
@@ -71,9 +73,7 @@ const StockManagerHeader = () => {
           <span className="navbar-toggler-icon"></span>
         </button>
 
-        {/* stock-manager Navigation */}
         <div className={`collapse navbar-collapse ${expanded ? "show" : ""}`}>
-          {/* stock-manager User Dropdown */}
           <div className="d-flex align-items-center stock-manager-user-section">
             <div className="stock-manager-user-info me-3 d-none d-md-block">
               <div className="stock-manager-user-role">

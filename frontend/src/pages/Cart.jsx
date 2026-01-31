@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import {
+  selectCartItems,
+  removeItem,
+  updateQuantity,
+  clearCart,
+  syncFromStorage,
+} from "../store/slices/cartSlice";
 
 // Import Components
 import CartHeader from "../components/Cart/CartHeader";
@@ -11,10 +19,6 @@ import OrderSummary from "../components/Cart/OrderSummary";
 // Import Utilities
 import {
   calculateTotals,
-  updateQuantity,
-  removeFromCart,
-  clearCart,
-  updateCartCount,
   checkStockAvailability,
   prepareCheckoutData,
 } from "../components/Cart/cartUtils";
@@ -23,22 +27,10 @@ import { getCurrentUser } from "../utils/auth";
 import { showNotification, books } from "../utils/helpers";
 import "../styles/pages/Cart.css";
 
-const getStoredCart = () => {
-  const storedCart = localStorage.getItem("cart");
-  if (!storedCart) {
-    return [];
-  }
-
-  try {
-    return JSON.parse(storedCart) || [];
-  } catch {
-    return [];
-  }
-};
-
 const Cart = () => {
-  const [cart, setCart] = useState(getStoredCart);
+  const cart = useSelector(selectCartItems);
   const [user, setUser] = useState(() => getCurrentUser());
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -60,9 +52,9 @@ const Cart = () => {
   }, []);
 
   useEffect(() => {
-    const syncCartState = () => {
-      setCart(getStoredCart());
-    };
+    dispatch(syncFromStorage());
+
+    const syncCartState = () => dispatch(syncFromStorage());
 
     const handleStorageCartChange = (event) => {
       if (event.key === "cart") {
@@ -77,7 +69,7 @@ const Cart = () => {
       window.removeEventListener("cart-updated", syncCartState);
       window.removeEventListener("storage", handleStorageCartChange);
     };
-  }, []);
+  }, [dispatch]);
 
   const handleRemoveFromCart = (bookId) => {
     if (
@@ -85,13 +77,13 @@ const Cart = () => {
         "Are you sure you want to remove this item from your cart?"
       )
     ) {
-      removeFromCart(cart, bookId, setCart, updateCartCount);
+      dispatch(removeItem(bookId));
       showNotification("Item removed from cart", "info");
     }
   };
 
   const handleUpdateQuantity = (bookId, change) => {
-    updateQuantity(cart, bookId, change, setCart, updateCartCount);
+    dispatch(updateQuantity({ id: bookId, delta: change }));
     if (change > 0) {
       showNotification("Quantity increased", "success");
     } else if (change < 0) {
@@ -101,7 +93,7 @@ const Cart = () => {
 
   const handleClearCart = () => {
     if (window.confirm("Are you sure you want to clear your entire cart?")) {
-      clearCart(setCart, updateCartCount);
+      dispatch(clearCart());
       showNotification("Cart cleared", "info");
     }
   };
