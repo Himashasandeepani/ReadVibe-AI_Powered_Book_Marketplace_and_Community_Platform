@@ -157,31 +157,48 @@ export const filterBooks = (filters, booksArray) => {
 
 // Enhanced showNotification function
 export const showNotification = (message, type = 'info') => {
-  // Create notification element
+  const typeMap = {
+    success: { icon: 'check-circle', label: 'Success' },
+    warning: { icon: 'exclamation-triangle', label: 'Warning' },
+    danger: { icon: 'times-circle', label: 'Error' },
+    info: { icon: 'info-circle', label: 'Info' },
+  };
+
+  const meta = typeMap[type] || typeMap.info;
+
+  // Ensure a single toast container exists
+  let container = document.querySelector('.rv-toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'rv-toast-container';
+    document.body.appendChild(container);
+  }
+
   const notification = document.createElement('div');
-  notification.className = `alert alert-${type} position-fixed`;
-  notification.style.cssText = `
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-    min-width: 300px;
-    animation: fadeIn 0.3s ease-in-out;
-  `;
+  notification.className = `rv-toast rv-toast-${type}`;
   notification.innerHTML = `
-    <div class="d-flex align-items-center">
-      <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
-      <span>${message}</span>
+    <div class="rv-toast__icon">
+      <i class="fas fa-${meta.icon}" aria-hidden="true"></i>
     </div>
+    <div class="rv-toast__content">
+      <div class="rv-toast__title">${meta.label}</div>
+      <div class="rv-toast__message">${message}</div>
+    </div>
+    <button class="rv-toast__close" aria-label="Dismiss notification">x</button>
   `;
 
-  document.body.appendChild(notification);
+  // Close on click of the dismiss button
+  notification.querySelector('.rv-toast__close').addEventListener('click', () => {
+    notification.classList.add('rv-toast--hide');
+    setTimeout(() => notification.remove(), 250);
+  });
 
-  // Remove after 3 seconds
+  container.appendChild(notification);
+
+  // Auto-remove after 3 seconds
   setTimeout(() => {
-    notification.style.animation = 'fadeOut 0.3s ease-in-out';
-    setTimeout(() => {
-      notification.remove();
-    }, 300);
+    notification.classList.add('rv-toast--hide');
+    setTimeout(() => notification.remove(), 250);
   }, 3000);
 };
 

@@ -94,7 +94,7 @@ ReadVibe/
 
 ### 1. Clone/Extract the Project
 ```bash
-cd ReadVibe-1
+cd ReadVibe
 ```
 
 ### 2. Frontend Setup

@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser } from "@fortawesome/free-solid-svg-icons";
 
 // Import Components
-import LoadingSpinner from "../components/UserProfile/LoadingSpinner";
+import LoadingSpinner from "../components/common/LoadingSpinner";
 import UserInfoCard from "../components/UserProfile/UserInfoCard";
 import ReadingStatsCard from "../components/UserProfile/ReadingStatsCard";
 import DashboardOverview from "../components/UserProfile/DashboardOverview";

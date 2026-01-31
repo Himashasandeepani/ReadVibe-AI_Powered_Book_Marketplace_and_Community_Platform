@@ -7,8 +7,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTruck } from "@fortawesome/free-solid-svg-icons";
 
 // Import Components
-import LoadingSpinner from "../components/DeliveryDetails/LoadingSpinner";
-import ProgressSteps from "../components/DeliveryDetails/ProgressSteps";
+import LoadingSpinner from "../components/common/LoadingSpinner";
+import ProgressSteps from "../components/common/ProgressSteps";
 import CartSummary from "../components/DeliveryDetails/CartSummary";
 import ShippingAddressForm from "../components/DeliveryDetails/ShippingAddressForm";
 import AddressPreview from "../components/DeliveryDetails/AddressPreview";
@@ -245,7 +245,15 @@ const DeliveryDetails = () => {
   };
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <LoadingSpinner
+        message="Processing your delivery information..."
+        containerClassName="delivery-loading"
+        spinnerClassName="delivery-loading-spinner"
+        textClassName="delivery-loading-text"
+        textTag="div"
+      />
+    );
   }
 
   return (
@@ -259,7 +267,7 @@ const DeliveryDetails = () => {
                 Delivery Details
               </h2>
 
-              <ProgressSteps currentStep={1} />
+              <ProgressSteps currentStep={1} variant="delivery" />
 
               <CartSummary cartItems={cartItems} orderSummary={orderSummary} />
 

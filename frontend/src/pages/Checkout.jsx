@@ -7,8 +7,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBookOpen } from "@fortawesome/free-solid-svg-icons";
 
 // Import Components
-import LoadingSpinner from "../components/Checkout/LoadingSpinner";
-import ProgressSteps from "../components/Checkout/ProgressSteps";
+import LoadingSpinner from "../components/common/LoadingSpinner";
+import ProgressSteps from "../components/common/ProgressSteps";
 import PaymentForm from "../components/Checkout/PaymentForm";
 import OrderSummary from "../components/Checkout/OrderSummary";
 import CheckoutButtons from "../components/Checkout/CheckoutButtons";

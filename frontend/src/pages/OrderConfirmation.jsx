@@ -6,7 +6,7 @@ import { faBookOpen } from "@fortawesome/free-solid-svg-icons";
 import { getCurrentUser } from "../utils/auth";
 
 // Import Components
-import ProgressSteps from "../components/OrderConfirmation/ProgressSteps";
+import ProgressSteps from "../components/common/ProgressSteps";
 import ConfirmationHeader from "../components/OrderConfirmation/ConfirmationHeader";
 import OrderInfoSection from "../components/OrderConfirmation/OrderInfoSection";
 import ShippingInfoSection from "../components/OrderConfirmation/ShippingInfoSection";

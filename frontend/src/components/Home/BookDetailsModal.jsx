@@ -246,7 +246,7 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
               </h5>
               <div className="mb-3 p-3 border rounded">
                 <div className="d-flex align-items-center mb-2">
-                  <span className="fw-bold me-2">
+                  <span className="fw-bold fs-5 me-2">
                     <FontAwesomeIcon icon={faUser} className="me-1" />
                     Verified Reader
                   </span>
