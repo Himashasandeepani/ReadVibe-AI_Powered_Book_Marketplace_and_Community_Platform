@@ -91,7 +91,7 @@ const StatusBadge = ({
           Rejected: "badge bg-danger",
           Fulfilled: "badge bg-info text-dark",
         }[status] || "badge bg-secondary";
-      case "supplier":
+      case "publisher":
         return status === "Active" ? "badge bg-success" : "badge bg-secondary";
       default:
         return "badge bg-secondary";

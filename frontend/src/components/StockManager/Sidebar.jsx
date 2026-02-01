@@ -181,11 +181,11 @@ const Sidebar = ({
           </li>
           <li className="nav-item">
             <button
-              className={`nav-link ${activeTab === "suppliers" ? "active" : ""}`}
-              onClick={() => onTabChange("suppliers")}
+              className={`nav-link ${activeTab === "Publishers" ? "active" : ""}`}
+              onClick={() => onTabChange("publishers")}
             >
               <FontAwesomeIcon icon={faTruck} className="me-2" />
-              Suppliers
+              Publishers
             </button>
           </li>
           <li className="nav-item">

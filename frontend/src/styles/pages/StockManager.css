@@ -1093,6 +1093,7 @@
   right: 15px;
   transform: translateY(-50%);
   color: #6c757d;
+    pointer-events: none;
 }
 
 /* Action Buttons */

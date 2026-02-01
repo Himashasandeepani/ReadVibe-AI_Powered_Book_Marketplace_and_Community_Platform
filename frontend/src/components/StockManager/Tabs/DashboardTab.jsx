@@ -239,7 +239,7 @@ import { formatCurrency } from "../utils";
 const DashboardTab = ({ 
   stats, 
   onAddBook, 
-  onAddSupplier, 
+  onAddPublisher, 
   onViewRequests, 
   onViewReports, 
   onManagePopularBooks, 
@@ -295,9 +295,9 @@ const DashboardTab = ({
                 <FontAwesomeIcon icon={faPlus} className="me-2" />
                 Add New Book
               </button>
-              <button className="btn btn-success" onClick={onAddSupplier}>
+              <button className="btn btn-success" onClick={onAddPublisher}>
                 <FontAwesomeIcon icon={faHandshake} className="me-2" />
-                Add Supplier
+                Add Publisher
               </button>
               <button className="btn btn-warning" onClick={onViewRequests}>
                 <FontAwesomeIcon icon={faBook} className="me-2" />

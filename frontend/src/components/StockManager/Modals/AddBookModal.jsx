@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faSearch } from "@fortawesome/free-solid-svg-icons";
 
 const AddBookModal = ({ 
   show, 
@@ -8,9 +8,50 @@ const AddBookModal = ({
   newBook, 
   onInputChange, 
   onSubmit, 
-  isEditing 
+  isEditing,
+  categories = [],
+  onManageCategories,
+  authors = [],
+  publishers = [],
+  onNewAuthor = () => {},
+  onEditAuthor = () => {},
+  onDeleteAuthor = () => {}
 }) => {
   if (!show) return null;
+
+  const [showAuthorsPanel, setShowAuthorsPanel] = useState(false);
+  const [showNewAuthorForm, setShowNewAuthorForm] = useState(false);
+  const [newAuthorFirst, setNewAuthorFirst] = useState("");
+  const [newAuthorLast, setNewAuthorLast] = useState("");
+  const [localAuthors, setLocalAuthors] = useState(authors || []);
+  const [selectedAuthor, setSelectedAuthor] = useState(null);
+
+  useEffect(() => {
+    const resolved = Array.isArray(authors) ? authors : [];
+    setLocalAuthors(resolved);
+    setSelectedAuthor(null);
+  }, [Array.isArray(authors) ? authors.length : 0]);
+
+  const handleAddAuthor = () => {
+    const first = newAuthorFirst.trim();
+    const last = newAuthorLast.trim();
+    if (!first && !last) return;
+
+    const payload = {
+      id: Date.now(),
+      firstName: first,
+      lastName: last,
+      name: `${first}${first && last ? " " : ""}${last}`.trim(),
+    };
+
+    onNewAuthor(payload);
+    setLocalAuthors((prev) => [...prev, payload]);
+    setSelectedAuthor(payload);
+    setShowNewAuthorForm(false);
+    setNewAuthorFirst("");
+    setNewAuthorLast("");
+    setShowAuthorsPanel(true);
+  };
 
   return (
     <>
@@ -63,35 +104,52 @@ const AddBookModal = ({
                 <div className="row">
                   <div className="col-md-6 mb-3">
                     <label className="form-label">Author *</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Author name"
-                      name="author"
-                      value={newBook.author}
-                      onChange={onInputChange}
-                      required
-                    />
+                    <div className="d-flex gap-2 align-items-center">
+                      <input
+                        type="text"
+                        className="form-control grow"
+                        placeholder="Author name"
+                        name="author"
+                        value={newBook.author}
+                        onChange={onInputChange}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        aria-label="Search authors"
+                        onClick={() => setShowAuthorsPanel(true)}
+                        title="Search authors"
+                      >
+                        <FontAwesomeIcon icon={faSearch} />
+                      </button>
+                    </div>
                   </div>
                   <div className="col-md-6 mb-3">
                     <label className="form-label">Category *</label>
-                    <select
-                      className="form-select"
-                      name="category"
-                      value={newBook.category}
-                      onChange={onInputChange}
-                      required
-                    >
-                      <option value="Fiction">Fiction</option>
-                      <option value="Science Fiction">Science Fiction</option>
-                      <option value="Fantasy">Fantasy</option>
-                      <option value="Mystery">Mystery</option>
-                      <option value="Romance">Romance</option>
-                      <option value="Non-Fiction">Non-Fiction</option>
-                      <option value="Biography">Biography</option>
-                      <option value="Self-Help">Self-Help</option>
-                      <option value="Business">Business</option>
-                    </select>
+                    <div className="d-flex gap-2">
+                      <select
+                        className="form-select grow"
+                        name="category"
+                        value={newBook.category}
+                        onChange={onInputChange}
+                        required
+                      >
+                        {(categories.length ? categories : ["Fiction"]).map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        style={{ minWidth: "90px" }}
+                        onClick={onManageCategories}
+                      >
+                        New
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className="row">
@@ -101,7 +159,7 @@ const AddBookModal = ({
                       <span className="input-group-text">LKR</span>
                       <input
                         type="number"
-                        className="form-control"
+                        className="form-control text-end"
                         placeholder="0.00"
                         step="0.01"
                         min="0"
@@ -118,7 +176,7 @@ const AddBookModal = ({
                       <span className="input-group-text">LKR</span>
                       <input
                         type="number"
-                        className="form-control"
+                        className="form-control text-end"
                         placeholder="0.00"
                         step="0.01"
                         min="0"
@@ -142,7 +200,7 @@ const AddBookModal = ({
                     />
                   </div>
                 </div>
-                <div className="row">
+                {/* <div className="row">
                   <div className="col-md-6 mb-3">
                     <label className="form-label">Minimum Stock</label>
                     <input
@@ -166,8 +224,8 @@ const AddBookModal = ({
                       value={newBook.maxStock}
                       onChange={onInputChange}
                     />
-                  </div>
-                </div>
+                  </div> 
+                </div>*/}
                 <div className="mb-3">
                   <label className="form-label">Description</label>
                   <textarea
@@ -182,14 +240,19 @@ const AddBookModal = ({
                 <div className="row">
                   <div className="col-md-6 mb-3">
                     <label className="form-label">Publisher</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Publisher name"
+                    <select
+                      className="form-select"
                       name="publisher"
                       value={newBook.publisher}
                       onChange={onInputChange}
-                    />
+                    >
+                      <option value="">Select publisher</option>
+                      {(Array.isArray(publishers) ? publishers : []).map((publisher) => (
+                        <option key={publisher.id || publisher.name || publisher} value={publisher.name || publisher}>
+                          {publisher.name || publisher}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="col-md-6 mb-3">
                     <label className="form-label">Publication Year</label>
@@ -227,6 +290,166 @@ const AddBookModal = ({
         </div>
       </div>
       <div className="modal-backdrop fade show"></div>
+
+      {showNewAuthorForm && (
+        <>
+          <div
+            className="modal fade show"
+            style={{ display: "block", backgroundColor: "rgba(0,0,0,0.4)", zIndex: 1080 }}
+            tabIndex="-1"
+          >
+            <div className="modal-dialog modal-sm">
+              <div className="modal-content">
+                <div className="modal-header py-2">
+                  <h6 className="modal-title mb-0">New Author</h6>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => {
+                      setShowNewAuthorForm(false);
+                      setNewAuthorFirst("");
+                      setNewAuthorLast("");
+                    }}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <div className="mb-3">
+                    <label className="form-label">First name</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="First name"
+                      value={newAuthorFirst}
+                      onChange={(e) => setNewAuthorFirst(e.target.value)}
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Last name</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Last name"
+                      value={newAuthorLast}
+                      onChange={(e) => setNewAuthorLast(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="modal-footer py-2">
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => {
+                      setShowNewAuthorForm(false);
+                      setNewAuthorFirst("");
+                      setNewAuthorLast("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={handleAddAuthor}
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" style={{ zIndex: 1075 }}></div>
+        </>
+      )}
+
+      {showAuthorsPanel && (
+        <>
+          <div
+            className="modal fade show"
+            style={{ display: "block", backgroundColor: "rgba(0,0,0,0.35)", zIndex: 1070 }}
+            tabIndex="-1"
+          >
+            <div className="modal-dialog modal-md">
+              <div className="modal-content">
+                <div className="modal-header py-2 d-flex align-items-center">
+                  <h6 className="modal-title mb-0">Authors</h6>
+                  <div className="ms-auto d-flex gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() => setShowNewAuthorForm(true)}
+                    >
+                      New
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-close"
+                      onClick={() => setShowAuthorsPanel(false)}
+                    ></button>
+                  </div>
+                </div>
+                <div className="modal-body" style={{ maxHeight: "320px", overflowY: "auto" }}>
+                  {localAuthors.length === 0 ? (
+                    <div className="text-muted small">No authors available.</div>
+                  ) : (
+                    localAuthors.map((author) => (
+                      <div
+                        key={author.id || author}
+                        className={`d-flex justify-content-between align-items-center py-2 border-bottom ${selectedAuthor && (selectedAuthor.id === (author.id || author) || selectedAuthor === author) ? "bg-light" : ""}`}
+                        role="button"
+                        onClick={() => setSelectedAuthor(author)}
+                      >
+                        <span>{author.name || author}</span>
+                        <div className="btn-group btn-group-sm" role="group">
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary"
+                            onClick={() => onEditAuthor(author)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline-danger"
+                            onClick={() => onDeleteAuthor(author)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="modal-footer py-2">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm"
+                    disabled={!selectedAuthor}
+                    onClick={() => selectedAuthor && onEditAuthor(selectedAuthor)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger btn-sm"
+                    disabled={!selectedAuthor}
+                    onClick={() => selectedAuthor && onDeleteAuthor(selectedAuthor)}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setShowAuthorsPanel(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" style={{ zIndex: 1065 }}></div>
+        </>
+      )}
     </>
   );
 };

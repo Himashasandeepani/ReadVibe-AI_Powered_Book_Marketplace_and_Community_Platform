@@ -42,7 +42,7 @@ export const getRequestStatusClass = (status) => {
   return classes[status] || "badge bg-secondary";
 };
 
-export const getSupplierStatusClass = (status) => {
+export const getPublisherStatusClass = (status) => {
   return status === "Active" ? "badge bg-success" : "badge bg-secondary";
 };
 
@@ -313,7 +313,7 @@ export const initialStockOrders = () => {
   ];
 };
 
-export const initialSuppliers = () => {
+export const initialPublishers = () => {
   return [
     {
       id: "SUP001",

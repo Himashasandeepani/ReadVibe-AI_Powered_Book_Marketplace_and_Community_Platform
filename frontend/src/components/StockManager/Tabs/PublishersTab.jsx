@@ -1,65 +1,52 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faUserTie,
-  faEnvelope,
-  faPhone,
-  faBuilding,
-  faPlus,
-} from "@fortawesome/free-solid-svg-icons";
+import { faEnvelope, faPhone, faBuilding, faPlus } from "@fortawesome/free-solid-svg-icons";
 import StatusBadge from "../Common/StatusBadge";
 import ActionButtons from "../Common/ActionButtons";
 
-const SuppliersTab = ({
-  suppliers,
-  onAddSupplier,
-  onContactSupplier,
-  onDeleteSupplier
+const PublishersTab = ({
+  publishers,
+  onAddPublisher,
+  onEditPublisher,
+  onContactPublisher,
+  onDeletePublisher
 }) => {
   return (
     <>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="mb-0">Supplier Management</h2>
-        <button className="btn btn-primary" onClick={onAddSupplier}>
+        <h2 className="mb-0">Publisher Management</h2>
+        <button className="btn btn-primary" onClick={onAddPublisher}>
           <FontAwesomeIcon icon={faPlus} className="me-2" />
-          Add Supplier
+          Add Publisher
         </button>
       </div>
 
       <div className="row mb-4">
-        {suppliers.length === 0 ? (
+        {publishers.length === 0 ? (
           <div className="col-12 text-center py-5">
-            <p className="text-muted">No suppliers found</p>
-            <button className="btn btn-primary mt-2" onClick={onAddSupplier}>
+            <p className="text-muted">No publishers found</p>
+            <button className="btn btn-primary mt-2" onClick={onAddPublisher}>
               <FontAwesomeIcon icon={faPlus} className="me-2" />
-              Add Your First Supplier
+              Add Your First Publisher
             </button>
           </div>
         ) : (
-          suppliers.map((supplier) => (
-            <div key={supplier.id} className="col-md-6 col-lg-4 mb-3">
+          publishers.map((publisher) => (
+            <div key={publisher.id} className="col-md-6 col-lg-4 mb-3">
               <div className="stock-manager-dashboard-card h-100">
                 <div className="d-flex justify-content-between align-items-center mb-2">
-                  <span className="text-muted small">{supplier.id}</span>
-                  <StatusBadge status={supplier.status} type="supplier" />
+                  <span className="text-muted small">{publisher.id}</span>
+                  <StatusBadge status={publisher.status} type="publisher" />
                 </div>
-                <h5 className="mb-3">{supplier.name}</h5>
+                <h5 className="mb-3">{publisher.name}</h5>
                 <div className="mb-3">
-                  <div className="d-flex align-items-center mb-1">
-                    <FontAwesomeIcon
-                      icon={faUserTie}
-                      className="text-muted me-2"
-                      size="sm"
-                    />
-                    <span>{supplier.contact}</span>
-                  </div>
                   <div className="d-flex align-items-center mb-1">
                     <FontAwesomeIcon
                       icon={faEnvelope}
                       className="text-muted me-2"
                       size="sm"
                     />
-                    <span>{supplier.email}</span>
+                    <span>{publisher.email}</span>
                   </div>
                   <div className="d-flex align-items-center mb-1">
                     <FontAwesomeIcon
@@ -67,7 +54,7 @@ const SuppliersTab = ({
                       className="text-muted me-2"
                       size="sm"
                     />
-                    <span>{supplier.phone}</span>
+                    <span>{publisher.phone}</span>
                   </div>
                   <div className="d-flex align-items-center">
                     <FontAwesomeIcon
@@ -75,29 +62,31 @@ const SuppliersTab = ({
                       className="text-muted me-2"
                       size="sm"
                     />
-                    <span className="small">{supplier.address}</span>
+                    <span className="small">{publisher.address}</span>
                   </div>
                 </div>
                 <div className="row mb-3">
-                  <div className="col-6">
+                  <div className="col-12">
                     <div className="small text-muted">Books Supplied</div>
-                    <div className="fw-bold">{supplier.booksSupplied}</div>
-                  </div>
-                  <div className="col-6">
-                    <div className="small text-muted">Lead Time</div>
-                    <div className="fw-bold">{supplier.leadTime}</div>
+                    <div className="fw-bold">{publisher.booksSupplied}</div>
                   </div>
                 </div>
                 <div className="d-flex gap-2">
                   <button
                     className="btn btn-sm btn-outline-primary grow"
-                    onClick={() => onContactSupplier(supplier.id)}
+                    onClick={() => onContactPublisher(publisher.id)}
                   >
                     <FontAwesomeIcon icon={faEnvelope} className="me-1" />
                     Contact
                   </button>
+                  <button
+                    className="btn btn-sm btn-outline-secondary grow"
+                    onClick={() => onEditPublisher(publisher)}
+                  >
+                    Edit
+                  </button>
                   <ActionButtons
-                    onDelete={() => onDeleteSupplier(supplier.id)}
+                    onDelete={() => onDeletePublisher(publisher.id)}
                     showDelete={true}
                   />
                 </div>
@@ -110,4 +99,4 @@ const SuppliersTab = ({
   );
 };
 
-export default SuppliersTab;
+export default PublishersTab;

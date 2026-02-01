@@ -841,11 +841,11 @@ import DashboardTab from "../components/StockManager/Tabs/DashboardTab";
 import InventoryTab from "../components/StockManager/Tabs/InventoryTab";
 import OrdersTab from "../components/StockManager/Tabs/OrdersTab";
 import ReportsTab from "../components/StockManager/Tabs/ReportsTab";
-import SuppliersTab from "../components/StockManager/Tabs/SuppliersTab";
+import PublishersTab from "../components/StockManager/Tabs/PublishersTab";
 import BookRequestsTab from "../components/StockManager/Tabs/BookRequestsTab";
 import PopularBooksTab from "../components/StockManager/Tabs/PopularBooksTab";
 import AddBookModal from "../components/StockManager/Modals/AddBookModal";
-import AddSupplierModal from "../components/StockManager/Modals/AddSupplierModal";
+import AddPublisherModal from "../components/StockManager/Modals/AddPublisherModal";
 import TrackingModal from "../components/StockManager/Modals/TrackingModal";
 import RequestDetailsModal from "../components/StockManager/Modals/RequestDetailsModal";
 
@@ -859,7 +859,7 @@ import {
   showNotification,
   initialStockBooks,
   initialStockOrders,
-  initialSuppliers
+  initialPublishers
 } from "../components/StockManager/utils";
 
 const StockManager = () => {
@@ -880,7 +880,7 @@ const StockManager = () => {
   const tabFromQuery = queryParams.get("tab");
   const activeTab = tabFromQuery || "dashboard";
   const [showAddBookModal, setShowAddBookModal] = useState(false);
-  const [showAddSupplierModal, setShowAddSupplierModal] = useState(false);
+  const [showAddPublisherModal, setShowAddPublisherModal] = useState(false);
   const [showRequestDetailsModal, setShowRequestDetailsModal] = useState(false);
   const [showTrackingModal, setShowTrackingModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -909,17 +909,13 @@ const StockManager = () => {
     dimensions: "20x13x3 cm",
   });
 
-  const [newSupplier, setNewSupplier] = useState({
+  const [newPublisher, setNewPublisher] = useState({
     name: "",
-    contact: "",
     email: "",
     phone: "",
     address: "",
-    website: "",
-    paymentTerms: "30 days",
-    leadTime: "7",
-    rating: 5,
   });
+  const [editingPublisherId, setEditingPublisherId] = useState(null);
 
   const [trackingUpdate, setTrackingUpdate] = useState({
     status: "Shipped",
@@ -942,10 +938,10 @@ const StockManager = () => {
     return stored || initialStockOrders();
   });
 
-  const [suppliers, setSuppliers] = useState(() => {
-    if (typeof window === "undefined") return initialSuppliers();
-    const stored = JSON.parse(window.localStorage.getItem("suppliers"));
-    return stored || initialSuppliers();
+  const [publishers, setPublishers] = useState(() => {
+    if (typeof window === "undefined") return initialPublishers();
+    const stored = JSON.parse(window.localStorage.getItem("publishers"));
+    return stored || initialPublishers();
   });
 
   const [bookRequests, setBookRequests] = useState(() => {
@@ -962,8 +958,8 @@ const StockManager = () => {
     const storedBooks = JSON.parse(window.localStorage.getItem("stockBooks"));
     if (storedBooks) setStockBooks(storedBooks);
 
-    const storedSuppliers = JSON.parse(window.localStorage.getItem("suppliers"));
-    if (storedSuppliers) setSuppliers(storedSuppliers);
+    const storedPublishers = JSON.parse(window.localStorage.getItem("publishers"));
+    if (storedPublishers) setPublishers(storedPublishers);
 
     const storedOrders = JSON.parse(window.localStorage.getItem("stockOrders"));
     if (storedOrders) setStockOrders(storedOrders);
@@ -975,7 +971,7 @@ const StockManager = () => {
 
       if (
         e.key === "stockBooks" ||
-        e.key === "suppliers" ||
+        e.key === "publishers" ||
         e.key === "stockOrders" ||
         e.key === "bookRequests"
       ) {
@@ -1036,6 +1032,16 @@ const StockManager = () => {
 
   const handleTabChange = (tab) => {
     navigate(`${location.pathname}?tab=${tab}`);
+  };
+
+  const resetPublisherForm = () => {
+    setNewPublisher({
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+    });
+    setEditingPublisherId(null);
   };
 
   const handleInputChange = (setter) => (e) => {
@@ -1126,50 +1132,73 @@ const StockManager = () => {
     window.dispatchEvent(new Event("storage"));
   };
 
-  const handleAddSupplier = (e) => {
+  const handleAddPublisher = (e) => {
     e.preventDefault();
 
-    if (!newSupplier.name || !newSupplier.contact || !newSupplier.email) {
+    if (!newPublisher.name || !newPublisher.email) {
       showNotification("Please fill in all required fields", "error");
       return;
     }
 
-    const newSupplierObj = {
-      id: `SUP${String(suppliers.length + 1).padStart(3, "0")}`,
-      name: newSupplier.name,
-      contact: newSupplier.contact,
-      email: newSupplier.email,
-      phone: newSupplier.phone,
-      address: newSupplier.address,
-      website: newSupplier.website,
-      booksSupplied: 0,
-      status: "Active",
-      rating: parseFloat(newSupplier.rating),
-      paymentTerms: newSupplier.paymentTerms,
-      leadTime: newSupplier.leadTime,
-      lastOrder: null,
-      createdAt: new Date().toISOString(),
-    };
+    if (editingPublisherId) {
+      const updatedPublishers = publishers.map((publisher) =>
+        publisher.id === editingPublisherId
+          ? {
+              ...publisher,
+              name: newPublisher.name,
+              email: newPublisher.email,
+              phone: newPublisher.phone,
+              address: newPublisher.address,
+            }
+          : publisher
+      );
 
-    const updatedSuppliers = [...suppliers, newSupplierObj];
-    setSuppliers(updatedSuppliers);
-    localStorage.setItem("suppliers", JSON.stringify(updatedSuppliers));
+      setPublishers(updatedPublishers);
+      localStorage.setItem("publishers", JSON.stringify(updatedPublishers));
+      showNotification("Publisher updated successfully!", "success");
+    } else {
+      const newPublisherObj = {
+        id: `PUB${String(publishers.length + 1).padStart(3, "0")}`,
+        name: newPublisher.name,
+        email: newPublisher.email,
+        phone: newPublisher.phone,
+        address: newPublisher.address,
+        booksSupplied: 0,
+        status: "Active",
+        rating: 5,
+        paymentTerms: "30 days",
+        leadTime: "7",
+        lastOrder: null,
+        createdAt: new Date().toISOString(),
+      };
 
-    // Reset form
-    setNewSupplier({
-      name: "",
-      contact: "",
-      email: "",
-      phone: "",
-      address: "",
-      website: "",
-      paymentTerms: "30 days",
-      leadTime: "7",
-      rating: 5,
+      const updatedPublishers = [...publishers, newPublisherObj];
+      setPublishers(updatedPublishers);
+      localStorage.setItem("publishers", JSON.stringify(updatedPublishers));
+      showNotification("Publisher added successfully!", "success");
+    }
+
+    resetPublisherForm();
+
+    setShowAddPublisherModal(false);
+    handleTabChange("publishers");
+    window.dispatchEvent(new Event("storage"));
+  };
+
+  const handleEditPublisher = (publisher) => {
+    setNewPublisher({
+      name: publisher.name || "",
+      email: publisher.email || "",
+      phone: publisher.phone || "",
+      address: publisher.address || "",
     });
+    setEditingPublisherId(publisher.id);
+    setShowAddPublisherModal(true);
+  };
 
-    setShowAddSupplierModal(false);
-    showNotification("Supplier added successfully!", "success");
+  const handleCloseAddPublisher = () => {
+    resetPublisherForm();
+    setShowAddPublisherModal(false);
   };
 
   const handleDeleteBook = (bookId) => {
@@ -1317,19 +1346,19 @@ const StockManager = () => {
     showNotification("Tracking updated successfully!", "success");
   };
 
-  const handleContactSupplier = (supplierId) => {
-    const supplier = suppliers.find((s) => s.id === supplierId);
-    if (supplier) {
-      window.location.href = `mailto:${supplier.email}`;
+  const handleContactPublisher = (publisherId) => {
+    const publisher = publishers.find((p) => p.id === publisherId);
+    if (publisher) {
+      window.location.href = `mailto:${publisher.email}`;
     }
   };
 
-  const handleDeleteSupplier = (supplierId) => {
-    if (window.confirm("Are you sure you want to delete this supplier?")) {
-      const updatedSuppliers = suppliers.filter((s) => s.id !== supplierId);
-      setSuppliers(updatedSuppliers);
-      localStorage.setItem("suppliers", JSON.stringify(updatedSuppliers));
-      showNotification("Supplier deleted successfully", "success");
+  const handleDeletePublisher = (publisherId) => {
+    if (window.confirm("Are you sure you want to delete this publisher?")) {
+      const updatedPublishers = publishers.filter((p) => p.id !== publisherId);
+      setPublishers(updatedPublishers);
+      localStorage.setItem("publishers", JSON.stringify(updatedPublishers));
+      showNotification("Publisher deleted successfully", "success");
     }
   };
 
@@ -1485,7 +1514,10 @@ const StockManager = () => {
           <DashboardTab
             stats={stats}
             onAddBook={() => setShowAddBookModal(true)}
-            onAddSupplier={() => setShowAddSupplierModal(true)}
+            onAddPublisher={() => {
+              resetPublisherForm();
+              setShowAddPublisherModal(true);
+            }}
             onViewRequests={() => handleTabChange("book-requests")}
             onViewReports={() => handleTabChange("reports")}
             onManagePopularBooks={() => handleTabChange("popular-books")}
@@ -1535,13 +1567,17 @@ const StockManager = () => {
             onExport={handleExportReport}
           />
         );
-      case "suppliers":
+      case "publishers":
         return (
-          <SuppliersTab
-            suppliers={suppliers}
-            onAddSupplier={() => setShowAddSupplierModal(true)}
-            onContactSupplier={handleContactSupplier}
-            onDeleteSupplier={handleDeleteSupplier}
+          <PublishersTab
+            publishers={publishers}
+            onAddPublisher={() => {
+              resetPublisherForm();
+              setShowAddPublisherModal(true);
+            }}
+            onEditPublisher={handleEditPublisher}
+            onContactPublisher={handleContactPublisher}
+            onDeletePublisher={handleDeletePublisher}
           />
         );
       case "book-requests":
@@ -1572,7 +1608,10 @@ const StockManager = () => {
           <DashboardTab
             stats={stats}
             onAddBook={() => setShowAddBookModal(true)}
-            onAddSupplier={() => setShowAddSupplierModal(true)}
+            onAddPublisher={() => {
+              resetPublisherForm();
+              setShowAddPublisherModal(true);
+            }}
             onViewRequests={() => handleTabChange("book-requests")}
             onViewReports={() => handleTabChange("reports")}
             onManagePopularBooks={() => handleTabChange("popular-books")}
@@ -1633,14 +1672,16 @@ const StockManager = () => {
         onInputChange={handleInputChange(setNewBook)}
         onSubmit={handleAddBook}
         isEditing={!!newBook.id}
+        publishers={publishers}
       />
 
-      <AddSupplierModal
-        show={showAddSupplierModal}
-        onClose={() => setShowAddSupplierModal(false)}
-        newSupplier={newSupplier}
-        onInputChange={handleInputChange(setNewSupplier)}
-        onSubmit={handleAddSupplier}
+      <AddPublisherModal
+        show={showAddPublisherModal}
+        onClose={handleCloseAddPublisher}
+        newPublisher={newPublisher}
+        onInputChange={handleInputChange(setNewPublisher)}
+        onSubmit={handleAddPublisher}
+        isEditing={!!editingPublisherId}
       />
 
       <TrackingModal

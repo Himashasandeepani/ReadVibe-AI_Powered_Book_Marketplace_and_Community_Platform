@@ -1,8 +1,7 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBoxOpen, faPlus, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import { faBoxOpen, faPlus, faExclamationTriangle, faSearch } from "@fortawesome/free-solid-svg-icons";
 import StatsCard from "../Common/StatsCard";
-import SearchBox from "../Common/SearchBox";
 import BooksTable from "../Tables/BooksTable";
 
 const InventoryTab = ({ 
@@ -23,11 +22,20 @@ const InventoryTab = ({
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 className="mb-0">Inventory Management</h2>
         <div className="d-flex gap-2">
-          <SearchBox
-            value={searchQuery}
-            onChange={onSearchChange}
-            placeholder="Search books..."
-          />
+          <div className="search-box">
+            <div className="input-group">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search books..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+              />
+              <span className="input-group-text bg-white">
+                <FontAwesomeIcon icon={faSearch} className="text-muted" />
+              </span>
+            </div>
+          </div>
           <button className="btn btn-primary" onClick={onAddBook}>
             <FontAwesomeIcon icon={faPlus} className="me-2" />
             Add Book
