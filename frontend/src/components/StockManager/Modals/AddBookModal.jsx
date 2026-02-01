@@ -25,6 +25,9 @@ const AddBookModal = ({
   const [newAuthorLast, setNewAuthorLast] = useState("");
   const [localAuthors, setLocalAuthors] = useState(authors || []);
   const [selectedAuthor, setSelectedAuthor] = useState(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [categoryInput, setCategoryInput] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   useEffect(() => {
     const resolved = Array.isArray(authors) ? authors : [];
@@ -145,7 +148,11 @@ const AddBookModal = ({
                         type="button"
                         className="btn btn-primary"
                         style={{ minWidth: "90px" }}
-                        onClick={onManageCategories}
+                        onClick={() => {
+                          setSelectedCategory(null);
+                          setCategoryInput("");
+                          setShowCategoryModal(true);
+                        }}
                       >
                         New
                       </button>
@@ -352,6 +359,113 @@ const AddBookModal = ({
                     onClick={handleAddAuthor}
                   >
                     Add
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" style={{ zIndex: 1075 }}></div>
+        </>
+      )}
+
+      {showCategoryModal && (
+        <>
+          <div
+            className="modal fade show"
+            style={{ display: "block", backgroundColor: "rgba(0,0,0,0.45)", zIndex: 1080 }}
+            tabIndex="-1"
+          >
+            <div className="modal-dialog modal-md">
+              <div className="modal-content">
+                <div className="modal-header py-2 d-flex align-items-center">
+                  <h6 className="modal-title mb-0">Manage Categories</h6>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => {
+                      setShowCategoryModal(false);
+                      setCategoryInput("");
+                      setSelectedCategory(null);
+                    }}
+                  ></button>
+                </div>
+                <div className="modal-body" style={{ maxHeight: "420px", overflowY: "auto" }}>
+                  <div className="mb-3">
+                    <label className="form-label">Category name</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. Thriller"
+                      value={categoryInput}
+                      onChange={(e) => setCategoryInput(e.target.value)}
+                    />
+                  </div>
+                  <div className="table-responsive">
+                    <table className="table table-hover table-sm align-middle mb-0">
+                      <thead style={{ backgroundColor: "#0d6efd", color: "#ffffff" }}>
+                        <tr>
+                          <th className="ps-3">Name</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(Array.isArray(categories) ? categories : []).map((cat) => (
+                          <tr
+                            key={cat}
+                            className={selectedCategory === cat ? "table-primary" : ""}
+                            role="button"
+                            style={{ cursor: "pointer" }}
+                            onClick={() => {
+                              setSelectedCategory(cat);
+                              setCategoryInput(cat);
+                            }}
+                          >
+                            <td className="small py-2">{cat}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="modal-footer py-2 d-flex justify-content-between">
+                  <div className="d-flex gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setShowCategoryModal(false);
+                        setCategoryInput("");
+                        setSelectedCategory(null);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() => {
+                        if (!categoryInput.trim()) return;
+                        onSaveCategory(categoryInput.trim(), selectedCategory || null);
+                        onInputChange({ target: { name: "category", value: categoryInput.trim() } });
+                        setSelectedCategory(categoryInput.trim());
+                        setShowCategoryModal(false);
+                        setCategoryInput("");
+                      }}
+                    >
+                      Save
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger btn-sm"
+                    disabled={!selectedCategory}
+                    onClick={() => {
+                      if (!selectedCategory) return;
+                      onDeleteCategory(selectedCategory);
+                      setCategoryInput("");
+                      setSelectedCategory(null);
+                    }}
+                  >
+                    Delete
                   </button>
                 </div>
               </div>

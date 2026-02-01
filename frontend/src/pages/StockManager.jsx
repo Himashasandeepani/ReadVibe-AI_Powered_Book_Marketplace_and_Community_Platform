@@ -890,11 +890,19 @@ const StockManager = () => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
   // Form states
+  const defaultCategories = ["Fiction", "Non-Fiction", "Science", "Fantasy"];
+
+  const [categories, setCategories] = useState(() => {
+    if (typeof window === "undefined") return defaultCategories;
+    const stored = JSON.parse(window.localStorage.getItem("categories"));
+    return Array.isArray(stored) && stored.length ? stored : defaultCategories;
+  });
+
   const [newBook, setNewBook] = useState({
     isbn: "",
     title: "",
     author: "",
-    category: "Fiction",
+    category: (Array.isArray(categories) && categories[0]) || "Fiction",
     price: "",
     costPrice: "",
     stock: "",
@@ -1052,6 +1060,51 @@ const StockManager = () => {
     }));
   };
 
+  const handleSaveCategory = (name, previousName = null) => {
+    const trimmed = (name || "").trim();
+    if (!trimmed) return;
+
+    setCategories((prev) => {
+      let next = [...prev];
+
+      if (previousName && previousName !== trimmed) {
+        // Rename
+        if (!prev.includes(previousName)) return prev;
+        if (prev.includes(trimmed)) {
+          showNotification("Category already exists", "info");
+          return prev;
+        }
+        next = prev.map((cat) => (cat === previousName ? trimmed : cat));
+      } else if (!prev.includes(trimmed)) {
+        // Add
+        next = [...prev, trimmed];
+      }
+
+      localStorage.setItem("categories", JSON.stringify(next));
+      setNewBook((book) => ({ ...book, category: trimmed }));
+      return next;
+    });
+  };
+
+  const handleDeleteCategory = (name) => {
+    const trimmed = (name || "").trim();
+    if (!trimmed) return;
+
+    setCategories((prev) => {
+      const next = prev.filter((cat) => cat !== trimmed);
+      if (!next.length) {
+        const fallback = defaultCategories[0];
+        localStorage.setItem("categories", JSON.stringify([fallback]));
+        setNewBook((book) => ({ ...book, category: fallback }));
+        return [fallback];
+      }
+
+      localStorage.setItem("categories", JSON.stringify(next));
+      setNewBook((book) => ({ ...book, category: next[0] }));
+      return next;
+    });
+  };
+
   const handleAddBook = (e) => {
     e.preventDefault();
 
@@ -1112,7 +1165,7 @@ const StockManager = () => {
       isbn: "",
       title: "",
       author: "",
-      category: "Fiction",
+      category: categories[0] || defaultCategories[0],
       price: "",
       costPrice: "",
       stock: "",
@@ -1672,6 +1725,9 @@ const StockManager = () => {
         onInputChange={handleInputChange(setNewBook)}
         onSubmit={handleAddBook}
         isEditing={!!newBook.id}
+        categories={categories}
+        onSaveCategory={handleSaveCategory}
+        onDeleteCategory={handleDeleteCategory}
         publishers={publishers}
       />
 
