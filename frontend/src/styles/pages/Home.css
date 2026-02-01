@@ -1,0 +1,1113 @@
+/* ---------- Guest Notice ---------- */
+.guest-notice {
+    color: var(--primary-blue);
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 2px solid var(--sky-blue);
+}
+
+.guest-restriction {
+    margin-bottom: 1rem;
+}
+
+.guest-restriction .d-flex .me-2 {
+    color: var(--secondary-blue);
+    font-size: 1.2rem;
+}
+
+/* ---------- Hero Section ---------- */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+    color: white;
+    padding: 5rem 0;
+    border-radius: 0 0 30px 30px;
+    margin-bottom: 4rem;
+    width: 100%;
+}
+
+.hero-title {
+    font-size: 3.8rem;
+    font-weight: 900;
+    color: var(--sky-blue);
+    margin-bottom: 1rem;
+}
+
+.hero-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    margin-bottom: 2rem;
+}
+
+.hero-section .text-center {
+    padding-top: 30px;
+}
+
+/* ---------- Features Section ---------- */
+.section-title {
+    text-align: center;
+    margin-bottom: 3rem;
+    color: var(--primary-blue);
+    position: relative;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: var(--secondary-blue);
+    border-radius: 2px;
+}
+
+.section-title-decoration {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: var(--secondary-blue);
+    border-radius: 2px;
+}
+
+.feature-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s, box-shadow 0.3s;
+    height: 100%;
+    border-top: 4px solid var(--sky-blue);
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon {
+    font-size: 2.5rem;
+    color: var(--secondary-blue);
+    margin-bottom: 1rem;
+}
+
+/* ---------- AI Section ---------- */
+.ai-section {
+    background-color: var(--light-blue);
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 3rem 0;
+}
+
+.ai-section-content {
+    padding-right: 1rem;
+}
+
+.ai-section .text-center {
+    font-size: 5rem;
+    color: var(--secondary-blue);
+}
+
+/* ---------- How It Works Section ---------- */
+.ai-how-it-works {
+    background-color: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    margin-top: 3rem;
+}
+
+.how-it-works-title {
+    color: var(--primary-blue);
+    margin-bottom: 0.5rem;
+}
+
+.how-it-works-subtitle {
+    color: var(--light-text);
+}
+
+.how-it-works-icon {
+    width: 80px;
+    height: 80px;
+    background-color: var(--light-blue);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 2rem;
+    color: var(--secondary-blue);
+}
+
+.how-it-works-step {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.how-it-works-step h5 {
+    color: var(--primary-blue);
+    margin-bottom: 0.5rem;
+}
+
+.how-it-works-step p {
+    color: var(--light-text);
+    font-size: 0.9rem;
+}
+
+/* ---------- Popular Books Section ---------- */
+.book-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s, box-shadow 0.3s;
+    height: 100%;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+}
+
+.book-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.book-cover {
+    height: 200px;
+    background: linear-gradient(135deg, var(--light-blue) 0%, var(--sky-blue) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.book-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.book-info {
+    padding: 1.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.book-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--primary-blue);
+    font-size: 1.1rem;
+    line-height: 1.3;
+    min-height: 2.6em;
+}
+
+.book-author {
+    color: var(--light-text);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.book-price {
+    font-weight: 600;
+    color: var(--secondary-blue);
+    font-size: 1.1rem;
+    margin-top: auto;
+}
+
+.ai-badge {
+    background-color: var(--sky-blue);
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 0.5rem;
+}
+
+.rating-badge {
+    background-color: var(--warning);
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.book-actions {
+    margin-top: auto;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.book-actions .btn {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ---------- Fix for Book Modal Buttons ---------- */
+.modal-footer .btn-outline-primary,
+.modal-footer .btn-outline-danger,
+.modal-footer .btn-primary {
+    transition: all 0.3s ease !important;
+}
+
+/* Hover states for modal buttons */
+.modal-footer .btn-outline-primary:hover {
+    background-color: var(--secondary-blue) !important;
+    border-color: var(--secondary-blue) !important;
+}
+
+.modal-footer .btn-outline-danger:hover {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+}
+
+.modal-footer .btn-primary:hover {
+    background-color: var(--primary-blue) !important;
+    border-color: var(--primary-blue) !important;
+}
+
+/* Force white text and icons on hover for modal buttons */
+.modal-footer .btn-outline-primary:hover,
+.modal-footer .btn-outline-primary:hover .me-2,
+.modal-footer .btn-outline-primary:hover svg,
+.modal-footer .btn-outline-primary:hover span {
+    color: white !important;
+}
+
+.modal-footer .btn-outline-danger:hover,
+.modal-footer .btn-outline-danger:hover .me-2,
+.modal-footer .btn-outline-danger:hover svg,
+.modal-footer .btn-outline-danger:hover span {
+    color: white !important;
+}
+
+.modal-footer .btn-primary:hover,
+.modal-footer .btn-primary:hover .me-2,
+.modal-footer .btn-primary:hover svg,
+.modal-footer .btn-primary:hover span {
+    color: white !important;
+}
+
+/* Book card button hover states */
+.book-actions .btn-outline-primary:hover {
+    background-color: var(--secondary-blue) !important;
+    border-color: var(--secondary-blue) !important;
+}
+
+.book-actions .btn-outline-danger:hover {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+}
+
+.book-actions .btn-primary:hover {
+    background-color: var(--primary-blue) !important;
+    border-color: var(--primary-blue) !important;
+}
+
+/* Force white text and icons on hover for book card buttons */
+.book-actions .btn-outline-primary:hover,
+.book-actions .btn-outline-primary:hover .me-1,
+.book-actions .btn-outline-primary:hover svg,
+.book-actions .btn-outline-primary:hover .btn-text {
+    color: white !important;
+}
+
+.book-actions .btn-outline-danger:hover,
+.book-actions .btn-outline-danger:hover .me-1,
+.book-actions .btn-outline-danger:hover svg,
+.book-actions .btn-outline-danger:hover .btn-text {
+    color: white !important;
+}
+
+.book-actions .btn-primary:hover,
+.book-actions .btn-primary:hover .me-1,
+.book-actions .btn-primary:hover svg,
+.book-actions .btn-primary:hover .btn-text {
+    color: white !important;
+}
+
+/* Book action button styles */
+.book-action-btn {
+    transition: all 0.3s ease !important;
+    display: block !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.book-action-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+
+/* ---------- Community Section ---------- */
+.my-5 .section-title {
+    text-align: center;
+    margin-bottom: 3rem;
+    position: relative;
+}
+
+.my-5 .section-title-line {
+    content: "";
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: var(--secondary-blue);
+    border-radius: 2px;
+}
+
+.community-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.community-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.community-card .btn {
+    transition: all 0.2s ease;
+}
+
+.community-card .btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.community-card .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--light-blue) 0%, var(--sky-blue) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-blue);
+    font-weight: 600;
+    margin-right: 1rem;
+}
+
+/* Comments Section */
+.comments-section {
+    border-top: 1px solid var(--light-blue);
+    padding-top: 1rem;
+}
+
+.comment-list {
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.comment-item {
+    padding: 0.5rem;
+    background: var(--bg-light);
+    border-radius: 8px;
+    border-left: 3px solid var(--sky-blue);
+    margin-bottom: 0.5rem;
+}
+
+.comment-item p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.comment-item small {
+    font-weight: 500;
+    color: var(--primary-blue);
+}
+
+.add-comment {
+    margin-top: 1rem;
+}
+
+.add-comment .form-control {
+    border-radius: 20px;
+    border: 1px solid var(--light-blue);
+    padding: 0.5rem 1rem;
+}
+
+.add-comment .form-control:focus {
+    border-color: var(--secondary-blue);
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.15);
+}
+
+.add-comment .btn {
+    border-radius: 20px;
+    padding: 0.25rem 1.5rem;
+}
+
+/* Scrollbar for comments */
+.comment-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.comment-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.comment-list::-webkit-scrollbar-thumb {
+    background: var(--light-blue);
+    border-radius: 10px;
+}
+
+.comment-list::-webkit-scrollbar-thumb:hover {
+    background: var(--sky-blue);
+}
+
+/* ---------- Stats Section ---------- */
+.stats-section .row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.stats-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: transform 0.3s;
+    height: 100%;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+
+.stats-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--secondary-blue);
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+}
+
+.stats-label {
+    color: var(--light-text);
+    font-size: 0.9rem;
+    line-height: 1.3;
+}
+
+/* ---------- Book Details Modal ---------- */
+.book-modal-image {
+    max-height: 300px;
+    object-fit: contain;
+}
+
+.modal-dialog-centered {
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 1rem);
+}
+
+.modal-dialog-centered::before {
+    content: "";
+    display: block;
+    height: calc(100vh - 1rem);
+}
+
+/* adddeee */
+.modal-lg {
+    max-width: 800px;
+}
+
+/* Mobile Layout Styles */
+.modal-body .d-lg-none {
+    padding: 0;
+}
+
+.modal-body .d-lg-none .row {
+    margin: 0;
+}
+
+.modal-body .d-lg-none .col-12,
+.modal-body .d-lg-none .col-6 {
+    padding: 0;
+}
+
+
+/* Sticky bottom for mobile actions */
+.sticky-bottom {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+}
+
+/* Book Modal Image Responsive */
+.book-modal-image {
+    max-height: 250px;
+    width: auto;
+    object-fit: contain;
+}
+
+
+/* Modal Header Responsive */
+.modal-header {
+    padding: 1rem 1.5rem;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+/* Modal Body Responsive */
+.modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Rating Badge Responsive */
+.rating-badge {
+    background-color: var(--warning);
+    color: white;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Badges Responsive */
+.badge {
+    font-size: 0.75rem;
+    padding: 0.4em 0.8em;
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+.badge svg {
+    font-size: 0.7em;
+    margin-right: 0.3em;
+}
+
+/* Button Group Responsive */
+.modal-body .row.g-2 {
+    margin-left: -0.25rem;
+    margin-right: -0.25rem;
+}
+
+.modal-body .row.g-2>[class*="col-"] {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+}
+
+/* Button Responsive */
+.modal-body .btn {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.modal-body .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+/* Text Truncation */
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Desktop Sidebar Layout */
+.modal-body .d-none.d-lg-block .col-md-4 {
+    border-right: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+/* Reviews Section Responsive */
+.modal-body [style*="max-height: 200px"] {
+    max-height: 200px !important;
+    overflow-y: auto;
+}
+
+/* Scrollbar Styling */
+.modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Modal Footer Responsive */
+.modal-footer {
+    padding: 0.75rem 1.5rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* Ensure modal doesn't overflow viewport */
+.modal-dialog-centered {
+    min-height: auto;
+    margin: 0.5rem auto;
+}
+
+.modal-dialog-centered::before {
+    height: 0;
+}
+
+
+/* Prevent text overflow in details */
+.modal-body strong {
+    display: inline-block;
+    min-width: 70px;
+}
+
+
+
+
+/* ---------- Button Hover Effects ---------- */
+.btn-hover-effect {
+    transition: all 0.3s ease;
+}
+
+.btn-hover-effect:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* AI Brain Icon */
+.ai-brain-icon {
+    font-size: 5rem;
+    color: var(--secondary-blue);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.8;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.8;
+    }
+}
+
+/* Stats Section Icons */
+.stats-card .stats-number svg {
+    font-size: 1.5rem;
+    color: var(--secondary-blue);
+    margin-right: 0.5rem;
+}
+
+/* Hero Section Icons */
+.hero-subtitle svg {
+    color: var(--sky-blue);
+    margin-right: 0.5rem;
+}
+
+/* Section Title Icons */
+.section-title svg {
+    color: var(--secondary-blue);
+}
+
+/* Badge Icons */
+.badge svg {
+    margin-right: 0.25rem;
+}
+
+/* Community Card Icons */
+.community-card .text-muted svg {
+    font-size: 0.8rem;
+    margin-right: 0.25rem;
+}
+
+.comments-section h6 svg {
+    color: var(--secondary-blue);
+}
+
+/* Join Conversation Button */
+.join-conversation-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.join-conversation-btn:hover {
+    background-color: var(--secondary-blue);
+    border-color: var(--secondary-blue);
+    color: white !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.join-conversation-btn:hover svg {
+    color: white !important;
+}
+
+.join-conversation-btn svg {
+    transition: color 0.3s ease;
+}
+
+/* Modal Icons */
+.modal-header svg,
+.modal-body h4 svg,
+.modal-body h5 svg,
+.modal-body li svg {
+    color: var(--secondary-blue);
+}
+
+/* ---------- Responsive Design ---------- */
+@media (max-width: 1200px) {
+    .hero-title {
+        font-size: 3rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.1rem;
+    }
+
+    .book-actions .btn {
+        font-size: 0.8rem;
+        padding: 0.375rem 0.5rem;
+        display: block !important;
+
+    }
+}
+
+@media (max-width: 992px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+
+    .feature-card {
+        padding: 1.5rem;
+    }
+
+    .book-card {
+        margin-bottom: 1.5rem;
+    }
+
+    .stats-number {
+        font-size: 1.75rem;
+    }
+
+    .ai-section-content {
+        padding-right: 0;
+        margin-bottom: 1.5rem;
+    }
+
+    .book-actions {
+        flex-wrap: nowrap;
+    }
+
+    .book-actions .btn {
+        flex: 1;
+        min-width: auto;
+    }
+
+    /* book model */
+    .modal-lg {
+        max-width: 95%;
+        margin: 10px auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.2rem;
+    }
+
+    .hero-section {
+        padding: 3rem 0;
+        border-radius: 0 0 20px 20px;
+    }
+
+    .feature-icon {
+        font-size: 2rem;
+    }
+
+    .book-title {
+        font-size: 1rem;
+        min-height: auto;
+    }
+
+    .book-info {
+        padding: 1rem;
+    }
+
+    .book-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .book-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Hide text on small screens */
+    .book-actions .btn-text {
+        display: none;
+    }
+
+    .book-actions .book-action-btn {
+        width: 36px;
+        justify-content: center;
+    }
+
+    .book-actions .book-action-btn .me-1 {
+        margin-right: 0 !important;
+    }
+
+    .community-card {
+        padding: 1rem;
+    }
+
+    .comment-item {
+        padding: 0.4rem;
+    }
+
+    .comment-item p {
+        font-size: 0.85rem;
+    }
+
+    .stats-card {
+        padding: 1rem;
+        min-height: 100px;
+    }
+
+    .stats-number {
+        font-size: 1.5rem;
+    }
+
+    .how-it-works-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+
+
+    /* book model */
+    .modal-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .modal-title {
+        font-size: 1.1rem;
+    }
+
+    .modal-body {
+        max-height: 80vh;
+        padding: 0 !important;
+    }
+
+    .modal-body .p-3 {
+        padding: 1rem !important;
+    }
+
+    .modal-footer {
+        padding: 0.5rem 1rem;
+    }
+
+    .modal-body .btn {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .hero-title {
+        font-size: 1.8rem;
+    }
+
+    .hero-subtitle {
+        font-size: 0.9rem;
+    }
+
+    .hero-section {
+        padding: 2rem 0;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .feature-card {
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .book-cover {
+        height: 180px;
+    }
+
+    .book-actions .btn {
+        font-size: 0.75rem;
+    }
+
+    .stats-number {
+        font-size: 1.3rem;
+    }
+
+    .ai-section,
+    .ai-how-it-works {
+        padding: 1.5rem;
+    }
+
+    .community-card {
+        padding: 1rem;
+    }
+
+
+    /* book model */
+    .book-modal-image {
+        max-height: 200px;
+    }
+
+    .rating-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .modal-body .btn {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.8125rem;
+    }
+
+    .modal-body .btn .me-2 {
+        margin-right: 0.25rem !important;
+    }
+
+
+    .modal-body .row.small .col-6 {
+        margin-bottom: 0.5rem;
+    }
+
+    .modal-body .row.small strong {
+        display: block;
+        margin-bottom: 0.125rem;
+    }
+}
+
+
+
+/* Fix for button hover states on mobile */
+@media (hover: hover) {
+    .modal-body .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+}
+
+
+/* Safe area for mobile notches */
+@supports (padding: max(0px)) {
+    .modal-body {
+        padding-left: max(1rem, env(safe-area-inset-left));
+        padding-right: max(1rem, env(safe-area-inset-right));
+    }
+
+    .sticky-bottom {
+        padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    }
+}
+
+
+/* Reduce font sizes on very small screens */
+@media (max-width: 375px) {
+    .modal-title {
+        font-size: 1rem;
+    }
+
+    .modal-body h4 {
+        font-size: 1.1rem;
+    }
+
+    .modal-body h6 {
+        font-size: 0.9rem;
+    }
+
+    .modal-body p {
+        font-size: 0.85rem;
+    }
+
+    .modal-body .small {
+        font-size: 0.8rem;
+    }
+}
+
+/* Improve spacing on tablets */
+@media (min-width: 577px) and (max-width: 768px) {
+    .modal-body .p-3 {
+        padding: 1.5rem !important;
+    }
+
+    .modal-body .mb-3 {
+        margin-bottom: 1rem !important;
+    }
+
+    .modal-body .mb-4 {
+        margin-bottom: 1.5rem !important;
+    }
+}

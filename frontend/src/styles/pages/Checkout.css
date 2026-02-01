@@ -1,0 +1,445 @@
+/* ---------- Checkout Page Layout ---------- */
+.checkout-page .form-container {
+    max-width: 100%;
+    padding: 2.5rem;
+}
+
+.checkout-page h2 {
+    color: var(--primary-blue);
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--light-blue);
+}
+
+/* ---------- Checkout Progress Steps ---------- */
+.checkout-steps {
+    margin-bottom: 3rem;
+}
+
+.step-indicator {
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    background-color: white;
+    border: 2px solid var(--light-blue);
+    color: var(--light-text);
+    transition: all 0.3s ease;
+}
+
+.step-circle.completed {
+    background-color: var(--success);
+    border-color: var(--success);
+    color: white;
+}
+
+.step-circle.active {
+    background-color: var(--secondary-blue);
+    border-color: var(--secondary-blue);
+    color: white;
+}
+
+.step-label {
+    font-size: 0.8rem;
+    color: var(--light-text);
+    font-weight: 500;
+}
+
+.step-connector {
+    flex-grow: 1;
+    height: 2px;
+    background-color: var(--light-blue);
+    margin: 0 1rem;
+    position: relative;
+    top: -20px;
+}
+
+.step-connector .progress-bar {
+    background-color: var(--secondary-blue);
+    height: 100%;
+    border-radius: 1px;
+    transition: width 0.3s ease;
+}
+
+/* ---------- Checkout Form ---------- */
+.checkout-form h5 {
+    color: var(--primary-blue);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--light-blue);
+}
+
+.checkout-form .form-label {
+    font-weight: 500;
+    color: var(--dark-text);
+    margin-bottom: 0.5rem;
+}
+
+.checkout-form .input-group-text {
+    background-color: var(--light-blue);
+    border-color: #e2e8f0;
+    color: var(--primary-blue);
+}
+
+.checkout-form .form-check-label {
+    color: var(--dark-text);
+    font-weight: 400;
+}
+
+/* ---------- Payment Method Selection ---------- */
+.payment-methods {
+    margin-bottom: 1.5rem;
+}
+
+.payment-method-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.payment-method-card:hover {
+    border-color: var(--secondary-blue);
+    background-color: #f8fafc;
+}
+
+.payment-method-card.selected {
+    border-color: var(--secondary-blue);
+    background-color: var(--light-blue);
+}
+
+.payment-method-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--light-blue) 0%, var(--sky-blue) 100%);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-blue);
+    font-size: 1.2rem;
+}
+
+.payment-method-details {
+    flex-grow: 1;
+}
+
+.payment-method-title {
+    font-weight: 600;
+    color: var(--primary-blue);
+    margin-bottom: 0.25rem;
+}
+
+.payment-method-description {
+    font-size: 0.85rem;
+    color: var(--light-text);
+}
+
+/* ---------- Credit Card Form ---------- */
+.credit-card-form {
+    margin-top: 1rem;
+}
+
+.card-preview {
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    color: white;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.card-chip {
+    width: 40px;
+    height: 30px;
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+}
+
+.card-number {
+    font-family: monospace;
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    margin-bottom: 1rem;
+}
+
+.card-details {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+}
+
+.card-holder {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+/* ---------- Order Summary in Checkout ---------- */
+.checkout-order-summary {
+    background-color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 100px;
+}
+
+.checkout-order-summary h5 {
+    color: var(--primary-blue);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--light-blue);
+}
+
+.checkout-order-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.checkout-order-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.checkout-order-item-details h6 {
+    color: var(--primary-blue);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.checkout-order-item-meta {
+    font-size: 0.8rem;
+    color: var(--light-text);
+}
+
+.checkout-order-item-price {
+    font-weight: 600;
+    color: var(--secondary-blue);
+    text-align: right;
+    font-size: 0.9rem;
+}
+
+.checkout-order-item-quantity {
+    font-size: 0.8rem;
+    color: var(--light-text);
+    display: block;
+}
+
+/* ---------- Checkout Totals ---------- */
+.checkout-totals {
+    margin-top: 1.5rem;
+}
+
+.checkout-total-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    color: var(--dark-text);
+}
+
+.checkout-total-item .label {
+    color: var(--light-text);
+}
+
+.checkout-total-item .value {
+    font-weight: 500;
+}
+
+.checkout-total-divider {
+    height: 1px;
+    background-color: #e2e8f0;
+    margin: 1rem 0;
+}
+
+.checkout-grand-total {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--primary-blue);
+    margin-bottom: 1.5rem;
+}
+
+/* ---------- Delivery Address Display ---------- */
+.delivery-address-display {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.delivery-address-display h6 {
+    color: var(--primary-blue);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.delivery-address-text {
+    font-size: 0.85rem;
+    color: var(--light-text);
+    line-height: 1.5;
+}
+
+/* ---------- Checkout Buttons ---------- */
+.checkout-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.back-button {
+    min-width: 120px;
+}
+
+.place-order-button {
+    min-width: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* ---------- Security Badges ---------- */
+.security-badges {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.security-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--light-text);
+    font-size: 0.75rem;
+}
+
+.security-badge i {
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+    color: var(--success);
+}
+
+/* ---------- Checkout Loading State ---------- */
+.checkout-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.checkout-loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--secondary-blue);
+    border-radius: 50%;
+    animation: checkout-spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes checkout-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.checkout-loading-text {
+    color: var(--primary-blue);
+    font-weight: 500;
+}
+
+/* ---------- Validation Styles ---------- */
+.checkout-validation-error {
+    font-size: 0.8rem;
+    color: var(--danger);
+    margin-top: 0.25rem;
+    display: none;
+}
+
+.checkout-form .is-invalid {
+    border-color: var(--danger);
+}
+
+.checkout-form .is-invalid:focus {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.1);
+}
+
+/* ---------- Responsive Checkout ---------- */
+@media (max-width: 768px) {
+    .checkout-page .form-container {
+        padding: 1.5rem;
+    }
+
+    .checkout-steps {
+        margin-bottom: 2rem;
+    }
+
+    .step-circle {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
+
+    .step-label {
+        font-size: 0.7rem;
+    }
+
+    .checkout-buttons {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .checkout-buttons .btn {
+        width: 100%;
+    }
+
+    .payment-method-card {
+        padding: 0.75rem;
+    }
+
+    .payment-method-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
+    }
+}

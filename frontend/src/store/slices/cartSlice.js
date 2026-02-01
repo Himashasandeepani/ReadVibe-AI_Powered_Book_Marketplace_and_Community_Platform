@@ -1,0 +1,104 @@
+import { createSlice } from "@reduxjs/toolkit";
+
+const readCartFromStorage = () => {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = window.localStorage.getItem("cart");
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    console.warn("Failed to parse cart from storage");
+    return [];
+  }
+};
+
+const emitCartEvent = () => {
+  try {
+    window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new CustomEvent("cart-updated"));
+  } catch {
+    // no-op if events fail
+  }
+};
+
+const persistCart = (items) => {
+  try {
+    window.localStorage.setItem("cart", JSON.stringify(items));
+    emitCartEvent();
+  } catch {
+    console.warn("Failed to persist cart");
+  }
+};
+
+const initialState = {
+  items: readCartFromStorage(),
+};
+
+const cartSlice = createSlice({
+  name: "cart",
+  initialState,
+  reducers: {
+    syncFromStorage: (state) => {
+      state.items = readCartFromStorage();
+    },
+    addItem: (state, action) => {
+      const incoming = action.payload;
+      const existing = state.items.find((i) => i.id === incoming.id);
+      const availableStock = incoming.stock ?? existing?.stock;
+
+      if (existing) {
+        const nextQuantity = existing.quantity + (incoming.quantity || 1);
+        if (availableStock && nextQuantity > availableStock) {
+          existing.quantity = availableStock;
+        } else {
+          existing.quantity = nextQuantity;
+        }
+      } else {
+        state.items.push({ ...incoming, quantity: incoming.quantity || 1 });
+      }
+      persistCart(state.items);
+    },
+    updateQuantity: (state, action) => {
+      const { id, delta } = action.payload;
+      state.items = state.items
+        .map((item) => {
+          if (item.id !== id) return item;
+          const nextQuantity = (item.quantity || 1) + delta;
+          if (nextQuantity <= 0) return null;
+          if (item.stock && nextQuantity > item.stock) {
+            return { ...item, quantity: item.stock };
+          }
+          return { ...item, quantity: nextQuantity };
+        })
+        .filter(Boolean);
+      persistCart(state.items);
+    },
+    removeItem: (state, action) => {
+      const id = action.payload;
+      state.items = state.items.filter((item) => item.id !== id);
+      persistCart(state.items);
+    },
+    clearCart: (state) => {
+      state.items = [];
+      persistCart(state.items);
+    },
+    setCart: (state, action) => {
+      state.items = action.payload || [];
+      persistCart(state.items);
+    },
+  },
+});
+
+export const {
+  syncFromStorage,
+  addItem,
+  updateQuantity,
+  removeItem,
+  clearCart,
+  setCart,
+} = cartSlice.actions;
+
+export const selectCartItems = (state) => state.cart.items;
+export const selectCartCount = (state) =>
+  state.cart.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+
+export default cartSlice.reducer;
