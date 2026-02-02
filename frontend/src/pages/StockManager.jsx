@@ -927,6 +927,8 @@ const StockManager = () => {
     language: "English",
     weight: "0.5",
     dimensions: "20x13x3 cm",
+    images: [],
+    image: "",
   });
 
   const [newPublisher, setNewPublisher] = useState({
@@ -1068,11 +1070,31 @@ const StockManager = () => {
     setEditingPublisherId(null);
   };
 
-  const handleInputChange = (setter) => (e) => {
-    const { name, value, type, checked } = e.target;
-    setter(prev => ({
+  const readFileAsDataURL = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleInputChange = (setter) => async (e) => {
+    const { name, value, type, checked, files } = e.target;
+
+    if (name === "images" && files) {
+      const fileList = Array.from(files);
+      const dataUrls = await Promise.all(fileList.map(readFileAsDataURL));
+      setter((prev) => ({
+        ...prev,
+        images: dataUrls,
+        image: dataUrls[0] || "",
+      }));
+      return;
+    }
+
+    setter((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
@@ -1126,6 +1148,8 @@ const StockManager = () => {
       language: "English",
       weight: "0.5",
       dimensions: "20x13x3 cm",
+      images: [],
+      image: "",
     });
     setEditingBookId(null);
   };
@@ -1224,6 +1248,8 @@ const StockManager = () => {
       language: newBook.language,
       weight: newBook.weight,
       dimensions: newBook.dimensions,
+      images: newBook.images || [],
+      image: newBook.image || (Array.isArray(newBook.images) ? newBook.images[0] : ""),
       lastRestocked: new Date().toISOString().split("T")[0],
       salesThisMonth: 0,
       totalSales: 0,
@@ -1295,6 +1321,12 @@ const StockManager = () => {
       language: newBook.language,
       weight: newBook.weight,
       dimensions: newBook.dimensions,
+      images: newBook.images || existingBook.images || [],
+      image:
+        newBook.image ||
+        (Array.isArray(newBook.images) && newBook.images[0]) ||
+        existingBook.image ||
+        (Array.isArray(existingBook.images) ? existingBook.images[0] : ""),
     };
 
     const updatedBooks = stockBooks.map((book) =>
@@ -1409,6 +1441,8 @@ const StockManager = () => {
         language: book.language || "English",
         weight: book.weight || "0.5",
         dimensions: book.dimensions || "20x13x3 cm",
+        images: book.images || (book.image ? [book.image] : []),
+        image: book.image || (Array.isArray(book.images) ? book.images[0] : ""),
       });
       setEditingBookId(bookId);
       setShowAddBookModal(true);

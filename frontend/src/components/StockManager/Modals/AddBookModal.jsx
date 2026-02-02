@@ -238,6 +238,18 @@ const BookModalBase = ({
                   </div> 
                 </div>*/}
                 <div className="mb-3">
+                  <label className="form-label">Book Images</label>
+                  <input
+                    type="file"
+                    className="form-control"
+                    name="images"
+                    accept="image/*"
+                    multiple
+                    onChange={onInputChange}
+                  />
+                  <small className="text-muted">Upload one or more cover images (JPG, PNG, GIF)</small>
+                </div>
+                <div className="mb-3">
                   <label className="form-label">Description</label>
                   <textarea
                     className="form-control"

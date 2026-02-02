@@ -85,19 +85,6 @@ const CreatePostModal = ({
                   </select>
                 </div>
               </div>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">
-                  Add image (optional)
-                </label>
-                <input
-                  type="file"
-                  className="form-control"
-                  accept="image/*"
-                />
-                <small className="text-muted">
-                  Max file size: 5MB. Supported formats: JPG, PNG, GIF
-                </small>
-              </div>
               <div className="alert alert-info">
                 <i className="fas fa-lightbulb me-2"></i>
                 <small>

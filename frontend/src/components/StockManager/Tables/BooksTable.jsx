@@ -25,6 +25,13 @@ const BooksTable = ({
     return "In Stock";
   };
 
+  const getImageSrc = (book) => {
+    if (book.image) return book.image;
+    if (Array.isArray(book.images) && book.images.length) return book.images[0];
+    if (book.imageUrl) return book.imageUrl;
+    return null;
+  };
+
   const formatMoney = (amount) => {
     const value = Number(amount || 0);
     return `LKR ${value.toFixed(2)}`;
@@ -35,6 +42,7 @@ const BooksTable = ({
       <table className="table table-hover stock-manager-table">
         <thead>
           <tr>
+            <th>Image</th>
             <th>
               <button
                 className="btn btn-link p-0 text-decoration-none text-dark fw-bold"
@@ -72,6 +80,18 @@ const BooksTable = ({
         <tbody>
           {books.map((book) => (
             <tr key={book.id}>
+              <td style={{ width: "80px" }}>
+                {getImageSrc(book) ? (
+                  <img
+                    src={getImageSrc(book)}
+                    alt={book.title}
+                    className="img-thumbnail"
+                    style={{ maxWidth: "72px", maxHeight: "72px", objectFit: "cover" }}
+                  />
+                ) : (
+                  <span className="text-muted small">No image</span>
+                )}
+              </td>
               <td>
                 <div className="fw-medium">{book.title}</div>
                 <small className="text-muted">ISBN: {book.isbn}</small>
