@@ -10,8 +10,7 @@ import {
 
 const AddReviewModal = ({ show, onHide, book, onSubmit }) => {
   const [reviewData, setReviewData] = useState({
-    rating: 0,
-    title: "",
+    rating: 5,
     text: "",
     recommend: true,
   });
@@ -24,8 +23,7 @@ const AddReviewModal = ({ show, onHide, book, onSubmit }) => {
     e.preventDefault();
     onSubmit(reviewData);
     setReviewData({
-      rating: 0,
-      title: "",
+      rating: 5,
       text: "",
       recommend: true,
     });
@@ -93,19 +91,6 @@ const AddReviewModal = ({ show, onHide, book, onSubmit }) => {
               ))}
             </div>
           </div>
-
-          {/* Review Title */}
-          <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">Review Title</Form.Label>
-            <Form.Control
-              type="text"
-              name="title"
-              placeholder="Summarize your experience..."
-              maxLength={100}
-              value={reviewData.title}
-              onChange={handleChange}
-            />
-          </Form.Group>
 
           {/* Review Text */}
           <Form.Group className="mb-3">

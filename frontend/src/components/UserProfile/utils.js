@@ -177,7 +177,7 @@ export const submitReview = (user, book, reviewData, orderId = null) => {
   const reviewId = "REV_" + Date.now();
   const newReview = {
     id: reviewId,
-    bookId: reviewData.bookId.toString(),
+    bookId: (reviewData.bookId ?? book.id).toString(),
     bookTitle: book.title,
     bookAuthor: book.author,
     bookImage: book.image,
@@ -185,7 +185,7 @@ export const submitReview = (user, book, reviewData, orderId = null) => {
     userName: user.name,
     userAvatar: user.avatar || user.name.substring(0, 2).toUpperCase(),
     rating: reviewData.rating,
-    title: reviewData.title.trim(),
+    title: (reviewData.title || "").trim(),
     text: reviewData.text.trim(),
     recommend: reviewData.recommend,
     date: new Date().toISOString(),

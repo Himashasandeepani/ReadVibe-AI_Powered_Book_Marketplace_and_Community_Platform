@@ -67,10 +67,10 @@ const PopularBooksTab = ({
                 <th>Book Title</th>
                 <th>Author</th>
                 <th>Category</th>
-                <th>Monthly Sales</th>
-                <th>Total Sales</th>
-                <th>Price</th>
-                <th>Stock</th>
+                <th className="text-end">Monthly Sales</th>
+                <th className="text-end">Total Sales</th>
+                <th className="text-end">Price</th>
+                <th className="text-end">Stock</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -105,21 +105,21 @@ const PopularBooksTab = ({
                   <td>
                     <span className="badge bg-secondary">{book.category}</span>
                   </td>
-                  <td>
-                    <div className="text-center">
+                  <td className="text-end">
+                    <div>
                       <div className="fw-medium text-primary">{book.salesThisMonth}</div>
                       <small className="text-muted">this month</small>
                     </div>
                   </td>
-                  <td>
+                  <td className="text-end">
                     <div className="fw-medium">{book.totalSales}</div>
                   </td>
-                  <td>
+                  <td className="text-end">
                     <div className="fw-medium">{formatCurrency(book.price)}</div>
                   </td>
-                  <td>
+                  <td className="text-end">
                     <div className={`stock-indicator ${book.stock <= book.minStock ? "low-stock" : "in-stock"}`}>
-                      {book.stock} / {book.maxStock}
+                      {book.stock}
                     </div>
                   </td>
                   <td>

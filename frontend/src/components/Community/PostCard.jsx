@@ -42,16 +42,6 @@ const PostCard = ({
         </div>
       </div>
       <p>{post.content}</p>
-      {post.image && post.image.trim() !== "" && (
-        <div className="mb-3">
-          <img
-            src={post.image}
-            className="img-fluid rounded post-image"
-            alt="Post"
-            onError={(e) => (e.target.style.display = "none")}
-          />
-        </div>
-      )}
       {post.bookReference && (
         <div className="book-reference">
           <FontAwesomeIcon icon={faBook} className="me-2" />
