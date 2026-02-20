@@ -154,7 +154,7 @@ const BookDetailsModal = ({
                   </div>
                 ))
               ) : (
-                <p>No reviews yet. Be the first to review this book!</p>
+                <p>No reviews yet. Be the first to review this book! </p>
               )}
             </div>
           </Col>
