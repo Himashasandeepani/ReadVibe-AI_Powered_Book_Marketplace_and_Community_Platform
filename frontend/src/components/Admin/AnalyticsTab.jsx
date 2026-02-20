@@ -29,7 +29,9 @@ const AnalyticsTab = ({ users, posts }) => {
               <i className="fas fa-comments fa-3x text-primary mb-3"></i>
               <p className="text-muted">Total Posts: {postStats.total}</p>
               <p className="text-muted">Total Likes: {postStats.totalLikes}</p>
-              <p className="text-muted">Total Comments: {postStats.totalComments}</p>
+              <p className="text-muted">
+                Total Comments: {postStats.totalComments}
+              </p>
             </div>
           </div>
         </div>

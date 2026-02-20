@@ -8,9 +8,21 @@ const UsersTab = ({
 }) => {
   const subTabs = [
     { id: "all", label: "All Users", count: users.length },
-    { id: "users", label: "Regular Users", count: users.filter(u => u.role === "user").length },
-    { id: "admins", label: "Administrators", count: users.filter(u => u.role === "admin").length },
-    { id: "stock", label: "Stock Managers", count: users.filter(u => u.role === "stock").length },
+    {
+      id: "users",
+      label: "Regular Users",
+      count: users.filter((u) => u.role === "user").length,
+    },
+    {
+      id: "admins",
+      label: "Administrators",
+      count: users.filter((u) => u.role === "admin").length,
+    },
+    {
+      id: "stock",
+      label: "Stock Managers",
+      count: users.filter((u) => u.role === "stock").length,
+    },
   ];
 
   return (

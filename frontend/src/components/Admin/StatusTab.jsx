@@ -1,19 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 
 const StatusTab = ({ statuses = [], onSaveStatus, onDeleteStatus }) => {
   const [statusInput, setStatusInput] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState(null);
+  const [selectedStatusId, setSelectedStatusId] = useState(null);
 
-  useEffect(() => {
-    if (!selectedStatus) return;
-    const updated = statuses.find((s) => s.id === selectedStatus.id);
-    if (!updated) {
-      setSelectedStatus(null);
-      setStatusInput("");
-    } else {
-      setSelectedStatus(updated);
-    }
-  }, [statuses, selectedStatus]);
+  const selectedStatus = useMemo(
+    () => statuses.find((s) => s.id === selectedStatusId) || null,
+    [statuses, selectedStatusId]
+  );
 
   const handleSave = () => {
     const name = (statusInput || "").trim();
@@ -23,19 +17,19 @@ const StatusTab = ({ statuses = [], onSaveStatus, onDeleteStatus }) => {
       onSaveStatus(name, selectedStatus ? selectedStatus.id : null);
     }
     setStatusInput("");
-    setSelectedStatus(null);
+    setSelectedStatusId(null);
   };
 
   const handleDelete = () => {
     if (!selectedStatus || !onDeleteStatus) return;
     onDeleteStatus(selectedStatus.id);
     setStatusInput("");
-    setSelectedStatus(null);
+    setSelectedStatusId(null);
   };
 
   const handleCancel = () => {
     setStatusInput("");
-    setSelectedStatus(null);
+    setSelectedStatusId(null);
   };
 
   return (
@@ -43,7 +37,10 @@ const StatusTab = ({ statuses = [], onSaveStatus, onDeleteStatus }) => {
       <div className="card-header d-flex align-items-center py-2">
         <h5 className="mb-0">Manage Status</h5>
       </div>
-      <div className="card-body" style={{ maxHeight: "480px", overflowY: "auto" }}>
+      <div
+        className="card-body"
+        style={{ maxHeight: "480px", overflowY: "auto" }}
+      >
         <div className="mb-3">
           <label className="form-label">Status name</label>
           <input
@@ -107,13 +104,15 @@ const StatusTab = ({ statuses = [], onSaveStatus, onDeleteStatus }) => {
                     role="button"
                     style={{ cursor: "pointer" }}
                     onClick={() => {
-                      setSelectedStatus(status);
+                      setSelectedStatusId(status.id);
                       setStatusInput(status.status || "");
                     }}
                   >
                     <td className="small py-2 ps-3">{status.status}</td>
                     <td className="small py-2">
-                      <span className={`badge ${status.isActive ? "bg-success" : "bg-secondary"}`}>
+                      <span
+                        className={`badge ${status.isActive ? "bg-success" : "bg-secondary"}`}
+                      >
                         {status.isActive ? "Yes" : "No"}
                       </span>
                     </td>

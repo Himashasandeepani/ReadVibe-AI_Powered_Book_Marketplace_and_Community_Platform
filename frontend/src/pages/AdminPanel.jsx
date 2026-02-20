@@ -53,7 +53,11 @@ const getInitialAdminData = () => {
     };
   }
 
-  const { users = [], posts = [], settings = DEFAULT_SYSTEM_SETTINGS } = loadData();
+  const {
+    users = [],
+    posts = [],
+    settings = DEFAULT_SYSTEM_SETTINGS,
+  } = loadData();
   return {
     users,
     posts,
@@ -76,7 +80,7 @@ const AdminPanel = () => {
   // State
   const [currentUser, setCurrentUser] = useState(storedUser);
   const [activeUserSubTab, setActiveUserSubTab] = useState("all");
-  
+
   // Data state
   const [users, setUsers] = useState(() => [...initialAdminData.users]);
   const [posts, setPosts] = useState(() => [...initialAdminData.posts]);
@@ -123,7 +127,12 @@ const AdminPanel = () => {
         event.key === "systemSettings" ||
         event.key === "adminStatuses"
       ) {
-        const { users: storedUsers, posts: storedPosts, settings: storedSettings, statuses: storedStatuses } = loadData();
+        const {
+          users: storedUsers,
+          posts: storedPosts,
+          settings: storedSettings,
+          statuses: storedStatuses,
+        } = loadData();
         setUsers([...storedUsers]);
         setPosts([...storedPosts]);
         setSystemSettings({ ...DEFAULT_SYSTEM_SETTINGS, ...storedSettings });
@@ -208,7 +217,7 @@ const AdminPanel = () => {
   const handleDeleteUser = (userId) => {
     if (
       window.confirm(
-        "Are you sure you want to delete this user? This action cannot be undone."
+        "Are you sure you want to delete this user? This action cannot be undone.",
       )
     ) {
       const updatedUsers = users.filter((user) => user.id !== userId);
@@ -236,11 +245,11 @@ const AdminPanel = () => {
       const communityStoragePosts =
         JSON.parse(localStorage.getItem("communityPosts")) || [];
       const updatedCommunityPosts = communityStoragePosts.filter(
-        (post) => post.id !== postId
+        (post) => post.id !== postId,
       );
       localStorage.setItem(
         "communityPosts",
-        JSON.stringify(updatedCommunityPosts)
+        JSON.stringify(updatedCommunityPosts),
       );
 
       showNotification("Post deleted successfully");
@@ -265,14 +274,12 @@ const AdminPanel = () => {
       let next;
       if (existingId) {
         next = prev.map((s) =>
-          s.id === existingId ? { ...s, status: trimmed } : s
+          s.id === existingId ? { ...s, status: trimmed } : s,
         );
       } else {
-        const maxId = prev.length > 0 ? Math.max(...prev.map((s) => s.id || 0)) : 0;
-        next = [
-          ...prev,
-          { id: maxId + 1, status: trimmed, isActive: true },
-        ];
+        const maxId =
+          prev.length > 0 ? Math.max(...prev.map((s) => s.id || 0)) : 0;
+        next = [...prev, { id: maxId + 1, status: trimmed, isActive: true }];
       }
 
       saveData(null, null, null, next);
