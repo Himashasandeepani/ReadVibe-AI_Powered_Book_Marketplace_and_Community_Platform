@@ -39,9 +39,7 @@ const CartItem = ({ item, book, onRemove, onUpdateQuantity }) => {
         </Col>
         <Col md={2} className="cart-item-price">
           <small className="text-muted">Per Item LKR</small>
-          <div className="fw-medium">
-            {formatPrice(book.price, false)}
-          </div>
+          <div className="fw-medium">{formatPrice(book.price, false)}</div>
         </Col>
         <Col md={2} className="cart-item-price">
           <small className="text-muted">Total LKR</small>
@@ -58,9 +56,7 @@ const CartItem = ({ item, book, onRemove, onUpdateQuantity }) => {
             >
               <FontAwesomeIcon icon={faMinus} />
             </button>
-            <span className="quantity-display">
-              {item.quantity}
-            </span>
+            <span className="quantity-display">{item.quantity}</span>
             <button
               className="quantity-btn"
               onClick={() => onUpdateQuantity(item.id, 1)}
