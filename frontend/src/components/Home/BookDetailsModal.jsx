@@ -23,7 +23,12 @@ import {
   faFire,
 } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
-import { formatPrice, generateStarRating, addToWishlist, showNotification } from "../../utils/helpers";
+import {
+  formatPrice,
+  generateStarRating,
+  addToWishlist,
+  showNotification,
+} from "../../utils/helpers";
 import { addItem, setCart } from "../../store/slices/cartSlice";
 
 const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
@@ -36,8 +41,9 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
 
   const isInWishlist = (bookId) => {
     if (!currentUser) return false;
-    const wishlist = JSON.parse(localStorage.getItem(`wishlist_${currentUser.id}`)) || [];
-    return wishlist.some(item => item.id === bookId);
+    const wishlist =
+      JSON.parse(localStorage.getItem(`wishlist_${currentUser.id}`)) || [];
+    return wishlist.some((item) => item.id === bookId);
   };
 
   const handleAddToWishlist = () => {
@@ -72,7 +78,7 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
         quantity: 1,
         image: book.image,
         stock: book.stock,
-      })
+      }),
     );
     showNotification("Book added to cart!", "success");
   };
@@ -99,7 +105,7 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
           image: book.image,
           stock: book.stock,
         },
-      ])
+      ]),
     );
     sessionStorage.setItem(
       "checkoutCart",
@@ -108,7 +114,7 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
           id: book.id,
           quantity: 1,
         },
-      ])
+      ]),
     );
     onHide();
     navigate("/delivery-details");
@@ -252,12 +258,11 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
                     <FontAwesomeIcon icon={faUser} className="me-1" />
                     Verified Reader
                   </span>
-                  <span className="text-warning">
-                    {generateStarRating(5)}
-                  </span>
+                  <span className="text-warning">{generateStarRating(5)}</span>
                 </div>
                 <p className="mb-0">
-                  Sold {book.salesThisMonth || 0} copies this month! Highly recommended.
+                  Sold {book.salesThisMonth || 0} copies this month! Highly
+                  recommended.
                 </p>
               </div>
             </div>

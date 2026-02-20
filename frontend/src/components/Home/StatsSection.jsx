@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBook, faUsers, faSmile, faBrain } from "@fortawesome/free-solid-svg-icons";
+import {
+  faBook,
+  faUsers,
+  faSmile,
+  faBrain,
+} from "@fortawesome/free-solid-svg-icons";
 
 const getStoredBookCount = () => {
   try {
@@ -31,23 +36,23 @@ const StatsSection = () => {
     {
       icon: faBook,
       value: `${bookCount}+`,
-      label: "Books Available"
+      label: "Books Available",
     },
     {
       icon: faUsers,
       value: "50,000+",
-      label: "Active Readers"
+      label: "Active Readers",
     },
     {
       icon: faSmile,
       value: "95%",
-      label: "Satisfaction Rate"
+      label: "Satisfaction Rate",
     },
     {
       icon: faBrain,
       value: "24/7",
-      label: "AI Recommendations"
-    }
+      label: "AI Recommendations",
+    },
   ];
 
   return (
