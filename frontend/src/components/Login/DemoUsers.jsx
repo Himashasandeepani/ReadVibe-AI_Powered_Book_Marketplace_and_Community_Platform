@@ -10,7 +10,7 @@ const DemoUsers = () => {
         <Card.Text className="text-muted small mb-3">
           Use these credentials to test different user roles:
         </Card.Text>
-        
+
         {DEMO_USERS.map((user) => (
           <Alert key={user.id} variant="light" className="small mb-2">
             <div className="d-flex justify-content-between align-items-center">
@@ -18,7 +18,8 @@ const DemoUsers = () => {
                 <strong>{user.name}</strong> ({user.role})
                 <br />
                 <small className="text-muted">
-                  Email: {user.email} | Username: {user.username} | Password: {user.password}
+                  Email: {user.email} | Username: {user.username} | Password:{" "}
+                  {user.password}
                 </small>
               </div>
             </div>
