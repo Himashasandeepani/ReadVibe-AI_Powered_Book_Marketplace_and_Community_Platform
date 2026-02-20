@@ -3,12 +3,7 @@ import { Button } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faLock } from "@fortawesome/free-solid-svg-icons";
 
-const CheckoutButtons = ({
-  onBack,
-  onSubmit,
-  isLoading,
-  onNavigateBack,
-}) => {
+const CheckoutButtons = ({ onBack, onSubmit, isLoading, onNavigateBack }) => {
   const handleBackClick = onBack || onNavigateBack;
 
   return (

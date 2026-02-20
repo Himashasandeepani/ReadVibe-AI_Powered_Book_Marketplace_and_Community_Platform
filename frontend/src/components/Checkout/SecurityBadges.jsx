@@ -1,6 +1,10 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faLock, faShieldAlt, faUserShield } from "@fortawesome/free-solid-svg-icons";
+import {
+  faLock,
+  faShieldAlt,
+  faUserShield,
+} from "@fortawesome/free-solid-svg-icons";
 
 const SecurityBadges = () => {
   return (
