@@ -1,24 +1,32 @@
 import { Container, Row, Col } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faRobot, faUsers, faShoppingCart, faStar } from "@fortawesome/free-solid-svg-icons";
+import {
+  faRobot,
+  faUsers,
+  faShoppingCart,
+  faStar,
+} from "@fortawesome/free-solid-svg-icons";
 
 const FeaturesSection = () => {
   const features = [
     {
       icon: faRobot,
       title: "AI-Powered Recommendations",
-      description: "Our intelligent system learns from your reading habits to suggest books you'll genuinely enjoy."
+      description:
+        "Our intelligent system learns from your reading habits to suggest books you'll genuinely enjoy.",
     },
     {
       icon: faUsers,
       title: "Vibrant Community",
-      description: "Connect with fellow readers, share reviews, and discover new perspectives on your favorite books."
+      description:
+        "Connect with fellow readers, share reviews, and discover new perspectives on your favorite books.",
     },
     {
       icon: faShoppingCart,
       title: "Seamless Shopping",
-      description: "Browse, purchase, and get books delivered - all in one convenient platform."
-    }
+      description:
+        "Browse, purchase, and get books delivered - all in one convenient platform.",
+    },
   ];
 
   return (

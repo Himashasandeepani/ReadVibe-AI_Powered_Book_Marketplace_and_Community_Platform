@@ -12,38 +12,39 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
     const imageMap = {
       "The Midnight Library": "/assets/The_Midnight_Library.jpeg",
       "Project Hail Mary": "/assets/project_hail_mary.jpg",
-      "Dune": "/assets/dune.jpg",
+      Dune: "/assets/dune.jpg",
       "The Hobbit": "/assets/the_hobbit.jpg",
       "The Silent Patient": "/assets/silent_patient.jpg",
       "Where the Crawdads Sing": "/assets/crawdads_sing.jpg",
       "Atomic Habits": "/assets/atomic_habits.jpg",
       "The Alchemist": "/assets/alchemist.jpg",
     };
-    
+
     return imageMap[bookTitle] || "/assets/default_book.jpg";
   };
 
   useEffect(() => {
     const loadFeaturedBooks = () => {
       try {
-        const storedBooks = JSON.parse(localStorage.getItem("stockBooks")) || [];
-        
-        let featured = storedBooks.filter(book => book.featured === true);
-        
+        const storedBooks =
+          JSON.parse(localStorage.getItem("stockBooks")) || [];
+
+        let featured = storedBooks.filter((book) => book.featured === true);
+
         if (featured.length < 4) {
           featured = [...storedBooks]
             .sort((a, b) => b.salesThisMonth - a.salesThisMonth)
             .slice(0, 4);
         }
-        
-        const formattedBooks = featured.map(book => ({
+
+        const formattedBooks = featured.map((book) => ({
           id: book.id,
           title: book.title,
           author: book.author,
           category: book.category,
           price: book.price,
           image: getBookImage(book.title),
-          rating: Math.min(5, 4 + (book.salesThisMonth / 20)),
+          rating: Math.min(5, 4 + book.salesThisMonth / 20),
           reviews: book.totalSales || Math.floor(Math.random() * 50) + 10,
           inStock: book.stock > 0,
           stock: book.stock,
@@ -54,7 +55,7 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
           language: book.language,
           pages: book.pages,
         }));
-        
+
         setFeaturedBooks(formattedBooks);
       } catch (error) {
         console.error("Error loading featured books:", error);
@@ -81,7 +82,7 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
           Popular This Week
           <div className="section-title-decoration"></div>
         </h2>
-        {featuredBooks.some(book => book.featured) && (
+        {featuredBooks.some((book) => book.featured) && (
           <Badge bg="warning" className="fs-6">
             <FontAwesomeIcon icon={faFire} className="me-1" />
             Featured from Inventory
@@ -102,7 +103,10 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
           ))
         ) : (
           <Col xs={12} className="text-center py-5">
-            <FontAwesomeIcon icon={faBookmark} className="fa-4x text-muted mb-3" />
+            <FontAwesomeIcon
+              icon={faBookmark}
+              className="fa-4x text-muted mb-3"
+            />
             <h5>No popular books available</h5>
             <p className="text-muted">Check back later for featured books</p>
           </Col>
@@ -114,8 +118,13 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
           <FontAwesomeIcon icon={faBookmark} className="me-2" />
           View All Books
         </Link>
-        {currentUser?.role === "stock-manager" || currentUser?.role === "admin" || currentUser?.role === "stock" ? (
-          <Link to="/stock-manager?tab=popular-books" className="btn btn-outline-primary">
+        {currentUser?.role === "stock-manager" ||
+        currentUser?.role === "admin" ||
+        currentUser?.role === "stock" ? (
+          <Link
+            to="/stock-manager?tab=popular-books"
+            className="btn btn-outline-primary"
+          >
             <FontAwesomeIcon icon={faCogs} className="me-2" />
             Manage Popular Books
           </Link>

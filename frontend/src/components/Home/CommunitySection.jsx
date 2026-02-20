@@ -73,8 +73,8 @@ const CommunitySection = ({ currentUser }) => {
               likedByUser: !post.likedByUser,
               likes: post.likedByUser ? post.likes - 1 : post.likes + 1,
             }
-          : post
-      )
+          : post,
+      ),
     );
   };
 
@@ -94,8 +94,8 @@ const CommunitySection = ({ currentUser }) => {
               comments: post.comments + 1,
               commentsList: [...post.commentsList, newComment],
             }
-          : post
-      )
+          : post,
+      ),
     );
 
     if (postId === 1) {
@@ -112,7 +112,12 @@ const CommunitySection = ({ currentUser }) => {
     return post?.likedByUser || false;
   };
 
-  const renderCommunityPost = (post, commentValue, onCommentChange, onAddComment) => (
+  const renderCommunityPost = (
+    post,
+    commentValue,
+    onCommentChange,
+    onAddComment,
+  ) => (
     <div className="community-card">
       <div className="d-flex align-items-center mb-3">
         <div className="user-avatar">{post.initials}</div>
@@ -144,18 +149,16 @@ const CommunitySection = ({ currentUser }) => {
           variant="outline-secondary"
           size="sm"
           className="me-2"
-          onClick={() => document.querySelector(`#comment-input-${post.id}`)?.focus()}
+          onClick={() =>
+            document.querySelector(`#comment-input-${post.id}`)?.focus()
+          }
           disabled={!currentUser}
           title={!currentUser ? "Login to comment" : "Add comment"}
         >
           <FontAwesomeIcon icon={faComment} />
           <span className="ms-1">{post.comments}</span>
         </Button>
-        <Button
-          variant="outline-secondary"
-          size="sm"
-          title="Share this post"
-        >
+        <Button variant="outline-secondary" size="sm" title="Share this post">
           <FontAwesomeIcon icon={faShareAlt} />
           <span className="ms-1">Share</span>
         </Button>
@@ -219,7 +222,7 @@ const CommunitySection = ({ currentUser }) => {
             communityPosts[0],
             commentText,
             setCommentText,
-            handleAddComment
+            handleAddComment,
           )}
         </Col>
 
@@ -228,7 +231,7 @@ const CommunitySection = ({ currentUser }) => {
             communityPosts[1],
             commentText2,
             setCommentText2,
-            handleAddComment
+            handleAddComment,
           )}
         </Col>
       </Row>
