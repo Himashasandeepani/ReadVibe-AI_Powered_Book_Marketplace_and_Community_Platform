@@ -50,7 +50,10 @@ const LiveChatModal = ({ show, onHide }) => {
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <div className="chat-container" style={{ height: "400px", overflowY: "auto" }}>
+        <div
+          className="chat-container"
+          style={{ height: "400px", overflowY: "auto" }}
+        >
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -62,7 +65,8 @@ const LiveChatModal = ({ show, onHide }) => {
             >
               <div
                 style={{
-                  backgroundColor: msg.sender === "user" ? "#007bff" : "#e9ecef",
+                  backgroundColor:
+                    msg.sender === "user" ? "#007bff" : "#e9ecef",
                   color: msg.sender === "user" ? "white" : "black",
                   padding: "8px 12px",
                   borderRadius: "15px",

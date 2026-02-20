@@ -27,8 +27,8 @@ const DeliveryTimeline = ({ shipDate, deliveryDate, processingDays }) => {
               {processingDays === 0
                 ? "Same day"
                 : processingDays === 1
-                ? "1 business day"
-                : `${processingDays} business days`}
+                  ? "1 business day"
+                  : `${processingDays} business days`}
             </div>
           </div>
         </div>

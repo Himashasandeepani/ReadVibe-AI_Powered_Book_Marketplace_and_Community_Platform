@@ -32,12 +32,13 @@ const ShippingInfoSection = ({ order, methodDetails }) => {
       <div className="shipping-info-content">
         <p>
           <FontAwesomeIcon icon={faUser} className="me-2" />
-          <strong>Recipient:</strong> {order.shipping.firstName} {order.shipping.lastName}
+          <strong>Recipient:</strong> {order.shipping.firstName}{" "}
+          {order.shipping.lastName}
         </p>
         <p>
           <FontAwesomeIcon icon={faMapMarkerAlt} className="me-2" />
-          <strong>Address:</strong> {order.shipping.address}, {order.shipping.city},{" "}
-          {order.shipping.state} {order.shipping.zipCode}
+          <strong>Address:</strong> {order.shipping.address},{" "}
+          {order.shipping.city}, {order.shipping.state} {order.shipping.zipCode}
         </p>
         <p>
           <FontAwesomeIcon icon={faGlobe} className="me-2" />
@@ -53,11 +54,13 @@ const ShippingInfoSection = ({ order, methodDetails }) => {
         </p>
         <p>
           <FontAwesomeIcon icon={methodDetails.icon} className="me-2" />
-          <strong>Shipping Method:</strong> {methodDetails.title} ({methodDetails.days})
+          <strong>Shipping Method:</strong> {methodDetails.title} (
+          {methodDetails.days})
         </p>
         <p>
           <FontAwesomeIcon icon={faReceipt} className="me-2" />
-          <strong>Shipping Cost:</strong> {formatPrice(order.totals?.shipping || 0)}
+          <strong>Shipping Cost:</strong>{" "}
+          {formatPrice(order.totals?.shipping || 0)}
         </p>
       </div>
     </div>

@@ -1,10 +1,23 @@
 import React from "react";
 import { Modal, Button, Alert } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTruck, faCheckCircle, faMapMarkerAlt, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import {
+  faTruck,
+  faCheckCircle,
+  faMapMarkerAlt,
+  faInfoCircle,
+} from "@fortawesome/free-solid-svg-icons";
 import { formatDate } from "./utils";
 
-const TrackOrderModal = ({ show, onHide, order, methodDetails, trackingUpdates, deliveryDate, processingDays }) => {
+const TrackOrderModal = ({
+  show,
+  onHide,
+  order,
+  methodDetails,
+  trackingUpdates,
+  deliveryDate,
+  processingDays,
+}) => {
   return (
     <Modal show={show} onHide={onHide} size="lg">
       <Modal.Header closeButton>
@@ -46,7 +59,10 @@ const TrackOrderModal = ({ show, onHide, order, methodDetails, trackingUpdates, 
                       )}
                       {update.location && (
                         <div className="timeline-location">
-                          <FontAwesomeIcon icon={faMapMarkerAlt} className="me-1" />
+                          <FontAwesomeIcon
+                            icon={faMapMarkerAlt}
+                            className="me-1"
+                          />
                           {update.location}
                         </div>
                       )}
@@ -57,7 +73,8 @@ const TrackOrderModal = ({ show, onHide, order, methodDetails, trackingUpdates, 
             ) : (
               <Alert variant="info">
                 <FontAwesomeIcon icon={faInfoCircle} className="me-2" />
-                No tracking updates available yet. Your order is being processed.
+                No tracking updates available yet. Your order is being
+                processed.
                 <br />
                 <small className="d-block mt-1">
                   Estimated processing time: {processingDays}{" "}

@@ -22,11 +22,15 @@ const OrderInfoSection = ({ order }) => {
         </Col>
         <Col md={4} className="order-info-item mb-3">
           <span className="label">Payment Method:</span>
-          <span className="value">{order.payment?.method || "Credit Card"}</span>
+          <span className="value">
+            {order.payment?.method || "Credit Card"}
+          </span>
         </Col>
         <Col md={8} className="order-info-item mb-3">
           <span className="label">Transaction ID:</span>
-          <span className="value">{order.payment?.transactionId || "TXN_000000000"}</span>
+          <span className="value">
+            {order.payment?.transactionId || "TXN_000000000"}
+          </span>
         </Col>
       </Row>
     </div>
