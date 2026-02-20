@@ -60,7 +60,8 @@ const OrderConfirmation = () => {
         rating: 4.3,
         reviews: 128,
         inStock: true,
-        image: "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
+        image:
+          "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
       },
       {
         id: 2,
@@ -71,7 +72,8 @@ const OrderConfirmation = () => {
         rating: 4.8,
         reviews: 95,
         inStock: true,
-        image: "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
+        image:
+          "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
       },
       {
         id: 3,
@@ -82,7 +84,8 @@ const OrderConfirmation = () => {
         rating: 4.0,
         reviews: 210,
         inStock: true,
-        image: "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
+        image:
+          "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
       },
       {
         id: 4,
@@ -93,10 +96,11 @@ const OrderConfirmation = () => {
         rating: 4.9,
         reviews: 305,
         inStock: false,
-        image: "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
+        image:
+          "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
       },
     ],
-    []
+    [],
   );
 
   const currentUser = useMemo(() => getCurrentUser(), []);
@@ -145,7 +149,7 @@ const OrderConfirmation = () => {
         image: book.image,
         quantity,
         stock: book.stock,
-      })
+      }),
     );
 
     showNotification("Book added to cart!", "success");
@@ -180,9 +184,15 @@ const OrderConfirmation = () => {
         <Container className="mt-5">
           <div className="form-container">
             <div className="confirmation-empty text-center py-5">
-              <FontAwesomeIcon icon={faBookOpen} size="3x" className="mb-3 text-muted" />
+              <FontAwesomeIcon
+                icon={faBookOpen}
+                size="3x"
+                className="mb-3 text-muted"
+              />
               <h4>No Order Found</h4>
-              <p className="text-muted">We couldn't find your order confirmation.</p>
+              <p className="text-muted">
+                We couldn't find your order confirmation.
+              </p>
               <div className="mt-3">
                 <Link to="/marketplace" className="btn btn-primary me-2">
                   <FontAwesomeIcon icon="store" className="me-2" />
@@ -201,7 +211,8 @@ const OrderConfirmation = () => {
 
   const shippingMethod = order.shipping?.shippingMethod || "standard";
   const methodDetails = shippingMethods[shippingMethod];
-  const { shipDate, deliveryDate, processingDays } = calculateEstimatedDates(shippingMethod);
+  const { shipDate, deliveryDate, processingDays } =
+    calculateEstimatedDates(shippingMethod);
 
   return (
     <div className="order-confirmation-page">
@@ -232,7 +243,10 @@ const OrderConfirmation = () => {
 
                       <OrderInfoSection order={order} />
 
-                      <ShippingInfoSection order={order} methodDetails={methodDetails} />
+                      <ShippingInfoSection
+                        order={order}
+                        methodDetails={methodDetails}
+                      />
 
                       <OrderItemsSection items={order.items} />
                     </Card.Body>
@@ -248,7 +262,10 @@ const OrderConfirmation = () => {
 
                 <Col lg={4}>
                   {/* Order Summary */}
-                  <OrderSummaryCard order={order} methodDetails={methodDetails} />
+                  <OrderSummaryCard
+                    order={order}
+                    methodDetails={methodDetails}
+                  />
 
                   {/* Delivery Timeline */}
                   <DeliveryTimeline
@@ -271,7 +288,10 @@ const OrderConfirmation = () => {
       </Container>
 
       {/* Recommended Books */}
-      <RecommendedBooks books={recommendedBooks} onAddToCart={handleAddToCart} />
+      <RecommendedBooks
+        books={recommendedBooks}
+        onAddToCart={handleAddToCart}
+      />
 
       {/* Modals */}
       <TrackOrderModal

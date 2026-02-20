@@ -16,11 +16,15 @@ const OrderSummaryCard = ({ order, methodDetails }) => {
         <div className="checkout-totals">
           <div className="checkout-total-item mb-2">
             <span className="label">Subtotal:</span>
-            <span className="value">{formatPrice(order.totals?.subtotal || 0)}</span>
+            <span className="value">
+              {formatPrice(order.totals?.subtotal || 0)}
+            </span>
           </div>
           <div className="checkout-total-item mb-2">
             <span className="label">Shipping:</span>
-            <span className="value">{formatPrice(order.totals?.shipping || 0)}</span>
+            <span className="value">
+              {formatPrice(order.totals?.shipping || 0)}
+            </span>
           </div>
           <div className="checkout-total-item mb-2">
             <span className="label">Tax (5%):</span>
@@ -46,9 +50,7 @@ const OrderSummaryCard = ({ order, methodDetails }) => {
               <FontAwesomeIcon icon="clock" className="me-1" />
               {methodDetails.days}
             </p>
-            <p className="text-muted small mb-0">
-              {methodDetails.description}
-            </p>
+            <p className="text-muted small mb-0">{methodDetails.description}</p>
           </div>
         </div>
       </Card.Body>

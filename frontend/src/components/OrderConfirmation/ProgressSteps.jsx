@@ -18,14 +18,23 @@ const ProgressSteps = ({ currentStep = 3 }) => {
         {steps.map((step, index) => (
           <React.Fragment key={step.number}>
             <div className="step-indicator">
-              <div className={`step-circle ${isCompleted(step.number) ? "completed" : ""} ${isActive(step.number) ? "active" : ""}`}>
-                {isCompleted(step.number) ? <FontAwesomeIcon icon={faCheck} /> : step.number}
+              <div
+                className={`step-circle ${isCompleted(step.number) ? "completed" : ""} ${isActive(step.number) ? "active" : ""}`}
+              >
+                {isCompleted(step.number) ? (
+                  <FontAwesomeIcon icon={faCheck} />
+                ) : (
+                  step.number
+                )}
               </div>
               <div className="step-label">{step.label}</div>
             </div>
             {index < steps.length - 1 && (
               <div className="step-connector">
-                <div className="progress-bar" style={{ width: isCompleted(step.number) ? "100%" : "0%" }}></div>
+                <div
+                  className="progress-bar"
+                  style={{ width: isCompleted(step.number) ? "100%" : "0%" }}
+                ></div>
               </div>
             )}
           </React.Fragment>
