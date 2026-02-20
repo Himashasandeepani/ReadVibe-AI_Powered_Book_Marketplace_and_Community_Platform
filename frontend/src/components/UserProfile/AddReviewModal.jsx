@@ -130,7 +130,9 @@ const AddReviewModal = ({ show, onHide, book, onSubmit }) => {
                 name="recommend"
                 id="recommendYes"
                 checked={reviewData.recommend}
-                onChange={() => setReviewData({ ...reviewData, recommend: true })}
+                onChange={() =>
+                  setReviewData({ ...reviewData, recommend: true })
+                }
               />
               <Form.Check
                 inline
@@ -147,7 +149,9 @@ const AddReviewModal = ({ show, onHide, book, onSubmit }) => {
                 name="recommend"
                 id="recommendNo"
                 checked={!reviewData.recommend}
-                onChange={() => setReviewData({ ...reviewData, recommend: false })}
+                onChange={() =>
+                  setReviewData({ ...reviewData, recommend: false })
+                }
               />
             </div>
           </Form.Group>
