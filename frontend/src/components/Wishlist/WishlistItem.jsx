@@ -17,12 +17,7 @@ import {
 // In WishlistItem.jsx, EditItemModal.jsx, etc.
 import { renderPriorityStars, formatPrice } from "./utils.jsx";
 
-const WishlistItem = ({
-  item,
-  onRemove,
-  onAddToCart,
-  onEditItem,
-}) => {
+const WishlistItem = ({ item, onRemove, onAddToCart, onEditItem }) => {
   return (
     <Col lg={4} md={6} key={item.id} className="mb-4">
       <Card className="wishlist-card h-100">
@@ -116,10 +111,7 @@ const WishlistItem = ({
           {/* Priority */}
           <div className="wishlist-priority mb-3">
             <div className="priority-label mb-2">
-              <FontAwesomeIcon
-                icon={faStar}
-                className="me-2 text-warning"
-              />
+              <FontAwesomeIcon icon={faStar} className="me-2 text-warning" />
               Priority Level:
             </div>
             {renderPriorityStars(item.priority || 3)}

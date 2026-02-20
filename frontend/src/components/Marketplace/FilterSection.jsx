@@ -11,7 +11,7 @@ const FilterSection = ({
   changeRating,
   resetFilters,
   handleApplyFilters,
-  filteredBooks
+  filteredBooks,
 }) => {
   if (!isFilterCollapsed) return null;
 
@@ -52,9 +52,7 @@ const FilterSection = ({
 
           <Col md={3}>
             <div className="filter-group mb-3">
-              <Form.Label className="fw-medium">
-                Price Range (LKR)
-              </Form.Label>
+              <Form.Label className="fw-medium">Price Range (LKR)</Form.Label>
               <div className="price-input-group">
                 <div className="price-input-wrapper">
                   <span className="price-label">Min</span>
@@ -84,8 +82,7 @@ const FilterSection = ({
                   />
                 </div>
               </div>
-              {parseInt(filters.minPrice) >
-                parseInt(filters.maxPrice) && (
+              {parseInt(filters.minPrice) > parseInt(filters.maxPrice) && (
                 <div className="price-range-error">
                   Minimum price cannot be greater than maximum price
                 </div>
@@ -95,9 +92,7 @@ const FilterSection = ({
 
           <Col md={3}>
             <div className="filter-group mb-3">
-              <Form.Label className="fw-medium">
-                Minimum Rating
-              </Form.Label>
+              <Form.Label className="fw-medium">Minimum Rating</Form.Label>
               <div className="d-flex align-items-center">
                 <Button
                   variant="outline-secondary"
@@ -163,11 +158,7 @@ const FilterSection = ({
             >
               Reset All
             </Button>
-            <Button
-              variant="primary"
-              onClick={handleApplyFilters}
-              size="sm"
-            >
+            <Button variant="primary" onClick={handleApplyFilters} size="sm">
               Apply Filters
             </Button>
           </div>

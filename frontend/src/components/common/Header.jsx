@@ -34,7 +34,9 @@ const getInitialWishlistCount = () => {
 
 const Header = () => {
   const [user, setUser] = useState(() => getCurrentUser());
-  const [wishlistCount, setWishlistCount] = useState(() => getInitialWishlistCount());
+  const [wishlistCount, setWishlistCount] = useState(() =>
+    getInitialWishlistCount(),
+  );
   const [expanded, setExpanded] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();

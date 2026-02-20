@@ -3,11 +3,7 @@ import { Modal, Button, Form, Alert } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faKey } from "@fortawesome/free-solid-svg-icons";
 
-const ForgotPasswordModal = ({ 
-  show, 
-  onHide,
-  onSubmit 
-}) => {
+const ForgotPasswordModal = ({ show, onHide, onSubmit }) => {
   const [email, setEmail] = useState("");
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -39,7 +35,7 @@ const ForgotPasswordModal = ({
       },
       onError: (message) => {
         setError(message);
-      }
+      },
     });
   };
 
@@ -132,8 +128,8 @@ const ForgotPasswordModal = ({
             {resetStep === 1
               ? "Send Reset Code"
               : resetStep === 2
-              ? "Verify Code"
-              : "Reset Password"}
+                ? "Verify Code"
+                : "Reset Password"}
           </Button>
         </Modal.Footer>
       </Form>

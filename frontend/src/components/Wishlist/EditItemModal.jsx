@@ -62,10 +62,7 @@ const EditItemModal = ({
 
           <Form.Group className="mb-4">
             <Form.Label className="fw-bold">
-              <FontAwesomeIcon
-                icon={faStar}
-                className="me-2 text-warning"
-              />
+              <FontAwesomeIcon icon={faStar} className="me-2 text-warning" />
               Priority Level
             </Form.Label>
             <div className="priority-selection">

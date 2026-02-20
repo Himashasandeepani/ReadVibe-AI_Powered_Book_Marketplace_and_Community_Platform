@@ -8,7 +8,6 @@ const appSlice = createSlice({
   name: "app",
   initialState,
   reducers: {
-    // placeholder reducer; add real reducers as needed
     setInitialized: (state, action) => {
       state.initialized = action.payload;
     },

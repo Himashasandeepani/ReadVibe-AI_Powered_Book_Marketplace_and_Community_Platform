@@ -23,7 +23,7 @@ const CategorySection = ({
   navigate,
   wishlistTooltip,
   cartTooltip,
-  buyNowTooltip
+  buyNowTooltip,
 }) => {
   const icon = getCategoryIcon(category);
 
@@ -54,26 +54,30 @@ const CategorySection = ({
       </div>
 
       <Row>
-        {books.slice(0, 4).map((book) => (
-          renderBookCard ? 
-            renderBookCard(book) :
-            <BookCard
-              key={book.id}
-              book={book}
-              isLoggedIn={isLoggedIn}
-              isInWishlist={isInWishlist}
-              onViewDetails={onViewDetails}
-              onAddToWishlist={onAddToWishlist}
-              onAddToCart={onAddToCart}
-              onBuyNow={onBuyNow}
-              navigate={navigate}
-              wishlistTooltip={wishlistTooltip}
-              cartTooltip={cartTooltip}
-              buyNowTooltip={buyNowTooltip}
-              formatPrice={formatPrice}
-              generateStarRating={generateStarRating}
-            />
-        ))}
+        {books
+          .slice(0, 4)
+          .map((book) =>
+            renderBookCard ? (
+              renderBookCard(book)
+            ) : (
+              <BookCard
+                key={book.id}
+                book={book}
+                isLoggedIn={isLoggedIn}
+                isInWishlist={isInWishlist}
+                onViewDetails={onViewDetails}
+                onAddToWishlist={onAddToWishlist}
+                onAddToCart={onAddToCart}
+                onBuyNow={onBuyNow}
+                navigate={navigate}
+                wishlistTooltip={wishlistTooltip}
+                cartTooltip={cartTooltip}
+                buyNowTooltip={buyNowTooltip}
+                formatPrice={formatPrice}
+                generateStarRating={generateStarRating}
+              />
+            ),
+          )}
       </Row>
 
       {books.length > 4 && (

@@ -1,7 +1,11 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { getCurrentUser } from "../../utils/auth";
 
-const ProtectedRoute = ({ children, requireAdmin = false, requireStockManager = false }) => {
+const ProtectedRoute = ({
+  children,
+  requireAdmin = false,
+  requireStockManager = false,
+}) => {
   const location = useLocation();
   const user = getCurrentUser();
 
@@ -13,7 +17,10 @@ const ProtectedRoute = ({ children, requireAdmin = false, requireStockManager = 
     return <Navigate to="/" replace />;
   }
 
-  if (requireStockManager && !["stock", "stock-manager", "admin"].includes(user.role)) {
+  if (
+    requireStockManager &&
+    !["stock", "stock-manager", "admin"].includes(user.role)
+  ) {
     return <Navigate to="/" replace />;
   }
 

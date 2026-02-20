@@ -21,7 +21,7 @@ const Footer = () => {
     const emailInput = e.target.querySelector('input[type="email"]');
     if (emailInput && emailInput.value) {
       alert(
-        `Thank you for subscribing with ${emailInput.value}! You'll receive our newsletter soon.`
+        `Thank you for subscribing with ${emailInput.value}! You'll receive our newsletter soon.`,
       );
       emailInput.value = "";
     }

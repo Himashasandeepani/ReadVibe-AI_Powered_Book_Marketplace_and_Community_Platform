@@ -5,7 +5,8 @@ const PostModal = ({ show, onClose, post, onDeletePost }) => {
   if (!show || !post) return null;
 
   // Fix: Extract user name from object if needed
-  const userName = typeof post.user === 'object' ? post.user.name || 'Unknown' : post.user;
+  const userName =
+    typeof post.user === "object" ? post.user.name || "Unknown" : post.user;
 
   return (
     <>

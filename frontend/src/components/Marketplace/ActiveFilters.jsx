@@ -3,13 +3,14 @@ import { Badge } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 
-const ActiveFilters = ({ 
-  filters, 
-  setFilters, 
-  searchQuery, 
-  setSearchQuery 
+const ActiveFilters = ({
+  filters,
+  setFilters,
+  searchQuery,
+  setSearchQuery,
 }) => {
-  const hasActiveFilters = filters.category !== "all" ||
+  const hasActiveFilters =
+    filters.category !== "all" ||
     searchQuery ||
     filters.minPrice > 0 ||
     filters.maxPrice < 10000;
@@ -43,11 +44,7 @@ const ActiveFilters = ({
           </Badge>
         )}
         {(filters.minPrice > 0 || filters.maxPrice < 10000) && (
-          <Badge
-            bg="warning"
-            className="d-flex align-items-center"
-            text="dark"
-          >
+          <Badge bg="warning" className="d-flex align-items-center" text="dark">
             Price: LKR {filters.minPrice} - {filters.maxPrice}
             <FontAwesomeIcon
               icon={faTimes}

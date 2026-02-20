@@ -3,11 +3,11 @@ import { Form, Button } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faFilter } from "@fortawesome/free-solid-svg-icons";
 
-const SearchBar = ({ 
-  searchQuery, 
-  handleSearch, 
-  isFilterCollapsed, 
-  setIsFilterCollapsed 
+const SearchBar = ({
+  searchQuery,
+  handleSearch,
+  isFilterCollapsed,
+  setIsFilterCollapsed,
 }) => {
   return (
     <div className="d-flex">

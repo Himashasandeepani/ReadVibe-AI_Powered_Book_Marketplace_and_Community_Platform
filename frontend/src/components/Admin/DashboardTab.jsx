@@ -63,7 +63,9 @@ const DashboardTab = ({ users, posts }) => {
                   <td>{activity.activity}</td>
                   <td>{activity.time}</td>
                   <td>
-                    <span className={`badge bg-${activity.status === "Active" ? "success" : "warning"}`}>
+                    <span
+                      className={`badge bg-${activity.status === "Active" ? "success" : "warning"}`}
+                    >
                       {activity.status}
                     </span>
                   </td>

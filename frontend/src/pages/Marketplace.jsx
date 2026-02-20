@@ -70,7 +70,7 @@ const Marketplace = () => {
   const dispatch = useDispatch();
   const [filters, setFilters] = useState(() => ({ ...DEFAULT_FILTERS }));
   const [filteredBooks, setFilteredBooks] = useState(() =>
-    filterBooks(DEFAULT_FILTERS, books)
+    filterBooks(DEFAULT_FILTERS, books),
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -78,7 +78,7 @@ const Marketplace = () => {
   const [isFilterCollapsed, setIsFilterCollapsed] = useState(false);
   const [user, setUser] = useState(() => getStoredUser());
   const [userWishlist, setUserWishlist] = useState(() =>
-    getStoredWishlist(getStoredUser())
+    getStoredWishlist(getStoredUser()),
   );
   const [showBookModal, setShowBookModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
@@ -146,7 +146,7 @@ const Marketplace = () => {
     if (minPrice > maxPrice) {
       showNotification(
         "Minimum price cannot be greater than maximum price",
-        "danger"
+        "danger",
       );
       return false;
     }
@@ -194,7 +194,7 @@ const Marketplace = () => {
         quantity: 1,
         image: targetBook.image,
         stock: targetBook.stock,
-      })
+      }),
     );
     showNotification("Book added to cart!", "success");
   };
@@ -351,7 +351,7 @@ const Marketplace = () => {
     if (filters.category !== "all") {
       // Show only selected category
       const categoryBooks = filteredBooks.filter(
-        (book) => book.category === filters.category
+        (book) => book.category === filters.category,
       );
 
       if (categoryBooks.length === 0) {
@@ -444,7 +444,7 @@ const Marketplace = () => {
             <FontAwesomeIcon icon={faBookmark} className="me-2" />
             Book Marketplace
           </h2>
-          
+
           <SearchBar
             searchQuery={searchQuery}
             handleSearch={handleSearch}
@@ -474,9 +474,7 @@ const Marketplace = () => {
           setSearchQuery={setSearchQuery}
         />
 
-        <div id="booksContainerByCategory">
-          {renderBooksByCategory()}
-        </div>
+        <div id="booksContainerByCategory">{renderBooksByCategory()}</div>
 
         <PaginationSection
           currentPage={currentPage}

@@ -2,7 +2,11 @@ import React from "react";
 import { Card, Button, Badge } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faShoppingBag, faTimes, faStar } from "@fortawesome/free-solid-svg-icons";
+import {
+  faShoppingBag,
+  faTimes,
+  faStar,
+} from "@fortawesome/free-solid-svg-icons";
 import { formatPrice, formatDate } from "./utils";
 
 const OrderHistory = ({ orders, onBack, onReviewOrder, onViewDetails }) => {
@@ -27,7 +31,9 @@ const OrderHistory = ({ orders, onBack, onReviewOrder, onViewDetails }) => {
                 className="text-muted mb-3"
               />
               <h5>No Orders Yet</h5>
-              <p className="text-muted">Start shopping to see your order history!</p>
+              <p className="text-muted">
+                Start shopping to see your order history!
+              </p>
               <Link to="/marketplace" className="btn btn-primary">
                 Browse Books
               </Link>
@@ -42,13 +48,16 @@ const OrderHistory = ({ orders, onBack, onReviewOrder, onViewDetails }) => {
                         Order #{order.orderNumber || order.id}
                       </h6>
                       <p className="card-text text-muted mb-1">
-                        {formatDate(order.orderDate)} • {order.items.length} item(s) •
+                        {formatDate(order.orderDate)} • {order.items.length}{" "}
+                        item(s) •
                         <strong> {formatPrice(order.totals.total)}</strong>
                       </p>
                       <Badge bg="success">{order.status}</Badge>
                     </div>
                     <div className="text-end">
-                      <small className="text-muted d-block">Est. Delivery</small>
+                      <small className="text-muted d-block">
+                        Est. Delivery
+                      </small>
                       <small className="text-muted">
                         {formatDate(order.shipping.estimatedDelivery)}
                       </small>

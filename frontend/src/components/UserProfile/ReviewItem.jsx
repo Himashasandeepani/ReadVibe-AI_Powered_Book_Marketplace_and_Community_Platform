@@ -1,7 +1,12 @@
 import React from "react";
 import { Button } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEdit, faTrash, faThumbsUp, faThumbsDown } from "@fortawesome/free-solid-svg-icons";
+import {
+  faEdit,
+  faTrash,
+  faThumbsUp,
+  faThumbsDown,
+} from "@fortawesome/free-solid-svg-icons";
 import { formatDate, generateStarRating } from "./utils";
 
 const ReviewItem = ({ review, onEdit, onDelete }) => {
@@ -44,12 +49,18 @@ const ReviewItem = ({ review, onEdit, onDelete }) => {
             <small className="text-muted">
               {review.recommend ? (
                 <>
-                  <FontAwesomeIcon icon={faThumbsUp} className="text-success me-1" />
+                  <FontAwesomeIcon
+                    icon={faThumbsUp}
+                    className="text-success me-1"
+                  />
                   Would recommend
                 </>
               ) : (
                 <>
-                  <FontAwesomeIcon icon={faThumbsDown} className="text-danger me-1" />
+                  <FontAwesomeIcon
+                    icon={faThumbsDown}
+                    className="text-danger me-1"
+                  />
                   Would not recommend
                 </>
               )}

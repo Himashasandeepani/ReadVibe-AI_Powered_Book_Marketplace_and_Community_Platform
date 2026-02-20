@@ -1,15 +1,20 @@
 import React from "react";
 import { Form, Button, Alert } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faEnvelope, faLock, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import {
+  faUser,
+  faEnvelope,
+  faLock,
+  faCheckCircle,
+} from "@fortawesome/free-solid-svg-icons";
 
-const SignupForm = ({ 
-  signupData, 
-  formErrors, 
-  onInputChange, 
-  onSubmit, 
+const SignupForm = ({
+  signupData,
+  formErrors,
+  onInputChange,
+  onSubmit,
   onShowTerms,
-  onSwitchToLogin 
+  onSwitchToLogin,
 }) => {
   return (
     <div id="signupFormContainer">
@@ -20,7 +25,9 @@ const SignupForm = ({
         Buy books, review purchases, share posts, and get AI recommendations
       </p>
 
-      {formErrors.general && <Alert variant="danger">{formErrors.general}</Alert>}
+      {formErrors.general && (
+        <Alert variant="danger">{formErrors.general}</Alert>
+      )}
 
       <Form onSubmit={onSubmit}>
         <Form.Group className="mb-3">
@@ -155,7 +162,8 @@ const SignupForm = ({
             onChange={onInputChange}
           />
           <Form.Text className="text-muted small">
-            Get personalized book suggestions based on your purchases, reviews, and reading activity
+            Get personalized book suggestions based on your purchases, reviews,
+            and reading activity
           </Form.Text>
         </Form.Group>
 

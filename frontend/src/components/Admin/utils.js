@@ -153,7 +153,7 @@ export const saveData = (users, posts, settings, statuses) => {
   if (users) localStorage.setItem("adminUsers", JSON.stringify(users));
   if (posts) localStorage.setItem("adminCommunityPosts", JSON.stringify(posts));
   if (settings) localStorage.setItem("systemSettings", JSON.stringify(settings));
-   if (statuses) localStorage.setItem("adminStatuses", JSON.stringify(statuses));
+  if (statuses) localStorage.setItem("adminStatuses", JSON.stringify(statuses));
 };
 
 // Role badge styling
@@ -224,7 +224,7 @@ export const validateNewUser = (user, existingUsers) => {
   if (!user.username) errors.push("Username is required");
   if (!user.email) errors.push("Email is required");
   if (!user.password) errors.push("Password is required");
-  
+
   if (user.password !== user.confirmPassword) {
     errors.push("Passwords do not match");
   }

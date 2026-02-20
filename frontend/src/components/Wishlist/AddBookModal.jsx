@@ -1,5 +1,14 @@
 import React from "react";
-import { Modal, Tabs, Tab, Form, InputGroup, Button, Alert, ListGroup } from "react-bootstrap";
+import {
+  Modal,
+  Tabs,
+  Tab,
+  Form,
+  InputGroup,
+  Button,
+  Alert,
+  ListGroup,
+} from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
@@ -11,7 +20,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { categories, renderPriorityStars, getPriorityLabel } from "./utils.jsx";
 // In WishlistItem.jsx, EditItemModal.jsx, etc.
-
 
 const AddBookModal = ({
   show,
@@ -30,11 +38,7 @@ const AddBookModal = ({
   onAddCustomBook,
 }) => {
   return (
-    <Modal
-      show={show}
-      onHide={onHide}
-      size="lg"
-    >
+    <Modal show={show} onHide={onHide} size="lg">
       <Modal.Header closeButton className="bg-primary text-white">
         <Modal.Title>
           <FontAwesomeIcon icon={faPlus} className="me-2" />
@@ -77,7 +81,9 @@ const AddBookModal = ({
 
             {searchResults.length > 0 ? (
               <>
-                <h6 className="mb-3">Search Results ({searchResults.length})</h6>
+                <h6 className="mb-3">
+                  Search Results ({searchResults.length})
+                </h6>
                 <ListGroup
                   className="mb-3"
                   style={{ maxHeight: "200px", overflowY: "auto" }}
@@ -269,7 +275,9 @@ const AddBookModal = ({
                   <Button
                     variant="primary"
                     onClick={onAddCustomBook}
-                    disabled={!newBook.title || !newBook.author || !newBook.price}
+                    disabled={
+                      !newBook.title || !newBook.author || !newBook.price
+                    }
                     size="sm"
                   >
                     <FontAwesomeIcon icon={faHeart} className="me-2" />

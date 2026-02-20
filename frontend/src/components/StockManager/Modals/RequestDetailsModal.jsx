@@ -3,14 +3,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBook, faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import StatusBadge from "../Common/StatusBadge";
 
-const RequestDetailsModal = ({ 
-  show, 
-  onClose, 
-  selectedRequest, 
-  stock_managerNotes, 
-  onNotesChange, 
-  onApprove, 
-  onReject
+const RequestDetailsModal = ({
+  show,
+  onClose,
+  selectedRequest,
+  stock_managerNotes,
+  onNotesChange,
+  onApprove,
+  onReject,
 }) => {
   if (!show || !selectedRequest) return null;
 
@@ -67,9 +67,9 @@ const RequestDetailsModal = ({
                 </p>
                 <p>
                   <strong>Status:</strong>
-                  <StatusBadge 
-                    status={selectedRequest.status} 
-                    type="request" 
+                  <StatusBadge
+                    status={selectedRequest.status}
+                    type="request"
                     className="ms-2"
                   />
                 </p>
@@ -110,7 +110,9 @@ const RequestDetailsModal = ({
                   <button
                     type="button"
                     className="btn btn-success"
-                    onClick={() => onApprove(selectedRequest.id, stock_managerNotes)}
+                    onClick={() =>
+                      onApprove(selectedRequest.id, stock_managerNotes)
+                    }
                   >
                     <FontAwesomeIcon icon={faCheck} className="me-2" />
                     Approve
@@ -118,7 +120,9 @@ const RequestDetailsModal = ({
                   <button
                     type="button"
                     className="btn btn-danger"
-                    onClick={() => onReject(selectedRequest.id, stock_managerNotes)}
+                    onClick={() =>
+                      onReject(selectedRequest.id, stock_managerNotes)
+                    }
                   >
                     <FontAwesomeIcon icon={faTimes} className="me-2" />
                     Reject

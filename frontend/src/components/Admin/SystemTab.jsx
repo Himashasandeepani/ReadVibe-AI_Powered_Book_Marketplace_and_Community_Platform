@@ -1,6 +1,10 @@
 import React from "react";
 
-const SystemTab = ({ systemSettings, onSystemSettingsChange, onSaveSettings }) => {
+const SystemTab = ({
+  systemSettings,
+  onSystemSettingsChange,
+  onSaveSettings,
+}) => {
   return (
     <>
       <h2 className="mb-4">System Settings</h2>
@@ -33,10 +37,13 @@ const SystemTab = ({ systemSettings, onSystemSettingsChange, onSaveSettings }) =
             </div>
           </div>
           <div className="mb-3">
-            <label className="form-label" id="form-email">Email Notifications</label>
+            <label className="form-label" id="form-email">
+              Email Notifications
+            </label>
             <div className="form-check">
               <input
-                className="form-check-input" id="form-email-input"
+                className="form-check-input"
+                id="form-email-input"
                 type="checkbox"
                 checked={systemSettings.emailNotifications}
                 onChange={(e) =>

@@ -180,7 +180,7 @@ export const createNewUser = (signupData) => {
 // Check if user exists
 export const checkUserExists = (username, email) => {
   const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-  
+
   return existingUsers.some(
     (user) => user.username === username || user.email === email
   );
