@@ -1,18 +1,21 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSort, faSortUp, faSortDown } from "@fortawesome/free-solid-svg-icons";
+import {
+  faSort,
+  faSortUp,
+  faSortDown,
+} from "@fortawesome/free-solid-svg-icons";
 import StatusBadge from "../Common/StatusBadge";
 import ActionButtons from "../Common/ActionButtons";
-import { formatCurrency, getStockPercentage } from "../utils";
 
-const BooksTable = ({ 
-  books, 
-  sortConfig, 
-  onSort, 
-  onEdit, 
-  onDelete, 
-  onRestock, 
-  onToggleFeatured 
+const BooksTable = ({
+  books,
+  sortConfig,
+  onSort,
+  onEdit,
+  onDelete,
+  onRestock,
+  onToggleFeatured,
 }) => {
   const getSortIcon = (key) => {
     if (sortConfig.key !== key) return faSort;
@@ -49,10 +52,7 @@ const BooksTable = ({
                 onClick={() => onSort("title")}
               >
                 Title
-                <FontAwesomeIcon
-                  icon={getSortIcon("title")}
-                  className="ms-1"
-                />
+                <FontAwesomeIcon icon={getSortIcon("title")} className="ms-1" />
               </button>
             </th>
             <th>Description</th>
@@ -65,10 +65,7 @@ const BooksTable = ({
                 onClick={() => onSort("price")}
               >
                 Price
-                <FontAwesomeIcon
-                  icon={getSortIcon("price")}
-                  className="ms-1"
-                />
+                <FontAwesomeIcon icon={getSortIcon("price")} className="ms-1" />
               </button>
             </th>
             <th>Stock Quantity</th>
@@ -86,7 +83,11 @@ const BooksTable = ({
                     src={getImageSrc(book)}
                     alt={book.title}
                     className="img-thumbnail"
-                    style={{ maxWidth: "72px", maxHeight: "72px", objectFit: "cover" }}
+                    style={{
+                      maxWidth: "72px",
+                      maxHeight: "72px",
+                      objectFit: "cover",
+                    }}
                   />
                 ) : (
                   <span className="text-muted small">No image</span>
@@ -106,19 +107,27 @@ const BooksTable = ({
               </td>
               <td className="text-end">
                 <div className="fw-medium">{formatMoney(book.price)}</div>
-                <small className="text-muted d-block">Cost: {formatMoney(book.costPrice)}</small>
+                <small className="text-muted d-block">
+                  Cost: {formatMoney(book.costPrice)}
+                </small>
               </td>
               <td className="text-end">
                 <div className="fw-medium">{book.stock}</div>
               </td>
               <td className="text-end">
-                <div className="fw-medium">{formatMoney(book.price * book.stock)}</div>
+                <div className="fw-medium">
+                  {formatMoney(book.price * book.stock)}
+                </div>
                 <small className="text-muted d-block">
-                  Profit: {formatMoney((book.price - book.costPrice) * book.stock)}
+                  Profit:{" "}
+                  {formatMoney((book.price - book.costPrice) * book.stock)}
                 </small>
               </td>
               <td>
-                <StatusBadge status={getComputedStatus(book.stock)} type="stock" />
+                <StatusBadge
+                  status={getComputedStatus(book.stock)}
+                  type="stock"
+                />
               </td>
               <td>
                 <ActionButtons

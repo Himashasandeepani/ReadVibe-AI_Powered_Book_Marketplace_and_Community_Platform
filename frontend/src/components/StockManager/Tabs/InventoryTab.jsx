@@ -1,21 +1,26 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBoxOpen, faPlus, faExclamationTriangle, faSearch } from "@fortawesome/free-solid-svg-icons";
+import {
+  faBoxOpen,
+  faPlus,
+  faExclamationTriangle,
+  faSearch,
+} from "@fortawesome/free-solid-svg-icons";
 import StatsCard from "../Common/StatsCard";
 import BooksTable from "../Tables/BooksTable";
 
-const InventoryTab = ({ 
-  stats, 
-  books, 
-  searchQuery, 
-  onSearchChange, 
-  onSort, 
-  sortConfig, 
-  onAddBook, 
-  onEditBook, 
-  onDeleteBook, 
-  onRestockBook, 
-  onToggleFeatured 
+const InventoryTab = ({
+  stats,
+  books,
+  searchQuery,
+  onSearchChange,
+  onSort,
+  sortConfig,
+  onAddBook,
+  onEditBook,
+  onDeleteBook,
+  onRestockBook,
+  onToggleFeatured,
 }) => {
   return (
     <>
@@ -47,8 +52,8 @@ const InventoryTab = ({
       {stats.lowStockItems > 0 && (
         <div className="alert alert-warning mb-4">
           <FontAwesomeIcon icon={faExclamationTriangle} className="me-2" />
-          <strong>Low Stock Alert:</strong> {stats.lowStockItems}{" "}
-          books are running low on inventory.
+          <strong>Low Stock Alert:</strong> {stats.lowStockItems} books are
+          running low on inventory.
         </div>
       )}
 
@@ -58,23 +63,23 @@ const InventoryTab = ({
           <StatsCard number={stats.totalBooks} label="Total Books" />
         </div>
         <div className="col-md-3 col-sm-6 mb-3">
-          <StatsCard 
-            number={stats.inStockBooks} 
-            label="In Stock" 
+          <StatsCard
+            number={stats.inStockBooks}
+            label="In Stock"
             variant="success"
           />
         </div>
         <div className="col-md-3 col-sm-6 mb-3">
-          <StatsCard 
-            number={stats.lowStockBooks} 
-            label="Low Stock" 
+          <StatsCard
+            number={stats.lowStockBooks}
+            label="Low Stock"
             variant="warning"
           />
         </div>
         <div className="col-md-3 col-sm-6 mb-3">
-          <StatsCard 
-            number={stats.outOfStockBooks} 
-            label="Out of Stock" 
+          <StatsCard
+            number={stats.outOfStockBooks}
+            label="Out of Stock"
             variant="danger"
           />
         </div>

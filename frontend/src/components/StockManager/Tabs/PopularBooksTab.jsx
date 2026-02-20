@@ -19,11 +19,20 @@ const PopularBooksTab = ({
   inventoryStats,
   onRestockBook,
   onToggleFeatured,
-  onChangeTab
+  onChangeTab,
 }) => {
-  const monthlySales = popularBooks.reduce((sum, book) => sum + book.salesThisMonth, 0);
-  const totalSales = popularBooks.reduce((sum, book) => sum + book.totalSales, 0);
-  const monthlyRevenue = popularBooks.reduce((sum, book) => sum + book.price * book.salesThisMonth, 0);
+  const monthlySales = popularBooks.reduce(
+    (sum, book) => sum + book.salesThisMonth,
+    0,
+  );
+  const totalSales = popularBooks.reduce(
+    (sum, book) => sum + book.totalSales,
+    0,
+  );
+  const monthlyRevenue = popularBooks.reduce(
+    (sum, book) => sum + book.price * book.salesThisMonth,
+    0,
+  );
 
   return (
     <>
@@ -32,7 +41,10 @@ const PopularBooksTab = ({
           <FontAwesomeIcon icon={faFire} className="me-2 text-danger" />
           Popular Books Management
         </h2>
-        <button className="btn btn-primary" onClick={() => onChangeTab("inventory")}>
+        <button
+          className="btn btn-primary"
+          onClick={() => onChangeTab("inventory")}
+        >
           <FontAwesomeIcon icon={faBoxes} className="me-2" />
           View All Inventory
         </button>
@@ -47,10 +59,16 @@ const PopularBooksTab = ({
           <StatsCard number={totalSales} label="Total Sales" />
         </div>
         <div className="col-md-3 col-sm-6 mb-3">
-          <StatsCard number={formatCurrency(monthlyRevenue)} label="Monthly Revenue" />
+          <StatsCard
+            number={formatCurrency(monthlyRevenue)}
+            label="Monthly Revenue"
+          />
         </div>
         <div className="col-md-3 col-sm-6 mb-3">
-          <StatsCard number={inventoryStats.featuredBooks} label="Featured Books" />
+          <StatsCard
+            number={inventoryStats.featuredBooks}
+            label="Featured Books"
+          />
         </div>
       </div>
 
@@ -80,7 +98,9 @@ const PopularBooksTab = ({
                 <tr key={book.id}>
                   <td>
                     <div className="rank-badge d-flex align-items-center">
-                      <span className={`rank-number rank-${index + 1} fw-medium`}>
+                      <span
+                        className={`rank-number rank-${index + 1} fw-medium`}
+                      >
                         #{index + 1}
                       </span>
                       {index < 3 && (
@@ -90,8 +110,8 @@ const PopularBooksTab = ({
                             index === 0
                               ? "text-danger"
                               : index === 1
-                              ? "text-warning"
-                              : "text-success"
+                                ? "text-warning"
+                                : "text-success"
                           }`}
                         />
                       )}
@@ -107,7 +127,9 @@ const PopularBooksTab = ({
                   </td>
                   <td className="text-end">
                     <div>
-                      <div className="fw-medium text-primary">{book.salesThisMonth}</div>
+                      <div className="fw-medium text-primary">
+                        {book.salesThisMonth}
+                      </div>
                       <small className="text-muted">this month</small>
                     </div>
                   </td>
@@ -115,10 +137,14 @@ const PopularBooksTab = ({
                     <div className="fw-medium">{book.totalSales}</div>
                   </td>
                   <td className="text-end">
-                    <div className="fw-medium">{formatCurrency(book.price)}</div>
+                    <div className="fw-medium">
+                      {formatCurrency(book.price)}
+                    </div>
                   </td>
                   <td className="text-end">
-                    <div className={`stock-indicator ${book.stock <= book.minStock ? "low-stock" : "in-stock"}`}>
+                    <div
+                      className={`stock-indicator ${book.stock <= book.minStock ? "low-stock" : "in-stock"}`}
+                    >
                       {book.stock}
                     </div>
                   </td>
@@ -157,10 +183,11 @@ const PopularBooksTab = ({
           </span>
         </div>
         <p className="text-muted mb-4">
-          These books will appear in the "Popular This Week" section on the home page.
-          Click the star icon to feature/unfeature books. Maximum 4 featured books are shown on home page.
+          These books will appear in the "Popular This Week" section on the home
+          page. Click the star icon to feature/unfeature books. Maximum 4
+          featured books are shown on home page.
         </p>
-        
+
         {featuredBooks.length > 0 ? (
           <div className="row">
             {featuredBooks.map((book, index) => (
@@ -168,10 +195,16 @@ const PopularBooksTab = ({
                 <div className="featured-book-card">
                   <div className="featured-book-rank">#{index + 1}</div>
                   <div className="featured-book-info">
-                    <h6 className="mb-1 text-truncate" title={book.title}>{book.title}</h6>
-                    <small className="text-muted d-block mb-2">{book.author}</small>
+                    <h6 className="mb-1 text-truncate" title={book.title}>
+                      {book.title}
+                    </h6>
+                    <small className="text-muted d-block mb-2">
+                      {book.author}
+                    </small>
                     <div className="d-flex justify-content-between align-items-center mb-2">
-                      <span className="fw-medium">{formatCurrency(book.price)}</span>
+                      <span className="fw-medium">
+                        {formatCurrency(book.price)}
+                      </span>
                       <span className={getStockStatusClass(book.status)}>
                         {book.stock} in stock
                       </span>
@@ -196,10 +229,18 @@ const PopularBooksTab = ({
           </div>
         ) : (
           <div className="text-center py-4">
-            <FontAwesomeIcon icon={faStarRegular} className="fa-4x text-muted mb-3" />
+            <FontAwesomeIcon
+              icon={faStarRegular}
+              className="fa-4x text-muted mb-3"
+            />
             <h5>No featured books</h5>
-            <p className="text-muted">Mark books as featured to show them on the home page</p>
-            <button className="btn btn-primary" onClick={() => onChangeTab("inventory")}>
+            <p className="text-muted">
+              Mark books as featured to show them on the home page
+            </p>
+            <button
+              className="btn btn-primary"
+              onClick={() => onChangeTab("inventory")}
+            >
               <FontAwesomeIcon icon={faBoxes} className="me-2" />
               Go to Inventory
             </button>
@@ -208,8 +249,9 @@ const PopularBooksTab = ({
 
         <div className="alert alert-info mt-3">
           <FontAwesomeIcon icon={faInfoCircle} className="me-2" />
-          <strong>Tip:</strong> Featured books should have good stock levels and recent sales.
-          The top 4 featured books will be displayed on the home page.
+          <strong>Tip:</strong> Featured books should have good stock levels and
+          recent sales. The top 4 featured books will be displayed on the home
+          page.
         </div>
       </div>
     </>

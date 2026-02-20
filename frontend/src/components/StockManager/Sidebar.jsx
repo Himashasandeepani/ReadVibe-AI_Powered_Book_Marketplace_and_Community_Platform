@@ -1,114 +1,3 @@
-// import React from 'react';
-// import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// import { 
-//   faTachometerAlt, 
-//   faBoxes, 
-//   faShoppingCart, 
-//   faChartBar, 
-//   faTruck, 
-//   faFire, 
-//   faBook 
-// } from '@fortawesome/free-solid-svg-icons';
-// import { TAB_NAMES } from './utils/constants';
-
-// const Sidebar = ({ activeTab, onTabChange, stats }) => {
-//   const tabs = [
-//     {
-//       id: TAB_NAMES.DASHBOARD,
-//       label: 'Dashboard',
-//       icon: faTachometerAlt,
-//       badge: null,
-//       badgeClass: ''
-//     },
-//     {
-//       id: TAB_NAMES.INVENTORY,
-//       label: 'Inventory',
-//       icon: faBoxes,
-//       badge: stats?.lowStockItems > 0 ? stats.lowStockItems : null,
-//       badgeClass: 'bg-warning'
-//     },
-//     {
-//       id: TAB_NAMES.ORDERS,
-//       label: 'Orders',
-//       icon: faShoppingCart,
-//       badge: stats?.processingOrders > 0 ? stats.processingOrders : null,
-//       badgeClass: 'bg-info'
-//     },
-//     {
-//       id: TAB_NAMES.REPORTS,
-//       label: 'Reports',
-//       icon: faChartBar,
-//       badge: null,
-//       badgeClass: ''
-//     },
-//     {
-//       id: TAB_NAMES.SUPPLIERS,
-//       label: 'Suppliers',
-//       icon: faTruck,
-//       badge: null,
-//       badgeClass: ''
-//     },
-//     {
-//       id: TAB_NAMES.POPULAR_BOOKS,
-//       label: 'Popular Books',
-//       icon: faFire,
-//       badge: stats?.featuredBooks > 0 ? stats.featuredBooks : null,
-//       badgeClass: 'bg-danger'
-//     },
-//     {
-//       id: TAB_NAMES.BOOK_REQUESTS,
-//       label: 'Book Requests',
-//       icon: faBook,
-//       badge: stats?.pendingRequests > 0 ? stats.pendingRequests : null,
-//       badgeClass: 'bg-danger'
-//     }
-//   ];
-
-//   const handleTabClick = (tabId) => {
-//     if (onTabChange && typeof onTabChange === 'function') {
-//       onTabChange(tabId);
-//     }
-//   };
-
-//   return (
-//     <div className="stock-manager-sidebar">
-//       <h5 className="mb-4">Stock Manager</h5>
-//       <ul className="nav nav-pills flex-column stock-manager-nav">
-//         {tabs.map(tab => (
-//           <li className="nav-item" key={tab.id}>
-//             <button
-//               className={`nav-link ${activeTab === tab.id ? 'active' : ''}`}
-//               onClick={() => handleTabClick(tab.id)}
-//               style={{
-//                 textAlign: 'left',
-//                 width: '100%',
-//                 border: 'none',
-//                 background: 'none',
-//                 cursor: 'pointer'
-//               }}
-//             >
-//               <FontAwesomeIcon icon={tab.icon} className="me-2" />
-//               {tab.label}
-//               {tab.badge !== null && tab.badge > 0 && (
-//                 <span className={`badge ${tab.badgeClass} ms-2`}>
-//                   {tab.badge}
-//                 </span>
-//               )}
-//             </button>
-//           </li>
-//         ))}
-//       </ul>
-//     </div>
-//   );
-// };
-
-// export default Sidebar;
-
-
-
-
-
-
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -121,12 +10,12 @@ import {
   faBook,
 } from "@fortawesome/free-solid-svg-icons";
 
-const Sidebar = ({ 
-  activeTab, 
-  onTabChange, 
-  inventoryStats, 
-  orderStats, 
-  requestStats 
+const Sidebar = ({
+  activeTab,
+  onTabChange,
+  inventoryStats,
+  orderStats,
+  requestStats,
 }) => {
   return (
     <div className="col-lg-2">

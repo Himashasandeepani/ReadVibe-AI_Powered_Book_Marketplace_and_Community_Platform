@@ -2,21 +2,21 @@ import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShippingFast } from "@fortawesome/free-solid-svg-icons";
 
-const TrackingModal = ({ 
-  show, 
-  onClose, 
-  selectedOrder, 
-  trackingUpdate, 
-  onTrackingUpdate, 
-  onSave
+const TrackingModal = ({
+  show,
+  onClose,
+  selectedOrder,
+  trackingUpdate,
+  onTrackingUpdate,
+  onSave,
 }) => {
   if (!show || !selectedOrder) return null;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    onTrackingUpdate(prev => ({
+    onTrackingUpdate((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -100,14 +100,14 @@ const TrackingModal = ({
                 </div>
                 <div className="mb-3">
                   <label className="form-label">Location</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Current location"
-                      name="location"
-                      value={trackingUpdate.location}
-                      onChange={handleInputChange}
-                    />
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Current location"
+                    name="location"
+                    value={trackingUpdate.location}
+                    onChange={handleInputChange}
+                  />
                 </div>
                 <div className="mb-3">
                   <label className="form-label">Notes</label>

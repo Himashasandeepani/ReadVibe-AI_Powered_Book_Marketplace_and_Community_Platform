@@ -28,7 +28,8 @@ const StockManagerFooter = () => {
                 </h5>
               </div>
               <p className="stock-manager-footer-description mb-3">
-                Operational console for inventory, warehouse coordination, and order fulfillment.
+                Operational console for inventory, warehouse coordination, and
+                order fulfillment.
               </p>
               <div className="stock-manager-footer-security">
                 <FontAwesomeIcon icon={faShieldAlt} className="me-2" />
@@ -40,22 +41,34 @@ const StockManagerFooter = () => {
               <h6 className="stock-manager-footer-heading">Quick Links</h6>
               <ul className="stock-manager-footer-links list-unstyled mb-0">
                 <li>
-                  <Link to="/stock-manager?tab=inventory" className="stock-manager-footer-link">
+                  <Link
+                    to="/stock-manager?tab=inventory"
+                    className="stock-manager-footer-link"
+                  >
                     Inventory
                   </Link>
                 </li>
                 <li>
-                  <Link to="/stock-manager?tab=orders" className="stock-manager-footer-link">
+                  <Link
+                    to="/stock-manager?tab=orders"
+                    className="stock-manager-footer-link"
+                  >
                     Orders
                   </Link>
                 </li>
                 <li>
-                  <Link to="/stock-manager?tab=reports" className="stock-manager-footer-link">
+                  <Link
+                    to="/stock-manager?tab=reports"
+                    className="stock-manager-footer-link"
+                  >
                     Reports
                   </Link>
                 </li>
                 <li>
-                  <Link to="/stock-manager?tab=popular-books" className="stock-manager-footer-link">
+                  <Link
+                    to="/stock-manager?tab=popular-books"
+                    className="stock-manager-footer-link"
+                  >
                     Featured
                   </Link>
                 </li>
@@ -112,10 +125,15 @@ const StockManagerFooter = () => {
           <div className="stock-manager-footer-bottom">
             <div className="row align-items-center">
               <div className="col-md-6">
-                <p className="mb-0">&copy; {currentYear} ReadVibe Stock Manager. All rights reserved.</p>
+                <p className="mb-0">
+                  &copy; {currentYear} ReadVibe Stock Manager. All rights
+                  reserved.
+                </p>
               </div>
               <div className="col-md-6 text-md-end mt-3 mt-md-0">
-                <span className="stock-manager-footer-meta">Ops Portal v1.0.0</span>
+                <span className="stock-manager-footer-meta">
+                  Ops Portal v1.0.0
+                </span>
               </div>
             </div>
           </div>

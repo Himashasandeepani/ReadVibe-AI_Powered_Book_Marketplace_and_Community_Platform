@@ -24,7 +24,11 @@ const CategoryModal = ({
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title">Manage Categories</h5>
-              <button type="button" className="btn-close" onClick={onClose}></button>
+              <button
+                type="button"
+                className="btn-close"
+                onClick={onClose}
+              ></button>
             </div>
             <div className="modal-body">
               <div className="mb-3">
@@ -39,10 +43,18 @@ const CategoryModal = ({
               </div>
 
               <div className="d-flex gap-2 mb-3">
-                <button type="button" className="btn btn-primary" onClick={onSave}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={onSave}
+                >
                   Save
                 </button>
-                <button type="button" className="btn btn-outline-secondary" onClick={onClose}>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={onClose}
+                >
                   Cancel
                 </button>
                 <button
@@ -71,7 +83,9 @@ const CategoryModal = ({
                       categories.map((category) => (
                         <tr
                           key={category}
-                          className={selectedCategory === category ? "table-active" : ""}
+                          className={
+                            selectedCategory === category ? "table-active" : ""
+                          }
                           role="button"
                           onClick={() => onSelect(category)}
                         >
