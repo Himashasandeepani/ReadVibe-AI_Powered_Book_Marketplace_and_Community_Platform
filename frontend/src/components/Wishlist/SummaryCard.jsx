@@ -57,7 +57,11 @@ const SummaryCard = ({ wishlist, onAddAllToCart, onClearWishlist }) => {
           <FontAwesomeIcon icon={faShoppingCart} className="me-2" />
           Add All to Cart
         </Button>
-        <Button variant="outline-danger" className="w-100" onClick={onClearWishlist}>
+        <Button
+          variant="outline-danger"
+          className="w-100"
+          onClick={onClearWishlist}
+        >
           <FontAwesomeIcon icon={faTrash} className="me-2" />
           Clear Wishlist
         </Button>

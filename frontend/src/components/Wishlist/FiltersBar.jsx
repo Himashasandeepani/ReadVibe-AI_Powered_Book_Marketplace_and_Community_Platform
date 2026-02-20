@@ -36,7 +36,9 @@ const FiltersBar = ({
           <div className="col-md-6 mb-3 mb-md-0">
             <div className="d-flex flex-wrap gap-2">
               <Button
-                variant={currentFilter === "all" ? "primary" : "outline-primary"}
+                variant={
+                  currentFilter === "all" ? "primary" : "outline-primary"
+                }
                 size="sm"
                 onClick={() => onFilterChange("all")}
               >
@@ -58,7 +60,9 @@ const FiltersBar = ({
               </Button>
               <Button
                 variant={
-                  currentFilter === "unavailable" ? "primary" : "outline-primary"
+                  currentFilter === "unavailable"
+                    ? "primary"
+                    : "outline-primary"
                 }
                 size="sm"
                 onClick={() => onFilterChange("unavailable")}
