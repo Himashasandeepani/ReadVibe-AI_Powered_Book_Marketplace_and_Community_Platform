@@ -1,8 +1,16 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUsers, faPlus, faBookMedical } from "@fortawesome/free-solid-svg-icons";
+import {
+  faUsers,
+  faPlus,
+  faBookMedical,
+} from "@fortawesome/free-solid-svg-icons";
 
-const Header = ({ currentUser, handleOpenCreatePostModal, handleOpenRequestBookModal }) => {
+const Header = ({
+  currentUser,
+  handleOpenCreatePostModal,
+  handleOpenRequestBookModal,
+}) => {
   return (
     <div className="community-header">
       <h2 className="mb-0" style={{ color: "var(--primary-blue)" }}>
@@ -15,14 +23,16 @@ const Header = ({ currentUser, handleOpenCreatePostModal, handleOpenRequestBookM
           onClick={handleOpenCreatePostModal}
           title={!currentUser ? "Login to create posts" : ""}
         >
-          <FontAwesomeIcon icon={faPlus} className="me-2" />Create Post
+          <FontAwesomeIcon icon={faPlus} className="me-2" />
+          Create Post
         </button>
         <button
           className="btn btn-success ms-2"
           onClick={handleOpenRequestBookModal}
           title={!currentUser ? "Login to request books" : ""}
         >
-          <FontAwesomeIcon icon={faBookMedical} className="me-2" />Request Book
+          <FontAwesomeIcon icon={faBookMedical} className="me-2" />
+          Request Book
         </button>
       </div>
     </div>
