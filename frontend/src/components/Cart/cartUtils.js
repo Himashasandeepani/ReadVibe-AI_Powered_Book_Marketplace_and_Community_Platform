@@ -85,7 +85,7 @@ export const updateCartCount = (cart) => {
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   // If you're using React Context or Redux, update it here
   // Example: setGlobalCartCount(totalItems);
-  
+
   // Dispatch custom event for other components to listen to
   window.dispatchEvent(new CustomEvent('cart-updated', { detail: { count: totalItems } }));
 };
@@ -101,7 +101,7 @@ export const checkStockAvailability = (cart, books) => {
 // Prepare cart data for checkout
 export const prepareCheckoutData = (cart, books) => {
   const totals = calculateTotals(cart, books);
-  
+
   const cartItems = cart.map((item) => {
     const book = books.find((b) => b.id === item.id);
     return {

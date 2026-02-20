@@ -74,7 +74,7 @@ const Cart = () => {
   const handleRemoveFromCart = (bookId) => {
     if (
       window.confirm(
-        "Are you sure you want to remove this item from your cart?"
+        "Are you sure you want to remove this item from your cart?",
       )
     ) {
       dispatch(removeItem(bookId));
@@ -110,7 +110,7 @@ const Cart = () => {
     if (outOfStockItems.length > 0) {
       showNotification(
         "Some items in your cart are out of stock. Please remove them to proceed.",
-        "danger"
+        "danger",
       );
       return;
     }
