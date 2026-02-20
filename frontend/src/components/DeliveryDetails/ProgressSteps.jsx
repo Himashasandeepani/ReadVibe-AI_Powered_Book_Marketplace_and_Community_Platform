@@ -13,7 +13,9 @@ const ProgressSteps = ({ currentStep = 1 }) => {
       <Row className="text-center">
         {steps.map((step) => (
           <div className="col" key={step.number}>
-            <div className={`delivery-step ${currentStep >= step.number ? "active" : ""}`}>
+            <div
+              className={`delivery-step ${currentStep >= step.number ? "active" : ""}`}
+            >
               <div className="delivery-step-circle">{step.number}</div>
               <div className="delivery-step-label">{step.label}</div>
             </div>
