@@ -8,9 +8,7 @@ const OrderItems = ({ items }) => {
         <div key={index} className="checkout-order-item">
           <div className="checkout-order-item-details">
             <h6>{item.title}</h6>
-            <div className="checkout-order-item-meta">
-              by {item.author}
-            </div>
+            <div className="checkout-order-item-meta">by {item.author}</div>
           </div>
           <div className="checkout-order-item-price">
             {formatPrice(item.price * item.quantity)}
