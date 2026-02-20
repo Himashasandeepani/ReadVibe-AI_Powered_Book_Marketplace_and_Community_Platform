@@ -49,9 +49,7 @@ const ShippingMethodSection = ({ shippingMethod, setShippingMethod }) => {
         <FontAwesomeIcon icon={faShippingFast} className="me-2" />
         Shipping Method
       </h5>
-      <p className="text-muted mb-3">
-        Choose your preferred shipping option
-      </p>
+      <p className="text-muted mb-3">Choose your preferred shipping option</p>
 
       <div className="shipping-methods">
         {shippingMethodsArray.map((method) => (

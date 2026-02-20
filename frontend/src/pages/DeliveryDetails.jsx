@@ -101,7 +101,9 @@ const getCheckoutCartItems = () => {
 const DeliveryDetails = () => {
   const initialUser = getCurrentUser();
   const [currentUser] = useState(initialUser);
-  const [formData, setFormData] = useState(() => buildInitialFormData(initialUser));
+  const [formData, setFormData] = useState(() =>
+    buildInitialFormData(initialUser),
+  );
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [cartItems] = useState(() => getCheckoutCartItems());
@@ -114,7 +116,7 @@ const DeliveryDetails = () => {
 
   const addressPreview = useMemo(
     () => generateAddressPreview(formData, countries),
-    [formData]
+    [formData],
   );
 
   const navigate = useNavigate();
@@ -123,14 +125,15 @@ const DeliveryDetails = () => {
     if (!currentUser) {
       showNotification(
         "Please login to proceed with delivery details",
-        "warning"
+        "warning",
       );
       navigate("/login");
       return;
     }
 
     // Check if cart has items
-    const savedCart = safeParseJSON(sessionStorage.getItem("checkoutCart")) || [];
+    const savedCart =
+      safeParseJSON(sessionStorage.getItem("checkoutCart")) || [];
     if (savedCart.length === 0) {
       showNotification("Your cart is empty", "warning");
       navigate("/cart");
@@ -195,7 +198,7 @@ const DeliveryDetails = () => {
       };
       localStorage.setItem(
         `userAddress_${currentUser.id}`,
-        JSON.stringify(address)
+        JSON.stringify(address),
       );
     }
   };
@@ -230,7 +233,7 @@ const DeliveryDetails = () => {
       setLoading(false);
       showNotification(
         "Delivery information saved! Redirecting to payment...",
-        "success"
+        "success",
       );
 
       // Redirect to checkout
