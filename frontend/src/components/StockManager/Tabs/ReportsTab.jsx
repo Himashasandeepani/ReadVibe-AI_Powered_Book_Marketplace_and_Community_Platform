@@ -18,7 +18,7 @@ const ReportsTab = ({
   orderStats,
   stockBooks,
   onPrint,
-  onExport
+  onExport,
 }) => {
   return (
     <>
@@ -52,11 +52,15 @@ const ReportsTab = ({
                 </div>
                 <div className="d-flex justify-content-between py-2 border-bottom">
                   <span>Total Stock Value:</span>
-                  <strong>{formatCurrency(inventoryStats.totalStockValue)}</strong>
+                  <strong>
+                    {formatCurrency(inventoryStats.totalStockValue)}
+                  </strong>
                 </div>
                 <div className="d-flex justify-content-between py-2 border-bottom">
                   <span>Total Cost Value:</span>
-                  <strong>{formatCurrency(inventoryStats.totalCostValue)}</strong>
+                  <strong>
+                    {formatCurrency(inventoryStats.totalCostValue)}
+                  </strong>
                 </div>
                 <div className="d-flex justify-content-between py-2 border-bottom">
                   <span>Potential Profit:</span>
@@ -84,7 +88,10 @@ const ReportsTab = ({
           <div className="col-md-6 mb-4">
             <div className="stock-manager-dashboard-card">
               <h5 className="d-flex align-items-center">
-                <FontAwesomeIcon icon={faMoneyBillWave} className="text-success me-2" />
+                <FontAwesomeIcon
+                  icon={faMoneyBillWave}
+                  className="text-success me-2"
+                />
                 Sales Summary
               </h5>
               <div className="mt-3">
@@ -102,7 +109,9 @@ const ReportsTab = ({
                 </div>
                 <div className="d-flex justify-content-between py-2 border-bottom">
                   <span>Orders Processing:</span>
-                  <strong className="text-warning">{orderStats.processing}</strong>
+                  <strong className="text-warning">
+                    {orderStats.processing}
+                  </strong>
                 </div>
                 <div className="d-flex justify-content-between py-2 border-bottom">
                   <span>Orders Shipped:</span>
@@ -110,7 +119,9 @@ const ReportsTab = ({
                 </div>
                 <div className="d-flex justify-content-between py-2">
                   <span>Orders Delivered:</span>
-                  <strong className="text-success">{orderStats.delivered}</strong>
+                  <strong className="text-success">
+                    {orderStats.delivered}
+                  </strong>
                 </div>
               </div>
             </div>
@@ -136,13 +147,20 @@ const ReportsTab = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {Array.from(new Set(stockBooks.map((book) => book.category))).map((category) => {
-                      const categoryBooks = stockBooks.filter((book) => book.category === category);
+                    {Array.from(
+                      new Set(stockBooks.map((book) => book.category)),
+                    ).map((category) => {
+                      const categoryBooks = stockBooks.filter(
+                        (book) => book.category === category,
+                      );
                       const count = categoryBooks.length;
-                      const percentage = ((count / inventoryStats.totalBooks) * 100).toFixed(1);
+                      const percentage = (
+                        (count / inventoryStats.totalBooks) *
+                        100
+                      ).toFixed(1);
                       const totalValue = categoryBooks.reduce(
                         (sum, book) => sum + book.price * book.stock,
-                        0
+                        0,
                       );
 
                       return (
@@ -155,10 +173,20 @@ const ReportsTab = ({
                       );
                     })}
                     <tr className="total-row">
-                      <td><strong>Total</strong></td>
-                      <td><strong>{inventoryStats.totalBooks}</strong></td>
-                      <td><strong>100%</strong></td>
-                      <td><strong>{formatCurrency(inventoryStats.totalStockValue)}</strong></td>
+                      <td>
+                        <strong>Total</strong>
+                      </td>
+                      <td>
+                        <strong>{inventoryStats.totalBooks}</strong>
+                      </td>
+                      <td>
+                        <strong>100%</strong>
+                      </td>
+                      <td>
+                        <strong>
+                          {formatCurrency(inventoryStats.totalStockValue)}
+                        </strong>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -172,7 +200,10 @@ const ReportsTab = ({
           <div className="col-12">
             <div className="stock-manager-dashboard-card">
               <h5 className="d-flex align-items-center">
-                <FontAwesomeIcon icon={faChartBar} className="text-warning me-2" />
+                <FontAwesomeIcon
+                  icon={faChartBar}
+                  className="text-warning me-2"
+                />
                 Top Selling Books (This Month)
               </h5>
               <div className="table-responsive mt-3">
@@ -200,17 +231,24 @@ const ReportsTab = ({
                             <div className={`rank-badge rank-${index + 1}`}>
                               #{index + 1}
                               {index < 3 && (
-                                <FontAwesomeIcon icon={faCrown} className="ms-1 text-warning" />
+                                <FontAwesomeIcon
+                                  icon={faCrown}
+                                  className="ms-1 text-warning"
+                                />
                               )}
                             </div>
                           </td>
                           <td>{book.title}</td>
                           <td>{book.author}</td>
                           <td>
-                            <span className="badge bg-secondary">{book.category}</span>
+                            <span className="badge bg-secondary">
+                              {book.category}
+                            </span>
                           </td>
                           <td>
-                            <strong className="text-primary">{book.salesThisMonth}</strong>
+                            <strong className="text-primary">
+                              {book.salesThisMonth}
+                            </strong>
                           </td>
                           <td>{book.totalSales}</td>
                           <td>{book.stock}</td>
@@ -221,9 +259,15 @@ const ReportsTab = ({
                           </td>
                           <td>
                             {book.featured ? (
-                              <FontAwesomeIcon icon={faStar} className="text-warning" />
+                              <FontAwesomeIcon
+                                icon={faStar}
+                                className="text-warning"
+                              />
                             ) : (
-                              <FontAwesomeIcon icon={faStarRegular} className="text-muted" />
+                              <FontAwesomeIcon
+                                icon={faStarRegular}
+                                className="text-muted"
+                              />
                             )}
                           </td>
                         </tr>

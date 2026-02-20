@@ -1,32 +1,26 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faSearch } from "@fortawesome/free-solid-svg-icons";
 
-const BookModalBase = ({ 
-  show, 
-  onClose, 
-  newBook, 
-  onInputChange, 
-  onSubmit, 
+const BookModalBase = ({
+  show,
+  onClose,
+  newBook,
+  onInputChange,
+  onSubmit,
   isEditing,
   categories = [],
-  onManageCategories,
   authors = [],
   publishers = [],
   onNewAuthor = () => {},
   onEditAuthor = () => {},
   onDeleteAuthor = () => {},
   onSaveCategory = () => {},
-  onDeleteCategory = () => {}
+  onDeleteCategory = () => {},
 }) => {
-  if (!show) return null;
-
   const [showAuthorsPanel, setShowAuthorsPanel] = useState(false);
   const [showNewAuthorForm, setShowNewAuthorForm] = useState(false);
-  const [newAuthorFirst, setNewAuthorFirst] = useState("");
-  const [newAuthorLast, setNewAuthorLast] = useState("");
-  const [localAuthors, setLocalAuthors] = useState(authors || []);
-  const [selectedAuthor, setSelectedAuthor] = useState(null);
+  const [selectedAuthorId, setSelectedAuthorId] = useState(null);
   const [authorFilter, setAuthorFilter] = useState("");
   const [authorNameInput, setAuthorNameInput] = useState("");
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -35,12 +29,17 @@ const BookModalBase = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState(null);
 
-  useEffect(() => {
-    const resolved = Array.isArray(authors) ? authors : [];
-    setLocalAuthors(resolved);
-    setSelectedAuthor(null);
-    setAuthorFilter("");
-  }, [Array.isArray(authors) ? authors.length : 0]);
+  const authorsList = useMemo(
+    () => (Array.isArray(authors) ? authors : []),
+    [authors],
+  );
+
+  const selectedAuthor = useMemo(
+    () => authorsList.find((a) => (a.id || a) === selectedAuthorId) || null,
+    [authorsList, selectedAuthorId],
+  );
+
+  if (!show) return null;
 
   const handleAddAuthor = () => {
     const name = (authorNameInput || "").trim();
@@ -55,8 +54,7 @@ const BookModalBase = ({
     };
 
     onNewAuthor(payload);
-    setLocalAuthors((prev) => [...prev, payload]);
-    setSelectedAuthor(payload);
+    setSelectedAuthorId(payload.id);
     setAuthorNameInput("");
   };
 
@@ -142,11 +140,13 @@ const BookModalBase = ({
                         onChange={onInputChange}
                         required
                       >
-                        {(categories.length ? categories : ["Fiction"]).map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
+                        {(categories.length ? categories : ["Fiction"]).map(
+                          (cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ),
+                        )}
                       </select>
                       <button
                         type="button"
@@ -247,7 +247,9 @@ const BookModalBase = ({
                     multiple
                     onChange={onInputChange}
                   />
-                  <small className="text-muted">Upload one or more cover images (JPG, PNG, GIF)</small>
+                  <small className="text-muted">
+                    Upload one or more cover images (JPG, PNG, GIF)
+                  </small>
                 </div>
                 <div className="mb-3">
                   <label className="form-label">Description</label>
@@ -270,11 +272,16 @@ const BookModalBase = ({
                       onChange={onInputChange}
                     >
                       <option value="">Select publisher</option>
-                      {(Array.isArray(publishers) ? publishers : []).map((publisher) => (
-                        <option key={publisher.id || publisher.name || publisher} value={publisher.name || publisher}>
-                          {publisher.name || publisher}
-                        </option>
-                      ))}
+                      {(Array.isArray(publishers) ? publishers : []).map(
+                        (publisher) => (
+                          <option
+                            key={publisher.id || publisher.name || publisher}
+                            value={publisher.name || publisher}
+                          >
+                            {publisher.name || publisher}
+                          </option>
+                        ),
+                      )}
                     </select>
                   </div>
                   <div className="col-md-6 mb-3">
@@ -318,7 +325,11 @@ const BookModalBase = ({
         <>
           <div
             className="modal fade show"
-            style={{ display: "block", backgroundColor: "rgba(0,0,0,0.4)", zIndex: 1080 }}
+            style={{
+              display: "block",
+              backgroundColor: "rgba(0,0,0,0.4)",
+              zIndex: 1080,
+            }}
             tabIndex="-1"
           >
             <div className="modal-dialog modal-md">
@@ -331,11 +342,14 @@ const BookModalBase = ({
                     onClick={() => {
                       setShowNewAuthorForm(false);
                       setAuthorNameInput("");
-                      setSelectedAuthor(null);
+                      setSelectedAuthorId(null);
                     }}
                   ></button>
                 </div>
-                <div className="modal-body" style={{ maxHeight: "420px", overflowY: "auto" }}>
+                <div
+                  className="modal-body"
+                  style={{ maxHeight: "420px", overflowY: "auto" }}
+                >
                   <div className="mb-3">
                     <label className="form-label">Author name</label>
                     <input
@@ -354,7 +368,7 @@ const BookModalBase = ({
                         onClick={() => {
                           setShowNewAuthorForm(false);
                           setAuthorNameInput("");
-                          setSelectedAuthor(null);
+                          setSelectedAuthorId(null);
                         }}
                       >
                         Cancel
@@ -376,17 +390,14 @@ const BookModalBase = ({
                           if (selectedAuthor) {
                             const key = selectedAuthor.id || selectedAuthor;
                             const updated = {
-                              ...(typeof selectedAuthor === "object" ? selectedAuthor : {}),
+                              ...(typeof selectedAuthor === "object"
+                                ? selectedAuthor
+                                : {}),
                               ...base,
                               id: key,
                             };
-                            setLocalAuthors((prev) =>
-                              prev.map((a) =>
-                                (a.id || a) === key ? updated : a
-                              )
-                            );
                             onEditAuthor(updated);
-                            setSelectedAuthor(updated);
+                            setSelectedAuthorId(key);
                           } else {
                             handleAddAuthor();
                           }
@@ -402,10 +413,6 @@ const BookModalBase = ({
                       disabled={!selectedAuthor}
                       onClick={() => {
                         if (!selectedAuthor) return;
-                        const key = selectedAuthor.id || selectedAuthor;
-                        setLocalAuthors((prev) =>
-                          prev.filter((a) => (a.id || a) !== key)
-                        );
                         onDeleteAuthor(selectedAuthor);
                         if (
                           (authorNameInput || "").trim() ===
@@ -413,7 +420,7 @@ const BookModalBase = ({
                         ) {
                           setAuthorNameInput("");
                         }
-                        setSelectedAuthor(null);
+                        setSelectedAuthorId(null);
                       }}
                     >
                       Delete
@@ -421,13 +428,15 @@ const BookModalBase = ({
                   </div>
                   <div className="table-responsive">
                     <table className="table table-hover table-sm align-middle mb-0">
-                      <thead style={{ backgroundColor: "#0d6efd", color: "#ffffff" }}>
+                      <thead
+                        style={{ backgroundColor: "#0d6efd", color: "#ffffff" }}
+                      >
                         <tr>
                           <th className="ps-3">Name</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {localAuthors.map((author) => (
+                        {authorsList.map((author) => (
                           <tr
                             key={author.id || author}
                             className={
@@ -440,11 +449,13 @@ const BookModalBase = ({
                             role="button"
                             style={{ cursor: "pointer" }}
                             onClick={() => {
-                              setSelectedAuthor(author);
+                              setSelectedAuthorId(author.id || author);
                               setAuthorNameInput(author.name || author);
                             }}
                           >
-                            <td className="small py-2">{author.name || author}</td>
+                            <td className="small py-2">
+                              {author.name || author}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -454,7 +465,10 @@ const BookModalBase = ({
               </div>
             </div>
           </div>
-          <div className="modal-backdrop fade show" style={{ zIndex: 1075 }}></div>
+          <div
+            className="modal-backdrop fade show"
+            style={{ zIndex: 1075 }}
+          ></div>
         </>
       )}
 
@@ -462,7 +476,11 @@ const BookModalBase = ({
         <>
           <div
             className="modal fade show"
-            style={{ display: "block", backgroundColor: "rgba(0,0,0,0.45)", zIndex: 1080 }}
+            style={{
+              display: "block",
+              backgroundColor: "rgba(0,0,0,0.45)",
+              zIndex: 1080,
+            }}
             tabIndex="-1"
           >
             <div className="modal-dialog modal-md">
@@ -479,7 +497,10 @@ const BookModalBase = ({
                     }}
                   ></button>
                 </div>
-                <div className="modal-body" style={{ maxHeight: "420px", overflowY: "auto" }}>
+                <div
+                  className="modal-body"
+                  style={{ maxHeight: "420px", overflowY: "auto" }}
+                >
                   <div className="mb-3">
                     <label className="form-label">Category name</label>
                     <input
@@ -508,8 +529,16 @@ const BookModalBase = ({
                         className="btn btn-primary btn-sm"
                         onClick={() => {
                           if (!categoryInput.trim()) return;
-                          onSaveCategory(categoryInput.trim(), selectedCategory || null);
-                          onInputChange({ target: { name: "category", value: categoryInput.trim() } });
+                          onSaveCategory(
+                            categoryInput.trim(),
+                            selectedCategory || null,
+                          );
+                          onInputChange({
+                            target: {
+                              name: "category",
+                              value: categoryInput.trim(),
+                            },
+                          });
                           setSelectedCategory(categoryInput.trim());
                           setShowCategoryModal(false);
                           setCategoryInput("");
@@ -533,26 +562,32 @@ const BookModalBase = ({
                   </div>
                   <div className="table-responsive">
                     <table className="table table-hover table-sm align-middle mb-0">
-                      <thead style={{ backgroundColor: "#0d6efd", color: "#ffffff" }}>
+                      <thead
+                        style={{ backgroundColor: "#0d6efd", color: "#ffffff" }}
+                      >
                         <tr>
                           <th className="ps-3">Name</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {(Array.isArray(categories) ? categories : []).map((cat) => (
-                          <tr
-                            key={cat}
-                            className={selectedCategory === cat ? "table-primary" : ""}
-                            role="button"
-                            style={{ cursor: "pointer" }}
-                            onClick={() => {
-                              setSelectedCategory(cat);
-                              setCategoryInput(cat);
-                            }}
-                          >
-                            <td className="small py-2">{cat}</td>
-                          </tr>
-                        ))}
+                        {(Array.isArray(categories) ? categories : []).map(
+                          (cat) => (
+                            <tr
+                              key={cat}
+                              className={
+                                selectedCategory === cat ? "table-primary" : ""
+                              }
+                              role="button"
+                              style={{ cursor: "pointer" }}
+                              onClick={() => {
+                                setSelectedCategory(cat);
+                                setCategoryInput(cat);
+                              }}
+                            >
+                              <td className="small py-2">{cat}</td>
+                            </tr>
+                          ),
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -560,7 +595,10 @@ const BookModalBase = ({
               </div>
             </div>
           </div>
-          <div className="modal-backdrop fade show" style={{ zIndex: 1075 }}></div>
+          <div
+            className="modal-backdrop fade show"
+            style={{ zIndex: 1075 }}
+          ></div>
         </>
       )}
 
@@ -568,7 +606,11 @@ const BookModalBase = ({
         <>
           <div
             className="modal fade show"
-            style={{ display: "block", backgroundColor: "rgba(0,0,0,0.55)", zIndex: 1100 }}
+            style={{
+              display: "block",
+              backgroundColor: "rgba(0,0,0,0.55)",
+              zIndex: 1100,
+            }}
             tabIndex="-1"
           >
             <div className="modal-dialog modal-sm modal-dialog-centered">
@@ -586,8 +628,7 @@ const BookModalBase = ({
                 </div>
                 <div className="modal-body">
                   <p className="mb-0 small">
-                    Are you sure you want to delete category
-                    {" "}
+                    Are you sure you want to delete category{" "}
                     <strong>{categoryToDelete}</strong>?
                   </p>
                 </div>
@@ -627,7 +668,10 @@ const BookModalBase = ({
               </div>
             </div>
           </div>
-          <div className="modal-backdrop fade show" style={{ zIndex: 1095 }}></div>
+          <div
+            className="modal-backdrop fade show"
+            style={{ zIndex: 1095 }}
+          ></div>
         </>
       )}
 
@@ -635,7 +679,11 @@ const BookModalBase = ({
         <>
           <div
             className="modal fade show"
-            style={{ display: "block", backgroundColor: "rgba(0,0,0,0.35)", zIndex: 1070 }}
+            style={{
+              display: "block",
+              backgroundColor: "rgba(0,0,0,0.35)",
+              zIndex: 1070,
+            }}
             tabIndex="-1"
           >
             <div className="modal-dialog modal-md">
@@ -648,7 +696,7 @@ const BookModalBase = ({
                       className="btn btn-primary btn-sm"
                       onClick={() => {
                         setAuthorNameInput("");
-                        setSelectedAuthor(null);
+                        setSelectedAuthorId(null);
                         setShowNewAuthorForm(true);
                       }}
                     >
@@ -661,7 +709,10 @@ const BookModalBase = ({
                     ></button>
                   </div>
                 </div>
-                <div className="modal-body" style={{ maxHeight: "320px", overflowY: "auto" }}>
+                <div
+                  className="modal-body"
+                  style={{ maxHeight: "320px", overflowY: "auto" }}
+                >
                   <div className="mb-2">
                     <input
                       type="text"
@@ -671,12 +722,16 @@ const BookModalBase = ({
                       onChange={(e) => setAuthorFilter(e.target.value)}
                     />
                   </div>
-                  {localAuthors.length === 0 ? (
-                    <div className="text-muted small">No authors available.</div>
+                  {authorsList.length === 0 ? (
+                    <div className="text-muted small">
+                      No authors available.
+                    </div>
                   ) : (
-                    localAuthors
+                    authorsList
                       .filter((author) => {
-                        const name = (author.name || author || "").toString().toLowerCase();
+                        const name = (author.name || author || "")
+                          .toString()
+                          .toLowerCase();
                         return name.includes(authorFilter.toLowerCase());
                       })
                       .map((author) => (
@@ -685,7 +740,7 @@ const BookModalBase = ({
                           className={`d-flex justify-content-between align-items-center py-2 border-bottom ${selectedAuthor && (selectedAuthor.id === (author.id || author) || selectedAuthor === author) ? "bg-light" : ""}`}
                           role="button"
                           onClick={() => {
-                            setSelectedAuthor(author);
+                            setSelectedAuthorId(author.id || author);
                             onInputChange({
                               target: {
                                 name: "author",
@@ -712,16 +767,17 @@ const BookModalBase = ({
               </div>
             </div>
           </div>
-          <div className="modal-backdrop fade show" style={{ zIndex: 1065 }}></div>
+          <div
+            className="modal-backdrop fade show"
+            style={{ zIndex: 1065 }}
+          ></div>
         </>
       )}
     </>
   );
 };
 
-const AddBookModal = (props) => (
-  <BookModalBase {...props} isEditing={false} />
-);
+const AddBookModal = (props) => <BookModalBase {...props} isEditing={false} />;
 
 export const EditBookModal = (props) => (
   <BookModalBase {...props} isEditing={true} />

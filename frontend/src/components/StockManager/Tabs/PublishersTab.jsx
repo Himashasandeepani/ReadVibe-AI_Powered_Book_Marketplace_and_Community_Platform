@@ -1,6 +1,11 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEnvelope, faPhone, faBuilding, faPlus } from "@fortawesome/free-solid-svg-icons";
+import {
+  faEnvelope,
+  faPhone,
+  faBuilding,
+  faPlus,
+} from "@fortawesome/free-solid-svg-icons";
 import StatusBadge from "../Common/StatusBadge";
 import ActionButtons from "../Common/ActionButtons";
 
@@ -9,7 +14,7 @@ const PublishersTab = ({
   onAddPublisher,
   onEditPublisher,
   onContactPublisher,
-  onDeletePublisher
+  onDeletePublisher,
 }) => {
   return (
     <>
