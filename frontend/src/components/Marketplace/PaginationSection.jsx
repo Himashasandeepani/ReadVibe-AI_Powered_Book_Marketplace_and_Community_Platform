@@ -1,15 +1,19 @@
 import React from "react";
 import { Pagination } from "react-bootstrap";
 
-const PaginationSection = ({ 
-  currentPage, 
-  totalPages, 
-  paginate, 
-  filteredBooks, 
+const PaginationSection = ({
+  currentPage,
+  totalPages,
+  paginate,
+  filteredBooks,
   booksPerPage,
-  filters 
+  filters,
 }) => {
-  if (filters.category === "all" && totalPages > 1 && filteredBooks.length > booksPerPage) {
+  if (
+    filters.category === "all" &&
+    totalPages > 1 &&
+    filteredBooks.length > booksPerPage
+  ) {
     return (
       <div className="mt-4">
         <Pagination className="justify-content-center">
