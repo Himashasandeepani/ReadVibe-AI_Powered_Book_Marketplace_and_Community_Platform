@@ -64,9 +64,9 @@ const Home = () => {
       {!isLoggedIn() && <GuestNotice />}
 
       <HeroSection />
-      
+
       <FeaturesSection />
-      
+
       <Container>
         <AISection />
       </Container>

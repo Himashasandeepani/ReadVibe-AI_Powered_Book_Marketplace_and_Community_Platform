@@ -14,18 +14,21 @@ const AISection = () => {
     {
       icon: faShoppingCart,
       title: "Track Purchases",
-      description: "We analyze the books you purchase to understand your reading preferences."
+      description:
+        "We analyze the books you purchase to understand your reading preferences.",
     },
     {
       icon: faStar,
       title: "Analyze Reviews",
-      description: "Your reviews help us understand what you love about specific books and genres."
+      description:
+        "Your reviews help us understand what you love about specific books and genres.",
     },
     {
       icon: faCogs,
       title: "Generate Matches",
-      description: "Our AI matches your preferences with similar books in our database."
-    }
+      description:
+        "Our AI matches your preferences with similar books in our database.",
+    },
   ];
 
   return (
@@ -38,9 +41,8 @@ const AISection = () => {
               Get Personalized Recommendations
             </h3>
             <p>
-              Our AI analyzes your reading history, purchased books, and
-              reviews to understand your preferences and suggest books you'll
-              love.
+              Our AI analyzes your reading history, purchased books, and reviews
+              to understand your preferences and suggest books you'll love.
             </p>
             <div>
               <Link to="/Marketplace" className="btn btn-primary me-2">

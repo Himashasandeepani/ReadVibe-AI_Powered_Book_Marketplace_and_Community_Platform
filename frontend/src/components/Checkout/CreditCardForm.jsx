@@ -40,9 +40,7 @@ const CreditCardForm = ({
             <FontAwesomeIcon icon={faCreditCard} />
           </InputGroup.Text>
           {formErrors.cardNumber && (
-            <div className="invalid-feedback">
-              {formErrors.cardNumber}
-            </div>
+            <div className="invalid-feedback">{formErrors.cardNumber}</div>
           )}
         </InputGroup>
       </Form.Group>
@@ -62,9 +60,7 @@ const CreditCardForm = ({
               disabled={isLoading}
             />
             {formErrors.expDate && (
-              <div className="invalid-feedback">
-                {formErrors.expDate}
-              </div>
+              <div className="invalid-feedback">{formErrors.expDate}</div>
             )}
           </Form.Group>
         </Col>
@@ -82,9 +78,7 @@ const CreditCardForm = ({
               disabled={isLoading}
             />
             {formErrors.cvv && (
-              <div className="invalid-feedback">
-                {formErrors.cvv}
-              </div>
+              <div className="invalid-feedback">{formErrors.cvv}</div>
             )}
           </Form.Group>
         </Col>
@@ -102,9 +96,7 @@ const CreditCardForm = ({
           disabled={isLoading}
         />
         {formErrors.cardholderName && (
-          <div className="invalid-feedback">
-            {formErrors.cardholderName}
-          </div>
+          <div className="invalid-feedback">{formErrors.cardholderName}</div>
         )}
       </Form.Group>
     </div>

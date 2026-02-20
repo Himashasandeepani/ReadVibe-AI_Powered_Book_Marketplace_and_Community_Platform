@@ -25,9 +25,7 @@ const OrderTotals = ({ totals }) => {
       <div className="checkout-total-divider"></div>
       <div className="checkout-grand-total">
         <span>Total:</span>
-        <span id="orderTotal">
-          {formatPrice(totals.total)}
-        </span>
+        <span id="orderTotal">{formatPrice(totals.total)}</span>
       </div>
     </div>
   );

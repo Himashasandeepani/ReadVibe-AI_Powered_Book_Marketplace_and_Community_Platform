@@ -6,7 +6,7 @@ const StatusTab = ({ statuses = [], onSaveStatus, onDeleteStatus }) => {
 
   const selectedStatus = useMemo(
     () => statuses.find((s) => s.id === selectedStatusId) || null,
-    [statuses, selectedStatusId]
+    [statuses, selectedStatusId],
   );
 
   const handleSave = () => {

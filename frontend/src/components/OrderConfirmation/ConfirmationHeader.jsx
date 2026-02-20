@@ -1,17 +1,25 @@
 import React from "react";
 import { Button, Badge } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCheckCircle, faEye, faStore } from "@fortawesome/free-solid-svg-icons";
+import {
+  faCheckCircle,
+  faEye,
+  faStore,
+} from "@fortawesome/free-solid-svg-icons";
 
-const ConfirmationHeader = ({ 
-  methodDetails, 
-  onTrackOrder, 
-  onContinueShopping 
+const ConfirmationHeader = ({
+  methodDetails,
+  onTrackOrder,
+  onContinueShopping,
 }) => {
   return (
     <div className="confirmation-success text-center py-4 mb-4">
       <div className="confirmation-icon">
-        <FontAwesomeIcon icon={faCheckCircle} size="4x" className="text-success" />
+        <FontAwesomeIcon
+          icon={faCheckCircle}
+          size="4x"
+          className="text-success"
+        />
       </div>
       <h2 className="mt-3 mb-2">Order Confirmed!</h2>
       <p className="text-muted mb-4">
@@ -30,7 +38,11 @@ const ConfirmationHeader = ({
           <FontAwesomeIcon icon={faEye} className="me-2" />
           Track Order
         </Button>
-        <Button variant="outline-success" size="sm" onClick={onContinueShopping}>
+        <Button
+          variant="outline-success"
+          size="sm"
+          onClick={onContinueShopping}
+        >
           <FontAwesomeIcon icon={faStore} className="me-2" />
           Continue Shopping
         </Button>

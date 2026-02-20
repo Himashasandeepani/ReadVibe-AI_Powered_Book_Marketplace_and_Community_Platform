@@ -13,14 +13,8 @@ const EmptyState = ({ resetFilters }) => {
         style={{ color: "#ccc" }}
       />
       <h4>No books found</h4>
-      <p className="text-muted">
-        Try adjusting your filters or search query
-      </p>
-      <Button
-        variant="outline-primary"
-        onClick={resetFilters}
-        className="mt-2"
-      >
+      <p className="text-muted">Try adjusting your filters or search query</p>
+      <Button variant="outline-primary" onClick={resetFilters} className="mt-2">
         Clear All Filters
       </Button>
     </div>

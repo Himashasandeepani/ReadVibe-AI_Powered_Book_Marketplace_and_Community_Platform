@@ -1,11 +1,7 @@
 import React from "react";
 import { Form, Alert } from "react-bootstrap";
 
-const BillingAddress = ({
-  paymentData,
-  isLoading,
-  handleInputChange,
-}) => {
+const BillingAddress = ({ paymentData, isLoading, handleInputChange }) => {
   return (
     <div className="billing-address-section">
       <h5 className="mb-3 mt-4">Billing Address</h5>

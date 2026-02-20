@@ -1,7 +1,10 @@
 import { Link } from "react-router-dom";
 import { Container } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHandsHelping, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import {
+  faHandsHelping,
+  faInfoCircle,
+} from "@fortawesome/free-solid-svg-icons";
 
 const GuestNotice = () => {
   return (

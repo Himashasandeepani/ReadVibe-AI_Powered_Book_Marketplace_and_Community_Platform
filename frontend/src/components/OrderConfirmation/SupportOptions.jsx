@@ -1,8 +1,17 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faQuestionCircle, faEye, faPhone, faComment } from "@fortawesome/free-solid-svg-icons";
+import {
+  faQuestionCircle,
+  faEye,
+  faPhone,
+  faComment,
+} from "@fortawesome/free-solid-svg-icons";
 
-const SupportOptions = ({ onViewOrderStatus, onContactSupport, onLiveChat }) => {
+const SupportOptions = ({
+  onViewOrderStatus,
+  onContactSupport,
+  onLiveChat,
+}) => {
   return (
     <div className="support-info mt-4">
       <h6>

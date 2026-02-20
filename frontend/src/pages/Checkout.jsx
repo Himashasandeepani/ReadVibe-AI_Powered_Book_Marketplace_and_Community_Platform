@@ -71,11 +71,12 @@ const buildOrderData = () => {
     return sum + (book?.price || 0) * item.quantity;
   }, 0);
   const shippingMethod = deliveryData.shipping?.shippingMethod;
-  const shipping = shippingMethod === "standard"
-    ? 500.0
-    : shippingMethod === "express"
-    ? 1200.0
-    : 2500.0;
+  const shipping =
+    shippingMethod === "standard"
+      ? 500.0
+      : shippingMethod === "express"
+        ? 1200.0
+        : 2500.0;
 
   const tax = subtotal * 0.05;
   const total = subtotal + shipping + tax;
@@ -134,7 +135,7 @@ const Checkout = () => {
 
     showNotification(
       "No order data found. Please start checkout from cart.",
-      "warning"
+      "warning",
     );
 
     const timeoutId = setTimeout(() => {
@@ -236,7 +237,7 @@ const Checkout = () => {
       console.error("Checkout error:", error);
       showNotification(
         error.message || "Payment failed. Please try again.",
-        "danger"
+        "danger",
       );
       setIsLoading(false);
     }
@@ -280,7 +281,7 @@ const Checkout = () => {
                       handleCardNumberChange={handleCardNumberChange}
                       handleInputChange={handleInputChange}
                     />
-                    
+
                     <CheckoutButtons
                       onBack={handleBack}
                       onSubmit={handleSubmit}

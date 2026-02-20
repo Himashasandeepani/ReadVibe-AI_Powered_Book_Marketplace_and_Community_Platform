@@ -28,7 +28,9 @@ const RecommendedBooks = ({ books, onAddToCart }) => {
                   />
                   <Card.Body>
                     <Card.Title>{book.title}</Card.Title>
-                    <Card.Text className="text-muted">by {book.author}</Card.Text>
+                    <Card.Text className="text-muted">
+                      by {book.author}
+                    </Card.Text>
                     <div className="d-flex justify-content-between align-items-center">
                       <span className="recommended-book-price">
                         {formatPrice(book.price)}
@@ -38,7 +40,10 @@ const RecommendedBooks = ({ books, onAddToCart }) => {
                         size="sm"
                         onClick={() => onAddToCart(book.id)}
                       >
-                        <FontAwesomeIcon icon={faShoppingCart} className="me-1" />
+                        <FontAwesomeIcon
+                          icon={faShoppingCart}
+                          className="me-1"
+                        />
                         Add to Cart
                       </Button>
                     </div>

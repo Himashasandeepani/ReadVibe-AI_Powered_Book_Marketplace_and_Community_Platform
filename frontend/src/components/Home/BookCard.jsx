@@ -15,7 +15,12 @@ import {
   faFire,
 } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
-import { formatPrice, generateStarRating, addToWishlist, showNotification } from "../../utils/helpers";
+import {
+  formatPrice,
+  generateStarRating,
+  addToWishlist,
+  showNotification,
+} from "../../utils/helpers";
 import { addItem, setCart } from "../../store/slices/cartSlice";
 
 const BookCard = ({ book, currentUser, onViewDetails }) => {
@@ -26,13 +31,14 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
 
   const isInWishlist = (bookId) => {
     if (!currentUser) return false;
-    const wishlist = JSON.parse(localStorage.getItem(`wishlist_${currentUser.id}`)) || [];
-    return wishlist.some(item => item.id === bookId);
+    const wishlist =
+      JSON.parse(localStorage.getItem(`wishlist_${currentUser.id}`)) || [];
+    return wishlist.some((item) => item.id === bookId);
   };
 
   const handleAddToWishlist = (e) => {
     e.stopPropagation();
-    
+
     if (!isLoggedIn()) {
       navigate("/login");
       return;
@@ -45,7 +51,7 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
 
   const handleAddToCart = (e) => {
     e.stopPropagation();
-    
+
     if (!isLoggedIn()) {
       navigate("/login");
       return;
@@ -64,14 +70,14 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
         quantity: 1,
         image: book.image,
         stock: book.stock,
-      })
+      }),
     );
     showNotification("Book added to cart!", "success");
   };
 
   const handleBuyNow = (e) => {
     e.stopPropagation();
-    
+
     if (!isLoggedIn()) {
       navigate("/login");
       return;
@@ -92,7 +98,7 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
           image: book.image,
           stock: book.stock,
         },
-      ])
+      ]),
     );
     sessionStorage.setItem(
       "checkoutCart",
@@ -101,7 +107,7 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
           id: book.id,
           quantity: 1,
         },
-      ])
+      ]),
     );
     navigate("/delivery-details");
   };
@@ -187,8 +193,10 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
         </div>
 
         <div className="book-stock mb-3">
-          <span className={`badge ${book.stock > 10 ? 'bg-success' : book.stock > 0 ? 'bg-warning' : 'bg-danger'}`}>
-            {book.stock > 0 ? `${book.stock} in stock` : 'Out of stock'}
+          <span
+            className={`badge ${book.stock > 10 ? "bg-success" : book.stock > 0 ? "bg-warning" : "bg-danger"}`}
+          >
+            {book.stock > 0 ? `${book.stock} in stock` : "Out of stock"}
           </span>
         </div>
 

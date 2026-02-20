@@ -1,32 +1,32 @@
 import React from "react";
 import { Button, Badge, OverlayTrigger, Tooltip } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { 
-  faBook, 
-  faUser, 
-  faStar, 
-  faTimes, 
-  faHeart, 
-    faShoppingCart, 
-  faTruck, 
-  faTag 
+import {
+  faBook,
+  faUser,
+  faStar,
+  faTimes,
+  faHeart,
+  faShoppingCart,
+  faTruck,
+  faTag,
 } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
 
-const BookCard = ({ 
-  book, 
-  isLoggedIn, 
-  isInWishlist, 
-  onViewDetails, 
-  onAddToWishlist, 
-  onAddToCart, 
-  onBuyNow, 
+const BookCard = ({
+  book,
+  isLoggedIn,
+  isInWishlist,
+  onViewDetails,
+  onAddToWishlist,
+  onAddToCart,
+  onBuyNow,
   navigate,
   wishlistTooltip,
   cartTooltip,
   buyNowTooltip,
   formatPrice,
-  generateStarRating
+  generateStarRating,
 }) => {
   return (
     <div className="book-card" onClick={() => onViewDetails(book)}>
@@ -106,9 +106,7 @@ const BookCard = ({
             >
               <FontAwesomeIcon
                 icon={
-                  isLoggedIn && isInWishlist(book.id)
-                    ? faHeart
-                    : faHeartRegular
+                  isLoggedIn && isInWishlist(book.id) ? faHeart : faHeartRegular
                 }
                 className="me-1"
               />
@@ -131,7 +129,7 @@ const BookCard = ({
                   }}
                   className="book-action-btn"
                 >
-                  <FontAwesomeIcon icon={  faShoppingCart} className="me-1" />
+                  <FontAwesomeIcon icon={faShoppingCart} className="me-1" />
                 </Button>
               </OverlayTrigger>
 
