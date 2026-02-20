@@ -5,7 +5,7 @@ import "../styles/pages/Community.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 // Import components
-import Header from "../components/Community/Header";
+import Header from "../components/Community/CommunityHeader";
 import GuestNotice from "../components/Community/GuestNotice";
 import EmptyState from "../components/Community/EmptyState";
 import PostCard from "../components/Community/PostCard";
@@ -104,7 +104,7 @@ const Community = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(() => getStoredCurrentUser());
   const [communityPosts, setCommunityPosts] = useState(() =>
-    getInitialCommunityPosts()
+    getInitialCommunityPosts(),
   );
 
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
@@ -231,7 +231,7 @@ const Community = () => {
       return {
         canProceed: false,
         message: "Please login to create posts",
-        redirectTo: "/login"
+        redirectTo: "/login",
       };
     }
     return { canProceed: true };
@@ -243,7 +243,7 @@ const Community = () => {
       return {
         canProceed: false,
         message: "Please login to interact with posts",
-        redirectTo: "/login"
+        redirectTo: "/login",
       };
     }
     return { canProceed: true };
@@ -255,7 +255,7 @@ const Community = () => {
       return {
         canProceed: false,
         message: "Please login to request books",
-        redirectTo: "/login"
+        redirectTo: "/login",
       };
     }
     return { canProceed: true };
@@ -321,7 +321,7 @@ const Community = () => {
     const updatedAdminPosts = [adminPost, ...adminPanelPosts];
     localStorage.setItem(
       "adminCommunityPosts",
-      JSON.stringify(updatedAdminPosts)
+      JSON.stringify(updatedAdminPosts),
     );
 
     // Reset form
@@ -332,7 +332,7 @@ const Community = () => {
 
     // Show success message
     alert(
-      "Post created successfully! It will now appear in the Admin Panel for review."
+      "Post created successfully! It will now appear in the Admin Panel for review.",
     );
   };
 
@@ -390,7 +390,7 @@ const Community = () => {
       const adminPosts =
         JSON.parse(localStorage.getItem("adminCommunityPosts")) || [];
       const adminPostIndex = adminPosts.findIndex(
-        (p) => p.id === updatedPost.id
+        (p) => p.id === updatedPost.id,
       );
 
       if (adminPostIndex !== -1) {
@@ -496,7 +496,7 @@ const Community = () => {
 
     const shareText = `Check out this book discussion on ReadVibe: "${post.content.substring(
       0,
-      100
+      100,
     )}..."`;
     const shareUrl = window.location.href;
 

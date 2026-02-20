@@ -1,7 +1,12 @@
 import React from "react";
 import { Card, Row, Col, Button } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faShoppingBag, faStar, faBookMedical, faChevronRight } from "@fortawesome/free-solid-svg-icons";
+import {
+  faShoppingBag,
+  faStar,
+  faBookMedical,
+  faChevronRight,
+} from "@fortawesome/free-solid-svg-icons";
 
 const QuickActions = ({ onViewOrders, onViewReviews, onRequestBook }) => {
   const actions = [

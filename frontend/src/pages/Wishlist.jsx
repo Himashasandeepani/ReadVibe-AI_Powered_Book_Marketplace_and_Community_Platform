@@ -90,7 +90,7 @@ const Wishlist = () => {
   // State management
   const [user, setUser] = useState(() => getStoredUser());
   const [wishlist, setWishlist] = useState(() =>
-    seedWishlistForUser(getStoredUser())
+    seedWishlistForUser(getStoredUser()),
   );
   const [currentFilter, setCurrentFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -143,7 +143,7 @@ const Wishlist = () => {
     if (!user) return;
     localStorage.setItem(
       `wishlist_${user.id}`,
-      JSON.stringify(updatedWishlist)
+      JSON.stringify(updatedWishlist),
     );
   };
 
@@ -171,7 +171,7 @@ const Wishlist = () => {
       .filter(
         (book) =>
           book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          book.author.toLowerCase().includes(searchTerm.toLowerCase())
+          book.author.toLowerCase().includes(searchTerm.toLowerCase()),
       )
       .filter((book) => !wishlist.some((item) => item.id === book.id));
 
@@ -182,7 +182,7 @@ const Wishlist = () => {
   const handleAddToWishlist = (
     book,
     priorityLevel = priority,
-    notesText = notes
+    notesText = notes,
   ) => {
     if (!user) {
       showNotification("Please login to add items to wishlist", "warning");
@@ -272,7 +272,7 @@ const Wishlist = () => {
   const handleClearWishlist = () => {
     if (
       !window.confirm(
-        "Clear your entire wishlist? This action cannot be undone."
+        "Clear your entire wishlist? This action cannot be undone.",
       )
     )
       return;
@@ -302,7 +302,7 @@ const Wishlist = () => {
     if (!selectedItem) return;
 
     const updatedWishlist = wishlist.map((item) =>
-      item.id === selectedItem.id ? { ...item, priority, notes } : item
+      item.id === selectedItem.id ? { ...item, priority, notes } : item,
     );
 
     setWishlist(updatedWishlist);
@@ -337,12 +337,12 @@ const Wishlist = () => {
         image: book.image,
         quantity: 1,
         stock: book.stock,
-      })
+      }),
     );
 
     if (
       window.confirm(
-        "Remove this book from wishlist since it's now in your cart?"
+        "Remove this book from wishlist since it's now in your cart?",
       )
     ) {
       handleRemoveFromWishlist(bookId);
@@ -366,7 +366,9 @@ const Wishlist = () => {
       const mergedCart = [...cartItems];
 
       availableItems.forEach((item) => {
-        const existingItem = mergedCart.find((cartItem) => cartItem.id === item.id);
+        const existingItem = mergedCart.find(
+          (cartItem) => cartItem.id === item.id,
+        );
 
         if (existingItem) {
           existingItem.quantity += 1;
@@ -391,7 +393,7 @@ const Wishlist = () => {
 
       showNotification(
         `${availableItems.length} items added to cart!`,
-        "success"
+        "success",
       );
     }
   };
@@ -417,8 +419,8 @@ const Wishlist = () => {
             .map(
               (item) =>
                 `• ${item.title} by ${item.author} - LKR ${item.price.toFixed(
-                  2
-                )}`
+                  2,
+                )}`,
             )
             .join("\n")}\n\n` +
           `Total: LKR ${wishlist
@@ -427,7 +429,7 @@ const Wishlist = () => {
           `View my wishlist: ${window.location.origin}/wishlist-share?user=${user.id}`;
 
         window.location.href = `mailto:?subject=${encodeURIComponent(
-          subject
+          subject,
         )}&body=${encodeURIComponent(body)}`;
         break;
       }

@@ -18,9 +18,7 @@ const OrderSummary = ({ totals, onCheckout, onContinueShopping, cart }) => {
       <Card.Body>
         <h4>Order Summary</h4>
         <div className="order-summary-item">
-          <span className="label">
-            Subtotal ({totals.itemCount} items):
-          </span>
+          <span className="label">Subtotal ({totals.itemCount} items):</span>
           <span className="value cart-total-amount" id="subtotal">
             {formatPriceLKR(totals.subtotal)}
           </span>

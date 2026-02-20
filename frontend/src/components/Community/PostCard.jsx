@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faThumbsUp, faComment, faShareSquare, faBook } from "@fortawesome/free-solid-svg-icons";
+import {
+  faThumbsUp,
+  faComment,
+  faShareSquare,
+  faBook,
+} from "@fortawesome/free-solid-svg-icons";
 
 const PostCard = ({
   post,
@@ -16,7 +21,9 @@ const PostCard = ({
   getUserName,
   formatTimestamp,
 }) => {
-  const [commentInput, setCommentInput] = useState(commentInputs[post.id] || "");
+  const [commentInput, setCommentInput] = useState(
+    commentInputs[post.id] || "",
+  );
 
   const handleCommentChange = (value) => {
     setCommentInput(value);
@@ -31,7 +38,10 @@ const PostCard = ({
           <h6 className="mb-0">
             {getUserName(post)}
             {post.category && (
-              <span className="badge bg-secondary ms-2" style={{ fontSize: "0.7rem" }}>
+              <span
+                className="badge bg-secondary ms-2"
+                style={{ fontSize: "0.7rem" }}
+              >
                 {post.category}
               </span>
             )}

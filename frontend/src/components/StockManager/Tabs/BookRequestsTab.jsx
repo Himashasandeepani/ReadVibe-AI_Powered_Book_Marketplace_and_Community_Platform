@@ -11,7 +11,7 @@ const BookRequestsTab = ({
   onViewRequestDetails,
   onApproveRequest,
   onRejectRequest,
-  onChangeTab
+  onChangeTab,
 }) => {
   return (
     <>
@@ -39,23 +39,19 @@ const BookRequestsTab = ({
           <StatsCard number={stats.total} label="Total Requests" />
         </div>
         <div className="col-md-3 col-sm-6 mb-3">
-          <StatsCard 
-            number={stats.pending} 
-            label="Pending" 
-            variant="warning"
-          />
+          <StatsCard number={stats.pending} label="Pending" variant="warning" />
         </div>
         <div className="col-md-3 col-sm-6 mb-3">
-          <StatsCard 
-            number={stats.approved} 
-            label="Approved" 
+          <StatsCard
+            number={stats.approved}
+            label="Approved"
             variant="success"
           />
         </div>
         <div className="col-md-3 col-sm-6 mb-3">
-          <StatsCard 
-            number={stats.rejected} 
-            label="Rejected" 
+          <StatsCard
+            number={stats.rejected}
+            label="Rejected"
             variant="danger"
           />
         </div>

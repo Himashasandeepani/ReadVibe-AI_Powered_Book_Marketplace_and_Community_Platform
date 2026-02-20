@@ -30,7 +30,11 @@ const EditUserModalContent = ({ user, onClose, onSubmit }) => {
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title">Edit User: {user.username}</h5>
-              <button type="button" className="btn-close" onClick={onClose}></button>
+              <button
+                type="button"
+                className="btn-close"
+                onClick={onClose}
+              ></button>
             </div>
             <div className="modal-body">
               <form id="editUserForm" onSubmit={handleSubmit}>
@@ -87,10 +91,18 @@ const EditUserModalContent = ({ user, onClose, onSubmit }) => {
               </form>
             </div>
             <div className="modal-footer">
-              <button type="button" className="btn btn-secondary" onClick={onClose}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onClose}
+              >
                 Cancel
               </button>
-              <button type="submit" form="editUserForm" className="btn btn-primary">
+              <button
+                type="submit"
+                form="editUserForm"
+                className="btn btn-primary"
+              >
                 Update User
               </button>
             </div>

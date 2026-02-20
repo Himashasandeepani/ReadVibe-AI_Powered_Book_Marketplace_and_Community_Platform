@@ -7,7 +7,7 @@ import {
   faStar,
   faTimes,
   faHeart,
-    faShoppingCart,
+  faShoppingCart,
   faTruck,
   faBookmark,
   faBookOpen,
@@ -16,7 +16,7 @@ import {
   faCalendar,
   faBarcode,
   faLanguage,
-  faComments
+  faComments,
 } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
 
@@ -31,18 +31,12 @@ const BookDetailsModal = ({
   onBuyNow,
   navigate,
   formatPrice,
-  generateStarRating
+  generateStarRating,
 }) => {
   if (!book) return null;
 
   return (
-    <Modal
-      show={show}
-      onHide={onHide}
-      size="lg"
-      animation={true}
-      centered
-    >
+    <Modal show={show} onHide={onHide} size="lg" animation={true} centered>
       <Modal.Header closeButton>
         <Modal.Title>
           <FontAwesomeIcon icon={faBook} className="me-2" />
@@ -154,7 +148,7 @@ const BookDetailsModal = ({
                   </div>
                 ))
               ) : (
-                <p>No reviews yet. Be the first to review this book!</p>
+                <p>No reviews yet. Be the first to review this book! </p>
               )}
             </div>
           </Col>
@@ -186,7 +180,7 @@ const BookDetailsModal = ({
               onClick={() => onAddToCart(book.id)}
               className="book-action-btn"
             >
-              <FontAwesomeIcon icon={  faShoppingCart} className="me-2" />
+              <FontAwesomeIcon icon={faShoppingCart} className="me-2" />
               Add to Cart
             </Button>
             <Button
@@ -222,7 +216,7 @@ const BookDetailsModal = ({
               }}
               className="book-action-btn"
             >
-              <FontAwesomeIcon icon={  faShoppingCart} className="me-2" />
+              <FontAwesomeIcon icon={faShoppingCart} className="me-2" />
               Login to Add to Cart
             </Button>
             <Button

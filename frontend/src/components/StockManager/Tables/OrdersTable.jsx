@@ -3,12 +3,7 @@ import StatusBadge from "../Common/StatusBadge";
 import ActionButtons from "../Common/ActionButtons";
 import { formatCurrency } from "../utils";
 
-const OrdersTable = ({ 
-  orders, 
-  onView, 
-  onShip, 
-  onUpdateTracking 
-}) => {
+const OrdersTable = ({ orders, onView, onShip, onUpdateTracking }) => {
   return (
     <div className="table-responsive">
       <table className="table table-hover stock-manager-table">

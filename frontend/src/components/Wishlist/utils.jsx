@@ -71,7 +71,7 @@ export const sampleBooks = [
 export const renderPriorityStars = (
   priorityLevel,
   interactive = false,
-  onStarClick = null
+  onStarClick = null,
 ) => {
   return (
     <div className="priority-stars">
@@ -228,7 +228,7 @@ export const searchBooks = (searchTerm, wishlist) => {
     .filter(
       (book) =>
         book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        book.author.toLowerCase().includes(searchTerm.toLowerCase())
+        book.author.toLowerCase().includes(searchTerm.toLowerCase()),
     )
     .filter((book) => !wishlist.some((item) => item.id === book.id));
 };

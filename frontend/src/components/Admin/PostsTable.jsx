@@ -25,7 +25,9 @@ const PostsTable = ({ posts, onViewPost, onDeletePost }) => {
                 <td>{post.id}</td>
                 <td>
                   {/* Fix: Extract user name from object if needed */}
-                  {typeof post.user === 'object' ? post.user.name || 'Unknown' : post.user}
+                  {typeof post.user === "object"
+                    ? post.user.name || "Unknown"
+                    : post.user}
                 </td>
                 <td>
                   <div className="post-preview">

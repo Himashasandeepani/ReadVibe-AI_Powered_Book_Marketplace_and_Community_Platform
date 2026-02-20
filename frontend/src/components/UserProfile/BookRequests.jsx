@@ -23,11 +23,7 @@ const BookRequests = ({ requests, onBack, onNewRequest }) => {
               <FontAwesomeIcon icon={faPlus} className="me-1" />
               New Request
             </Button>
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              onClick={onBack}
-            >
+            <Button variant="outline-secondary" size="sm" onClick={onBack}>
               <FontAwesomeIcon icon={faTimes} /> Back to Overview
             </Button>
           </div>

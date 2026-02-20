@@ -3,13 +3,13 @@ import { Form, Button, Alert } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faLock } from "@fortawesome/free-solid-svg-icons";
 
-const LoginForm = ({ 
-  loginData, 
-  formErrors, 
-  onInputChange, 
-  onSubmit, 
+const LoginForm = ({
+  loginData,
+  formErrors,
+  onInputChange,
+  onSubmit,
   onForgotPassword,
-  onSwitchToSignup 
+  onSwitchToSignup,
 }) => {
   return (
     <div id="loginFormContainer">
@@ -20,7 +20,9 @@ const LoginForm = ({
         Your Book Marketplace & Reading Community
       </p>
 
-      {formErrors.general && <Alert variant="danger">{formErrors.general}</Alert>}
+      {formErrors.general && (
+        <Alert variant="danger">{formErrors.general}</Alert>
+      )}
 
       <Form onSubmit={onSubmit}>
         <Form.Group className="mb-3">

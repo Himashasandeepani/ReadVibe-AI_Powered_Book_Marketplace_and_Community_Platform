@@ -43,7 +43,7 @@ const Login = () => {
 
   const isSignupMode = useMemo(
     () => isSignupQuery(location.search),
-    [location.search]
+    [location.search],
   );
 
   const [loginData, setLoginData] = useState({
@@ -78,7 +78,7 @@ const Login = () => {
         pathname: location.pathname,
         search: searchString ? `?${searchString}` : "",
       },
-      { replace: true }
+      { replace: true },
     );
   };
 
@@ -196,7 +196,9 @@ const Login = () => {
       }
 
       if (updateUserPassword(email, newPassword)) {
-        onSuccess("Password reset successful! You can now login with your new password.");
+        onSuccess(
+          "Password reset successful! You can now login with your new password.",
+        );
       } else {
         onError("User not found");
       }

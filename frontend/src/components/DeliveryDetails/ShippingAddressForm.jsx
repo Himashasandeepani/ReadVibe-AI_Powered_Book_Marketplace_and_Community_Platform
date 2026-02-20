@@ -11,15 +11,10 @@ import {
   faMailBulk,
   faGlobe,
   faInfoCircle,
-  faMapMarkerAlt
+  faMapMarkerAlt,
 } from "@fortawesome/free-solid-svg-icons";
 
-const ShippingAddressForm = ({
-  formData,
-  errors,
-  handleChange,
-  countries,
-}) => {
+const ShippingAddressForm = ({ formData, errors, handleChange, countries }) => {
   return (
     <div className="delivery-section">
       <h5>
@@ -42,9 +37,7 @@ const ShippingAddressForm = ({
             required
           />
           {errors.firstName && (
-            <div className="delivery-validation-error">
-              {errors.firstName}
-            </div>
+            <div className="delivery-validation-error">{errors.firstName}</div>
           )}
         </Col>
         <Col md={6} className="mb-3">
@@ -61,9 +54,7 @@ const ShippingAddressForm = ({
             required
           />
           {errors.lastName && (
-            <div className="delivery-validation-error">
-              {errors.lastName}
-            </div>
+            <div className="delivery-validation-error">{errors.lastName}</div>
           )}
         </Col>
       </Row>
@@ -83,9 +74,7 @@ const ShippingAddressForm = ({
             required
           />
           {errors.email && (
-            <div className="delivery-validation-error">
-              {errors.email}
-            </div>
+            <div className="delivery-validation-error">{errors.email}</div>
           )}
         </Col>
         <Col md={6} className="mb-3">
@@ -102,9 +91,7 @@ const ShippingAddressForm = ({
             required
           />
           {errors.phone && (
-            <div className="delivery-validation-error">
-              {errors.phone}
-            </div>
+            <div className="delivery-validation-error">{errors.phone}</div>
           )}
         </Col>
       </Row>
@@ -124,9 +111,7 @@ const ShippingAddressForm = ({
           required
         />
         {errors.address && (
-          <div className="delivery-validation-error">
-            {errors.address}
-          </div>
+          <div className="delivery-validation-error">{errors.address}</div>
         )}
       </div>
 
@@ -145,9 +130,7 @@ const ShippingAddressForm = ({
             required
           />
           {errors.city && (
-            <div className="delivery-validation-error">
-              {errors.city}
-            </div>
+            <div className="delivery-validation-error">{errors.city}</div>
           )}
         </Col>
         <Col md={4} className="mb-3">
@@ -164,9 +147,7 @@ const ShippingAddressForm = ({
             required
           />
           {errors.state && (
-            <div className="delivery-validation-error">
-              {errors.state}
-            </div>
+            <div className="delivery-validation-error">{errors.state}</div>
           )}
         </Col>
         <Col md={4} className="mb-3">
@@ -183,9 +164,7 @@ const ShippingAddressForm = ({
             required
           />
           {errors.zipCode && (
-            <div className="delivery-validation-error">
-              {errors.zipCode}
-            </div>
+            <div className="delivery-validation-error">{errors.zipCode}</div>
           )}
         </Col>
       </Row>
@@ -195,10 +174,7 @@ const ShippingAddressForm = ({
           <FontAwesomeIcon icon={faGlobe} className="me-1" />
           Country
           <span className="delivery-info-tooltip">
-            <FontAwesomeIcon
-              icon={faInfoCircle}
-              className="text-muted ms-1"
-            />
+            <FontAwesomeIcon icon={faInfoCircle} className="text-muted ms-1" />
             <span className="tooltip-text">
               Select your country for accurate shipping calculations
             </span>
@@ -218,9 +194,7 @@ const ShippingAddressForm = ({
           ))}
         </Form.Select>
         {errors.country && (
-          <div className="delivery-validation-error">
-            {errors.country}
-          </div>
+          <div className="delivery-validation-error">{errors.country}</div>
         )}
       </div>
     </div>

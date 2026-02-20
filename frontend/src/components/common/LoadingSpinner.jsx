@@ -12,7 +12,9 @@ const LoadingSpinner = ({
   return (
     <div className={containerClassName}>
       <div className={spinnerClassName}></div>
-      {message ? <TextTag className={textClassName || undefined}>{message}</TextTag> : null}
+      {message ? (
+        <TextTag className={textClassName || undefined}>{message}</TextTag>
+      ) : null}
     </div>
   );
 };
