@@ -1,9 +1,20 @@
 import React from "react";
 import { Card, Button } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCalendarAlt, faEdit, faHistory, faStar, faBook } from "@fortawesome/free-solid-svg-icons";
+import {
+  faCalendarAlt,
+  faEdit,
+  faHistory,
+  faStar,
+  faBook,
+} from "@fortawesome/free-solid-svg-icons";
 
-const UserInfoCard = ({ user, activeSection, onEditProfile, onChangeSection }) => {
+const UserInfoCard = ({
+  user,
+  activeSection,
+  onEditProfile,
+  onChangeSection,
+}) => {
   return (
     <Card className="dashboard-card text-center mb-4">
       <Card.Body>
@@ -29,7 +40,9 @@ const UserInfoCard = ({ user, activeSection, onEditProfile, onChangeSection }) =
             Edit Profile
           </Button>
           <Button
-            variant={activeSection === "orders" ? "primary" : "outline-secondary"}
+            variant={
+              activeSection === "orders" ? "primary" : "outline-secondary"
+            }
             className="w-100 mb-2"
             onClick={() => onChangeSection("orders")}
           >
@@ -37,7 +50,9 @@ const UserInfoCard = ({ user, activeSection, onEditProfile, onChangeSection }) =
             Order History
           </Button>
           <Button
-            variant={activeSection === "reviews" ? "primary" : "outline-success"}
+            variant={
+              activeSection === "reviews" ? "primary" : "outline-success"
+            }
             className="w-100 mb-2"
             onClick={() => onChangeSection("reviews")}
           >

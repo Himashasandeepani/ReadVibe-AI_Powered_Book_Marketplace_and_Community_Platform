@@ -24,14 +24,12 @@ const RequestItem = ({ request }) => {
             <h6 className="card-title mb-1">{request.bookTitle}</h6>
             <p className="card-text text-muted mb-2">by {request.author}</p>
             <small className="text-muted">
-              Requested: {formatDate(request.dateRequested)} •
-              Category: {request.category || "Not specified"}
+              Requested: {formatDate(request.dateRequested)} • Category:{" "}
+              {request.category || "Not specified"}
             </small>
           </div>
           <div className="text-end">
-            <Badge bg={getStatusBadge(request.status)}>
-              {request.status}
-            </Badge>
+            <Badge bg={getStatusBadge(request.status)}>{request.status}</Badge>
             <div className="mt-2">
               <small className="text-muted">Last updated:</small>
               <br />

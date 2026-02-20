@@ -58,14 +58,18 @@ const UserProfile = () => {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [activeSection, setActiveSection] = useState("overview");
-  
+
   // User data
   const [userStats, setUserStats] = useState({ ...initialData.userStats });
-  const [recentActivity, setRecentActivity] = useState([...initialData.recentActivity]);
+  const [recentActivity, setRecentActivity] = useState([
+    ...initialData.recentActivity,
+  ]);
   const [orders, setOrders] = useState([...initialData.orders]);
   const [myReviews, setMyReviews] = useState([...initialData.reviews]);
-  const [bookRequests, setBookRequests] = useState([...initialData.bookRequests]);
-  
+  const [bookRequests, setBookRequests] = useState([
+    ...initialData.bookRequests,
+  ]);
+
   // Modal data
   const [selectedBook, setSelectedBook] = useState(null);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
@@ -127,7 +131,9 @@ const UserProfile = () => {
     }
 
     // For simplicity, review first unreviewed item
-    const bookToReview = books.find((b) => b.id.toString() === unreviewedItems[0].id.toString());
+    const bookToReview = books.find(
+      (b) => b.id.toString() === unreviewedItems[0].id.toString(),
+    );
     if (bookToReview) {
       setSelectedBook(bookToReview);
       setSelectedOrderId(orderId);
@@ -153,8 +159,13 @@ const UserProfile = () => {
     // Ensure the review payload includes the book id required by submitReview
     const reviewPayload = { ...reviewData, bookId: selectedBook.id };
 
-    const newReview = submitReview(user, selectedBook, reviewPayload, selectedOrderId);
-    
+    const newReview = submitReview(
+      user,
+      selectedBook,
+      reviewPayload,
+      selectedOrderId,
+    );
+
     setMyReviews([...myReviews, newReview]);
     setUserStats((prev) => ({
       ...prev,
@@ -163,21 +174,23 @@ const UserProfile = () => {
     setShowReviewModal(false);
     setSelectedBook(null);
     setSelectedOrderId(null);
-    
+
     showNotification("Review submitted successfully!", "success");
   };
 
   const handleDeleteReview = (reviewId) => {
     if (window.confirm("Are you sure you want to delete this review?")) {
       deleteReview(reviewId, user.id);
-      
-      const updatedReviews = myReviews.filter((review) => review.id !== reviewId);
+
+      const updatedReviews = myReviews.filter(
+        (review) => review.id !== reviewId,
+      );
       setMyReviews(updatedReviews);
       setUserStats((prev) => ({
         ...prev,
         reviewsWritten: prev.reviewsWritten - 1,
       }));
-      
+
       showNotification("Review deleted successfully!", "success");
     }
   };
@@ -200,8 +213,8 @@ const UserProfile = () => {
       case "overview":
         return (
           <>
-            <DashboardOverview 
-              userStats={userStats} 
+            <DashboardOverview
+              userStats={userStats}
               onNavigate={(destination) => {
                 if (destination.startsWith("/")) {
                   navigate(destination);
@@ -210,8 +223,8 @@ const UserProfile = () => {
                 }
               }}
             />
-            <RecentActivity 
-              activities={recentActivity} 
+            <RecentActivity
+              activities={recentActivity}
               onRefresh={() => initializeUserData(user)}
             />
             <QuickActions
