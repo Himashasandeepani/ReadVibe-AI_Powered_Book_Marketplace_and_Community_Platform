@@ -24,12 +24,13 @@ import {
 } from "../components/Cart/cartUtils";
 
 import { getCurrentUser } from "../utils/auth";
-import { showNotification, books } from "../utils/helpers";
+import { showNotification, getAllBooks } from "../utils/helpers";
 import "../styles/pages/Cart.css";
 
 const Cart = () => {
   const cart = useSelector(selectCartItems);
   const [user, setUser] = useState(() => getCurrentUser());
+  const [catalog, setCatalog] = useState(() => getAllBooks());
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -44,6 +45,10 @@ const Cart = () => {
     const handleStorageChange = (event) => {
       if (event.key === "currentUser") {
         setUser(getCurrentUser());
+      }
+
+      if (event.key === "stockBooks") {
+        setCatalog(getAllBooks());
       }
     };
 
@@ -105,7 +110,7 @@ const Cart = () => {
     }
 
     // Check if all items are in stock
-    const outOfStockItems = checkStockAvailability(cart, books);
+    const outOfStockItems = checkStockAvailability(cart, catalog);
 
     if (outOfStockItems.length > 0) {
       showNotification(
@@ -116,7 +121,7 @@ const Cart = () => {
     }
 
     // Prepare checkout data
-    const checkoutData = prepareCheckoutData(cart, books);
+    const checkoutData = prepareCheckoutData(cart, catalog);
 
     // Save cart and totals to session for checkout
     sessionStorage.setItem("checkoutCart", JSON.stringify(cart));
@@ -131,7 +136,7 @@ const Cart = () => {
     navigate("/marketplace");
   };
 
-  const totals = calculateTotals(cart, books);
+  const totals = calculateTotals(cart, catalog);
 
   return (
     <div className="cart-page">
@@ -146,7 +151,7 @@ const Cart = () => {
               <Col lg={8}>
                 <CartItemsList
                   cart={cart}
-                  books={books}
+                  books={catalog}
                   onRemoveItem={handleRemoveFromCart}
                   onUpdateQuantity={handleUpdateQuantity}
                 />

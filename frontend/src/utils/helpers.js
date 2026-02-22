@@ -9,7 +9,7 @@ export const books = [
     rating: 4.3,
     reviews: 128,
     inStock: true,
-    image: "/Images/The_Midnight_Library.jpeg"
+    image: "/assets/The_Midnight_Library.jpeg"
   },
   {
     id: 2,
@@ -20,7 +20,7 @@ export const books = [
     rating: 4.8,
     reviews: 95,
     inStock: true,
-    image: "/Images/Project_Hail_Mary.jpg"
+    image: "/assets/project_hail_mary.jpg"
   },
   {
     id: 3,
@@ -31,7 +31,7 @@ export const books = [
     rating: 4.0,
     reviews: 210,
     inStock: true,
-    image: "/Images/Dune.jpeg"
+    image: "/assets/dune.jpg"
   },
   {
     id: 4,
@@ -42,9 +42,34 @@ export const books = [
     rating: 4.9,
     reviews: 305,
     inStock: false,
-    image: "/Images/The_Hobbit.jpeg"
+    image: "/assets/the_hobbit.jpg"
   }
-]
+];
+
+// Return inventory books from localStorage; fallback to seed list
+export const getAllBooks = () => {
+  try {
+    const stored = JSON.parse(localStorage.getItem("stockBooks")) || [];
+    const mapped = stored.map((book) => ({
+      ...book,
+      inStock: book.stock > 0,
+      image:
+        book.image ||
+        (Array.isArray(book.images) && book.images.length
+          ? book.images[0]
+          : "/assets/default_book.jpg"),
+      rating: book.rating || 4.2,
+      reviews: book.reviews || book.totalSales || 12,
+      price: Number(book.price) || 0,
+    }));
+
+    if (mapped.length) return mapped;
+  } catch (error) {
+    console.error("Error reading stockBooks:", error);
+  }
+
+  return books;
+};
 
 // Cart functions
 export const getCart = () => {
@@ -101,26 +126,29 @@ export const updateQuantity = (bookId, change) => {
 
 
 // Search books
-export const searchBooks = (query) => {
-  return books.filter(book =>
-    book.title.toLowerCase().includes(query.toLowerCase()) ||
-    book.author.toLowerCase().includes(query.toLowerCase())
-  )
-}
+export const searchBooks = (query, booksArray = getAllBooks()) => {
+  const q = (query || "").toLowerCase();
+  return booksArray.filter(
+    (book) =>
+      book.title.toLowerCase().includes(q) ||
+      book.author.toLowerCase().includes(q),
+  );
+};
 
 // Add this function to your existing helpers.js file
 export const addToWishlist = (bookId, userId) => {
-  const wishlistKey = `wishlist_${userId}`
-  const currentWishlist = JSON.parse(localStorage.getItem(wishlistKey)) || []
-  const book = books.find(b => b.id === bookId)
+  const wishlistKey = `wishlist_${userId}`;
+  const currentWishlist = JSON.parse(localStorage.getItem(wishlistKey)) || [];
+  const catalog = getAllBooks();
+  const book = catalog.find((b) => b.id === bookId);
 
-  if (book && !currentWishlist.some(item => item.id === bookId)) {
-    currentWishlist.push(book)
-    localStorage.setItem(wishlistKey, JSON.stringify(currentWishlist))
-    return true
+  if (book && !currentWishlist.some((item) => item.id === bookId)) {
+    currentWishlist.push(book);
+    localStorage.setItem(wishlistKey, JSON.stringify(currentWishlist));
+    return true;
   }
-  return false
-}
+  return false;
+};
 
 
 

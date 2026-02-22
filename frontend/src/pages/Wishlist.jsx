@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -22,7 +22,7 @@ import {
   // ... other imports
 } from "../components/Wishlist/utils.jsx";
 
-import { showNotification } from "../utils/helpers";
+import { showNotification, getAllBooks } from "../utils/helpers";
 import { addItem, selectCartItems, setCart } from "../store/slices/cartSlice";
 import "../styles/pages/Wishlist.css";
 
@@ -87,10 +87,44 @@ const Wishlist = () => {
   const dispatch = useDispatch();
   const cartItems = useSelector(selectCartItems);
 
+  const resolveBookImage = useCallback((book) => {
+    if (!book) return "/assets/default_book.jpg";
+    const fromBook =
+      book.image ||
+      (Array.isArray(book.images) && book.images.length ? book.images[0] : "");
+    return fromBook || "/assets/default_book.jpg";
+  }, []);
+
+  const normalizeWishlistItems = useCallback(
+    (items, catalog) => {
+      const catalogMap = new Map(
+        (catalog || []).map((b) => [String(b.id), { ...b, image: resolveBookImage(b) }]),
+      );
+
+      return (items || []).map((item) => {
+        const match = catalogMap.get(String(item.id));
+        const base = match || {};
+
+        return {
+          ...base,
+          ...item,
+          image: resolveBookImage(item) || base.image || "/assets/default_book.jpg",
+          inStock:
+            item.inStock ?? base.inStock ?? (base.stock !== undefined ? base.stock > 0 : true),
+          price: Number(item.price ?? base.price ?? 0),
+          rating: item.rating || base.rating || 4.2,
+          reviews: item.reviews || base.reviews || base.totalSales || 0,
+        };
+      });
+    },
+    [resolveBookImage],
+  );
+
   // State management
   const [user, setUser] = useState(() => getStoredUser());
+  const [allBooks, setAllBooks] = useState(() => getAllBooks());
   const [wishlist, setWishlist] = useState(() =>
-    seedWishlistForUser(getStoredUser()),
+    normalizeWishlistItems(seedWishlistForUser(getStoredUser()), getAllBooks()),
   );
   const [currentFilter, setCurrentFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -112,26 +146,45 @@ const Wishlist = () => {
     if (!user || !canAccessStorage()) return;
 
     const handleWishlistUpdated = () => {
-      setWishlist(readWishlistFromStorage(user.id));
+      setWishlist(
+        normalizeWishlistItems(readWishlistFromStorage(user.id), allBooks),
+      );
     };
 
     window.addEventListener("wishlist-updated", handleWishlistUpdated);
     return () =>
       window.removeEventListener("wishlist-updated", handleWishlistUpdated);
-  }, [user]);
+  }, [allBooks, normalizeWishlistItems, user]);
 
   useEffect(() => {
     if (!canAccessStorage()) return undefined;
 
+    const handleStorageChange = (event) => {
+      if (event.key === "stockBooks") {
+        const updated = getAllBooks();
+        setAllBooks(updated);
+        setWishlist((prev) => normalizeWishlistItems(prev, updated));
+      }
+    };
+
     const handleAuthChange = () => {
       const updatedUser = getStoredUser();
       setUser(updatedUser);
-      setWishlist(seedWishlistForUser(updatedUser));
+      setWishlist(
+        normalizeWishlistItems(
+          seedWishlistForUser(updatedUser),
+          allBooks,
+        ),
+      );
     };
 
+    window.addEventListener("storage", handleStorageChange);
     window.addEventListener("auth-change", handleAuthChange);
-    return () => window.removeEventListener("auth-change", handleAuthChange);
-  }, []);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("auth-change", handleAuthChange);
+    };
+  }, [allBooks, normalizeWishlistItems]);
 
   const filteredWishlist = useMemo(() => {
     if (!user) return [];
@@ -166,8 +219,9 @@ const Wishlist = () => {
       setSearchResults([]);
       return;
     }
+    const catalog = allBooks.length ? allBooks : sampleBooks;
 
-    const results = sampleBooks
+    const results = catalog
       .filter(
         (book) =>
           book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -321,9 +375,13 @@ const Wishlist = () => {
     }
 
     const book =
-      sampleBooks.find((b) => b.id === bookId) ||
-      wishlist.find((b) => b.id === bookId);
-    if (!book || !book.inStock) {
+      allBooks.find((b) => b.id === bookId) ||
+      wishlist.find((b) => b.id === bookId) ||
+      sampleBooks.find((b) => b.id === bookId);
+
+    const inStock = book?.inStock ?? (book?.stock ?? 0) > 0;
+
+    if (!book || !inStock) {
       showNotification("This book is currently out of stock", "warning");
       return;
     }
@@ -336,7 +394,7 @@ const Wishlist = () => {
         price: book.price,
         image: book.image,
         quantity: 1,
-        stock: book.stock,
+        stock: book.stock ?? 0,
       }),
     );
 

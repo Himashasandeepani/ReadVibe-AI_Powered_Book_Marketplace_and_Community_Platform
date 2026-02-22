@@ -12,7 +12,7 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
     const imageMap = {
       "The Midnight Library": "/assets/The_Midnight_Library.jpeg",
       "Project Hail Mary": "/assets/project_hail_mary.jpg",
-      Dune: "/assets/dune.jpg",
+      "Dune": "/assets/dune.jpg",
       "The Hobbit": "/assets/the_hobbit.jpg",
       "The Silent Patient": "/assets/silent_patient.jpg",
       "Where the Crawdads Sing": "/assets/crawdads_sing.jpg",
@@ -24,6 +24,17 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
   };
 
   useEffect(() => {
+    const resolveBookImage = (book) => {
+      const localImage =
+        book.image ||
+        (Array.isArray(book.images) && book.images.length
+          ? book.images[0]
+          : "");
+
+      // Prefer stored image (data URL or uploaded path); fallback to static map
+      return localImage || getBookImage(book.title);
+    };
+
     const loadFeaturedBooks = () => {
       try {
         const storedBooks =
@@ -43,7 +54,7 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
           author: book.author,
           category: book.category,
           price: book.price,
-          image: getBookImage(book.title),
+          image: resolveBookImage(book),
           rating: Math.min(5, 4 + book.salesThisMonth / 20),
           reviews: book.totalSales || Math.floor(Math.random() * 50) + 10,
           inStock: book.stock > 0,

@@ -18,7 +18,7 @@ export const sampleBooks = [
     rating: 4.3,
     reviews: 128,
     inStock: true,
-    image: "../Images/The_Midnight_Library.jpeg",
+    image: "/assets/The_Midnight_Library.jpeg",
   },
   {
     id: 2,
@@ -29,7 +29,7 @@ export const sampleBooks = [
     rating: 4.8,
     reviews: 95,
     inStock: true,
-    image: "../Images/Project_Hail_Mary.jpg",
+    image: "/assets/project_hail_mary.jpg",
   },
   {
     id: 3,
@@ -40,7 +40,7 @@ export const sampleBooks = [
     rating: 4.0,
     reviews: 210,
     inStock: false,
-    image: "../Images/Dune.jpeg",
+    image: "/assets/dune.jpg",
   },
   {
     id: 4,
@@ -51,7 +51,7 @@ export const sampleBooks = [
     rating: 4.9,
     reviews: 305,
     inStock: true,
-    image: "../Images/The_Hobbit.jpeg",
+    image: "/assets/the_hobbit.jpg",
   },
   {
     id: 5,
@@ -62,8 +62,7 @@ export const sampleBooks = [
     rating: 4.8,
     reviews: 150,
     inStock: true,
-    image:
-      "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Atomic+Habits",
+    image: "/assets/atomic_habits.jpg",
   },
 ];
 

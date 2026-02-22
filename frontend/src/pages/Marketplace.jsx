@@ -25,7 +25,7 @@ import {
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 import {
-  books,
+  getAllBooks,
   formatPrice,
   generateStarRating,
   searchBooks,
@@ -68,9 +68,35 @@ const DEFAULT_FILTERS = {
 
 const Marketplace = () => {
   const dispatch = useDispatch();
+  const resolveBookImage = useCallback((book) => {
+    const imageFromBook =
+      book.image ||
+      (Array.isArray(book.images) && book.images.length ? book.images[0] : "");
+    return imageFromBook || "/assets/default_book.jpg";
+  }, []);
+
+  const normalizeBooks = useCallback(
+    (booksArray) =>
+      (booksArray || []).map((book) => ({
+        ...book,
+        image: resolveBookImage(book),
+        inStock: book.inStock ?? book.stock > 0,
+        stock: book.stock ?? 0,
+        rating: book.rating || 4.2,
+        reviews: book.reviews || book.totalSales || 12,
+        price: Number(book.price) || 0,
+      })),
+    [resolveBookImage],
+  );
+
+  const loadBooks = useCallback(() => {
+    const source = getAllBooks();
+    return normalizeBooks(source);
+  }, [normalizeBooks]);
+  const [allBooks, setAllBooks] = useState(() => loadBooks());
   const [filters, setFilters] = useState(() => ({ ...DEFAULT_FILTERS }));
   const [filteredBooks, setFilteredBooks] = useState(() =>
-    filterBooks(DEFAULT_FILTERS, books),
+    filterBooks(DEFAULT_FILTERS, loadBooks()),
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -85,28 +111,38 @@ const Marketplace = () => {
   const navigate = useNavigate();
 
   const applyFilters = useCallback(() => {
-    const filtered = filterBooks(filters, books);
+    const filtered = filterBooks(filters, allBooks);
     setFilteredBooks(filtered);
     setCurrentPage(1);
-  }, [filters]);
+  }, [allBooks, filters]);
 
   useEffect(() => {
     const handleStorageChange = () => {
       const storedUser = getStoredUser();
       setUser(storedUser);
       setUserWishlist(getStoredWishlist(storedUser));
+
+      const updatedBooks = loadBooks();
+      setAllBooks(updatedBooks);
+
+      if (searchQuery.length >= 2) {
+        setFilteredBooks(searchBooks(searchQuery, updatedBooks));
+      } else {
+        setFilteredBooks(filterBooks(filters, updatedBooks));
+      }
+      setCurrentPage(1);
     };
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+  }, [filters, loadBooks, searchQuery]);
 
   const handleSearch = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
 
     if (query.length >= 2) {
-      const results = searchBooks(query);
+      const results = searchBooks(query, allBooks);
       setFilteredBooks(results);
       setCurrentPage(1);
     } else if (query.length === 0) {
@@ -135,7 +171,7 @@ const Marketplace = () => {
     const resetState = { ...DEFAULT_FILTERS };
     setFilters(resetState);
     setSearchQuery("");
-    setFilteredBooks(filterBooks(resetState, books));
+    setFilteredBooks(filterBooks(resetState, allBooks));
     setCurrentPage(1);
   };
 
@@ -179,7 +215,7 @@ const Marketplace = () => {
 
     if (!requireLogin("add items to cart")) return;
 
-    const targetBook = books.find((b) => b.id === bookId);
+    const targetBook = allBooks.find((b) => b.id === bookId);
     if (!targetBook) return;
     if (!targetBook.inStock || targetBook.stock === 0) {
       showNotification("This book is currently out of stock", "warning");
@@ -204,7 +240,7 @@ const Marketplace = () => {
 
     if (!requireLogin("buy books")) return;
 
-    const targetBook = books.find((b) => b.id === bookId);
+    const targetBook = allBooks.find((b) => b.id === bookId);
     if (!targetBook || !targetBook.inStock || targetBook.stock === 0) {
       showNotification("This book is currently out of stock", "warning");
       return;
