@@ -45,6 +45,25 @@ services:
       - readvibe-network
     command: npm run dev
 
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: readvibe_frontend
+    environment:
+      VITE_API_URL: http://localhost:5000/api
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    working_dir: /app
+    command: npm run dev -- --host 0.0.0.0 --port 5173
+    networks:
+      - readvibe-network
+
 volumes:
   postgres_data:
 
