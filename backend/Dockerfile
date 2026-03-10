@@ -1,20 +1,22 @@
-# Use official Node.js runtime as a parent image
+# Dockerfile - Backend containerization
+# This file defines the Docker image configuration for the backend application
+# Used to build and deploy the backend in a containerized environment
+
 FROM node:18-alpine
 
-# Set working directory in container
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Copy package files
 COPY package*.json ./
 
 # Install dependencies
 RUN npm install
 
-# Copy the rest of the application code
+# Copy source code
 COPY . .
 
 # Expose port
 EXPOSE 5000
 
-# Start the application
+# Start command (will be overridden by docker-compose)
 CMD ["npm", "start"]

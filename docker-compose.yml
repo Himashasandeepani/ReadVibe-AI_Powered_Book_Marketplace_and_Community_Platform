@@ -1,0 +1,87 @@
+# docker-compose.yml (Member 1 creates)
+# Docker Compose configuration - Orchestrates all application services
+# Defines and configures frontend, backend, database, and other services
+# Used to run the entire application stack with a single command
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: readvibe-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=readvibe_db
+      - POSTGRES_USER=readvibe
+      - POSTGRES_PASSWORD=readvibe_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - readvibe-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U readvibe -d readvibe_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: readvibe-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+      - DATABASE_URL=postgresql://readvibe:readvibe_password@postgres:5432/readvibe_db
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=readvibe_db
+      - DB_USER=readvibe
+      - DB_PASSWORD=readvibe_password
+      - JWT_SECRET=${JWT_SECRET:-development-secret-change-in-production}
+      - JWT_EXPIRE=24h
+      - FRONTEND_URL=http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - readvibe-network
+    command: npm run dev
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: readvibe-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_BACKEND_URL=http://localhost:5000
+      - VITE_WEBSOCKET_URL=http://localhost:5000
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - readvibe-network
+    command: npm run dev -- --host 0.0.0.0 --port 3000
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  readvibe-network:
+    driver: bridge
