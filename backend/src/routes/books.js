@@ -1,6 +1,12 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
-import { createBook, deleteBook, getBookById, listBooks, updateBook } from '../models/bookModel.js';
+import {
+  createBookHandler,
+  deleteBookHandler,
+  getBook,
+  getBooks,
+  updateBookHandler,
+} from '../controllers/bookController.js';
 
 const router = express.Router();
 
@@ -15,15 +21,7 @@ const handleValidation = (req, res, next) => {
 // @route   GET /api/books
 // @desc    Get all books
 // @access  Public
-router.get('/', async (_req, res) => {
-  try {
-    const books = await listBooks();
-    return res.json({ books });
-  } catch (err) {
-    console.error('Failed to fetch books', err);
-    return res.status(500).json({ error: 'Failed to fetch books' });
-  }
-});
+router.get('/', getBooks);
 
 // @route   GET /api/books/:id
 // @desc    Get book by ID
@@ -32,18 +30,7 @@ router.get(
   '/:id',
   [param('id').isInt().withMessage('Book id must be an integer')],
   handleValidation,
-  async (req, res) => {
-    try {
-      const book = await getBookById(Number(req.params.id));
-      if (!book) {
-        return res.status(404).json({ error: 'Book not found' });
-      }
-      return res.json({ book });
-    } catch (err) {
-      console.error('Failed to fetch book', err);
-      return res.status(500).json({ error: 'Failed to fetch book' });
-    }
-  }
+  getBook
 );
 
 // @route   POST /api/books
@@ -60,38 +47,7 @@ router.post(
     body('featured').optional().isBoolean(),
   ],
   handleValidation,
-  async (req, res) => {
-    try {
-      const book = await createBook({
-        isbn: req.body.isbn,
-        title: req.body.title,
-        author: req.body.author,
-        category: req.body.category,
-        price: req.body.price,
-        costPrice: req.body.costPrice,
-        stock: req.body.stock ?? 0,
-        minStock: req.body.minStock ?? 0,
-        maxStock: req.body.maxStock ?? 0,
-        status: req.body.status,
-        description: req.body.description,
-        publisher: req.body.publisher,
-        publicationYear: req.body.publicationYear,
-        pages: req.body.pages,
-        language: req.body.language,
-        weight: req.body.weight,
-        dimensions: req.body.dimensions,
-        image: req.body.image,
-        images: req.body.images,
-        featured: req.body.featured,
-        salesThisMonth: req.body.salesThisMonth,
-        totalSales: req.body.totalSales,
-      });
-      return res.status(201).json({ book });
-    } catch (err) {
-      console.error('Failed to create book', err);
-      return res.status(500).json({ error: 'Failed to create book' });
-    }
-  }
+  createBookHandler
 );
 
 // @route   PUT /api/books/:id
@@ -108,44 +64,7 @@ router.put(
     body('featured').optional().isBoolean(),
   ],
   handleValidation,
-  async (req, res) => {
-    const id = Number(req.params.id);
-    try {
-      const existing = await getBookById(id);
-      if (!existing) {
-        return res.status(404).json({ error: 'Book not found' });
-      }
-
-      const book = await updateBook(id, {
-        isbn: req.body.isbn,
-        title: req.body.title,
-        author: req.body.author,
-        category: req.body.category,
-        price: req.body.price,
-        costPrice: req.body.costPrice,
-        stock: req.body.stock,
-        minStock: req.body.minStock,
-        maxStock: req.body.maxStock,
-        status: req.body.status,
-        description: req.body.description,
-        publisher: req.body.publisher,
-        publicationYear: req.body.publicationYear,
-        pages: req.body.pages,
-        language: req.body.language,
-        weight: req.body.weight,
-        dimensions: req.body.dimensions,
-        image: req.body.image,
-        images: req.body.images,
-        featured: req.body.featured,
-        salesThisMonth: req.body.salesThisMonth,
-        totalSales: req.body.totalSales,
-      });
-      return res.json({ book });
-    } catch (err) {
-      console.error('Failed to update book', err);
-      return res.status(500).json({ error: 'Failed to update book' });
-    }
-  }
+  updateBookHandler
 );
 
 // @route   DELETE /api/books/:id
@@ -155,21 +74,7 @@ router.delete(
   '/:id',
   [param('id').isInt().withMessage('Book id must be an integer')],
   handleValidation,
-  async (req, res) => {
-    const id = Number(req.params.id);
-    try {
-      const existing = await getBookById(id);
-      if (!existing) {
-        return res.status(404).json({ error: 'Book not found' });
-      }
-
-      await deleteBook(id);
-      return res.json({ success: true });
-    } catch (err) {
-      console.error('Failed to delete book', err);
-      return res.status(500).json({ error: 'Failed to delete book' });
-    }
-  }
+  deleteBookHandler
 );
 
 export default router;

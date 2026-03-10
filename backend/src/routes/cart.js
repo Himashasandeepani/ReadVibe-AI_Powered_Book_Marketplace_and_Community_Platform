@@ -1,12 +1,12 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import {
-  addToCart,
-  clearCart,
-  deleteCartItem,
-  getCartForUser,
-  updateCartItem,
-} from '../models/cartModel.js';
+  addCartItem,
+  clearCartHandler,
+  deleteCartItemHandler,
+  getCart,
+  updateCartItemHandler,
+} from '../controllers/cartController.js';
 
 const router = express.Router();
 
@@ -35,15 +35,7 @@ const handleValidation = (req, res, next) => {
 
 // @route   GET /api/cart
 // @desc    Get user cart
-router.get('/', requireUser, async (req, res) => {
-  try {
-    const items = await getCartForUser(req.userId);
-    return res.json({ items });
-  } catch (err) {
-    console.error('Failed to fetch cart', err);
-    return res.status(500).json({ error: 'Failed to fetch cart' });
-  }
-});
+router.get('/', requireUser, getCart);
 
 // @route   POST /api/cart
 // @desc    Add item to cart (increments if exists)
@@ -55,15 +47,7 @@ router.post(
     body('quantity').optional().isInt({ min: 1 }).withMessage('quantity must be positive'),
   ],
   handleValidation,
-  async (req, res) => {
-    try {
-      const items = await addToCart(req.userId, Number(req.body.bookId), Number(req.body.quantity) || 1);
-      return res.status(201).json({ items });
-    } catch (err) {
-      console.error('Failed to add to cart', err);
-      return res.status(500).json({ error: 'Failed to add to cart' });
-    }
-  }
+  addCartItem
 );
 
 // @route   PUT /api/cart/:bookId
@@ -76,16 +60,7 @@ router.put(
     body('quantity').isInt().withMessage('quantity is required'),
   ],
   handleValidation,
-  async (req, res) => {
-    const quantity = Number(req.body.quantity);
-    try {
-      const items = await updateCartItem(req.userId, Number(req.params.bookId), quantity);
-      return res.json({ items });
-    } catch (err) {
-      console.error('Failed to update cart item', err);
-      return res.status(500).json({ error: 'Failed to update cart item' });
-    }
-  }
+  updateCartItemHandler
 );
 
 // @route   DELETE /api/cart/:bookId
@@ -95,28 +70,11 @@ router.delete(
   requireUser,
   [param('bookId').isInt().withMessage('bookId must be an integer')],
   handleValidation,
-  async (req, res) => {
-    try {
-      await deleteCartItem(req.userId, Number(req.params.bookId));
-      const items = await getCartForUser(req.userId);
-      return res.json({ items });
-    } catch (err) {
-      console.error('Failed to remove cart item', err);
-      return res.status(500).json({ error: 'Failed to remove cart item' });
-    }
-  }
+  deleteCartItemHandler
 );
 
 // @route   DELETE /api/cart
 // @desc    Clear cart
-router.delete('/', requireUser, async (req, res) => {
-  try {
-    await clearCart(req.userId);
-    return res.json({ items: [] });
-  } catch (err) {
-    console.error('Failed to clear cart', err);
-    return res.status(500).json({ error: 'Failed to clear cart' });
-  }
-});
+router.delete('/', requireUser, clearCartHandler);
 
 export default router;
