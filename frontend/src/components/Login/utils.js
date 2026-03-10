@@ -137,67 +137,44 @@ export const initializeDemoUsers = () => {
   return existingUsers;
 };
 
+// API helpers
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+const handleApi = async (path, options = {}) => {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const errorMsg = data?.error || data?.message || "Request failed";
+    throw new Error(errorMsg);
+  }
+  return data;
+};
+
+export const registerUserApi = async ({ name, email, username, password }) => {
+  const data = await handleApi("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ name, email, username, password }),
+  });
+  return data.user;
+};
+
+export const loginUserApi = async ({ identifier, password }) => {
+  const data = await handleApi("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ identifier, password }),
+  });
+  return data.user;
+};
+
 // Find user by credentials
-export const findUserByCredentials = (username, password) => {
-  const users = JSON.parse(localStorage.getItem("users") || "[]");
-
-  // Try to find user by username or email
-  const user = users.find(
-    (u) =>
-      (u.username === username || u.email === username) &&
-      u.password === password
-  );
-
-  return user;
-};
-
-// Create new user
-export const createNewUser = (signupData) => {
-  return {
-    id: Date.now(),
-    name: signupData.name,
-    email: signupData.email,
-    username: signupData.username,
-    password: signupData.password,
-    role: "user",
-    avatar: signupData.name.substring(0, 2).toUpperCase(),
-    createdAt: new Date().toISOString(),
-    isVerified: false,
-    receiveRecommendations: signupData.receiveRecommendations,
-    readingPreferences: {
-      genres: [],
-      favoriteAuthors: [],
-      readingGoal: 12, // Default: 12 books per year
-    },
-    purchaseHistory: [],
-    reviews: [],
-    posts: [],
-    likedPosts: [],
-    searchHistory: [],
-  };
-};
-
-// Check if user exists
-export const checkUserExists = (username, email) => {
-  const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-
-  return existingUsers.some(
-    (user) => user.username === username || user.email === email
-  );
-};
-
-// Save user to storage
-export const saveUserToStorage = (user) => {
-  const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-  existingUsers.push(user);
-  localStorage.setItem("users", JSON.stringify(existingUsers));
-  return user;
-};
-
-// Remove password from user object
+// Legacy local helpers kept for reference (not used once API is wired)
 export const removePasswordFromUser = (user) => {
-  const { password: UNUSED_PASSWORD, ...userWithoutPassword } = user;
-  return userWithoutPassword;
+  const { password: UNUSED_PASSWORD, password_hash: UNUSED_HASH, ...rest } = user;
+  return rest;
 };
 
 // Validate login form

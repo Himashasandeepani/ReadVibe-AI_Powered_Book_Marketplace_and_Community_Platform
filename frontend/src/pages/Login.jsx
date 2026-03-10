@@ -17,10 +17,8 @@ import {
   initializeDemoUsers,
   validateLoginForm,
   validateSignupForm,
-  findUserByCredentials,
-  createNewUser,
-  checkUserExists,
-  saveUserToStorage,
+  registerUserApi,
+  loginUserApi,
   removePasswordFromUser,
   generateResetCode,
   saveResetCode,
@@ -91,7 +89,7 @@ const Login = () => {
     initializeDemoUsers();
   }, [navigate]);
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     const errors = validateLoginForm(loginData);
 
@@ -102,9 +100,12 @@ const Login = () => {
 
     setFormErrors({});
 
-    const user = findUserByCredentials(loginData.username, loginData.password);
+    try {
+      const user = await loginUserApi({
+        identifier: loginData.username,
+        password: loginData.password,
+      });
 
-    if (user) {
       const userWithoutPassword = removePasswordFromUser(user);
 
       if (loginData.rememberMe) {
@@ -113,12 +114,12 @@ const Login = () => {
 
       dispatch(loginSuccess(userWithoutPassword));
       redirectBasedOnRole(userWithoutPassword, navigate);
-    } else {
-      setFormErrors({ general: "Invalid username or password" });
+    } catch (err) {
+      setFormErrors({ general: err.message || "Invalid username or password" });
     }
   };
 
-  const handleSignupSubmit = (e) => {
+  const handleSignupSubmit = async (e) => {
     e.preventDefault();
     const errors = validateSignupForm(signupData);
 
@@ -129,18 +130,21 @@ const Login = () => {
 
     setFormErrors({});
 
-    if (checkUserExists(signupData.username, signupData.email)) {
-      setFormErrors({ general: "Username or email already exists" });
-      return;
+    try {
+      const user = await registerUserApi({
+        name: signupData.name,
+        email: signupData.email,
+        username: signupData.username,
+        password: signupData.password,
+      });
+
+      const userWithoutPassword = removePasswordFromUser(user);
+      dispatch(loginSuccess(userWithoutPassword));
+
+      navigate("/", { state: { welcome: true } });
+    } catch (err) {
+      setFormErrors({ general: err.message || "Signup failed" });
     }
-
-    const newUser = createNewUser(signupData);
-    saveUserToStorage(newUser);
-
-    const userWithoutPassword = removePasswordFromUser(newUser);
-    dispatch(loginSuccess(userWithoutPassword));
-
-    navigate("/", { state: { welcome: true } });
   };
 
   const handleForgotPasswordSubmit = (data) => {
