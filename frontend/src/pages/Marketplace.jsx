@@ -33,7 +33,8 @@ import {
   showNotification,
   addToWishlist,
 } from "../utils/helpers";
-import { addItem, setCart } from "../store/slices/cartSlice";
+import { setCart } from "../store/slices/cartSlice";
+import { addCartItemApi, fetchCartApi } from "../utils/cartApi";
 import "../styles/pages/Marketplace.css";
 
 // Components
@@ -137,6 +138,31 @@ const Marketplace = () => {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, [filters, loadBooks, searchQuery]);
 
+  useEffect(() => {
+    const syncCart = async () => {
+      if (!user?.id) return;
+      try {
+        const items = await fetchCartApi(user.id);
+        dispatch(
+          setCart(
+            items.map((item) => ({
+              id: item.bookId,
+              quantity: item.quantity,
+              title: item.title,
+              price: item.price,
+              image: resolveBookImage(item),
+              stock: item.stock,
+            })),
+          ),
+        );
+      } catch (error) {
+        console.error("Failed to sync cart from API", error);
+      }
+    };
+
+    syncCart();
+  }, [dispatch, resolveBookImage, user]);
+
   const handleSearch = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -222,17 +248,28 @@ const Marketplace = () => {
       return;
     }
 
-    dispatch(
-      addItem({
-        id: targetBook.id,
-        title: targetBook.title,
-        price: targetBook.price,
-        quantity: 1,
-        image: targetBook.image,
-        stock: targetBook.stock,
-      }),
-    );
-    showNotification("Book added to cart!", "success");
+    const add = async () => {
+      try {
+        const items = await addCartItemApi(user.id, targetBook.id, 1);
+        dispatch(
+          setCart(
+            items.map((item) => ({
+              id: item.bookId,
+              quantity: item.quantity,
+              title: item.title,
+              price: item.price,
+              image: resolveBookImage(item),
+              stock: item.stock,
+            })),
+          ),
+        );
+        showNotification("Book added to cart!", "success");
+      } catch (error) {
+        showNotification(error.message || "Failed to add to cart", "danger");
+      }
+    };
+
+    add();
   };
 
   const handleBuyNow = (bookId, e = null) => {
