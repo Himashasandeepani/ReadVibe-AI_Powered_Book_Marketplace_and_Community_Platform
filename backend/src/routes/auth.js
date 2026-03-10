@@ -10,10 +10,14 @@ const router = express.Router();
 router.post(
   '/register',
   [
-    body('name').trim().notEmpty().withMessage('Name is required'),
+    body('name').trim().notEmpty().withMessage('Full name is required'),
     body('email').isEmail().withMessage('Valid email is required'),
     body('username').isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    body('role').optional().isString(),
+    body('status').optional().isString(),
+    body('termsAccepted').optional().isBoolean(),
+    body('aiEmailOptIn').optional().isBoolean(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -21,7 +25,7 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, username, password } = req.body;
+    const { name, email, username, password, role, status, termsAccepted, aiEmailOptIn } = req.body;
 
     try {
       const exists = await userExists(username, email);
@@ -29,7 +33,16 @@ router.post(
         return res.status(409).json({ error: 'Username or email already exists' });
       }
 
-      const user = await createUser({ name, email, username, password });
+      const user = await createUser({
+        fullName: name,
+        email,
+        username,
+        password,
+        role,
+        status,
+        termsAccepted,
+        aiEmailOptIn,
+      });
       return res.status(201).json({ user });
     } catch (err) {
       console.error('Register error:', err);

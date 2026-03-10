@@ -1,3 +1,45 @@
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+const handleApi = async (path, options = {}) => {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = data?.error || data?.message || "Request failed";
+    throw new Error(msg);
+  }
+  return data;
+};
+
+export const fetchBooksFromApi = async () => {
+  const data = await handleApi("/api/books");
+  return data.books || [];
+};
+
+export const createBookApi = async (payload) => {
+  const data = await handleApi("/api/books", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return data.book;
+};
+
+export const updateBookApi = async (bookId, payload) => {
+  const data = await handleApi(`/api/books/${bookId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  return data.book;
+};
+
+export const deleteBookApi = async (bookId) => {
+  await handleApi(`/api/books/${bookId}`, { method: "DELETE" });
+  return true;
+};
+
 // Currency formatter for LKR
 export const formatCurrency = (amount) => {
   return new Intl.NumberFormat("en-LK", {

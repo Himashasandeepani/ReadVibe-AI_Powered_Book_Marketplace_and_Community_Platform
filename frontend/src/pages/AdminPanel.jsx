@@ -26,6 +26,10 @@ import {
   validateNewUser,
   validateEditUser,
   showNotification,
+  fetchUsersFromApi,
+  createAdminUserApi,
+  updateAdminUserApi,
+  deleteAdminUserApi,
 } from "../components/Admin/utils";
 
 const DEFAULT_SYSTEM_SETTINGS = {
@@ -113,6 +117,28 @@ const AdminPanel = () => {
   }, [currentUser, navigate]);
 
   useEffect(() => {
+    const pullUsers = async () => {
+      if (!currentUser || currentUser.role !== "admin") return;
+      try {
+        const apiUsers = await fetchUsersFromApi();
+        const normalized = apiUsers.map((user) => ({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          status: (user.status || "active").toLowerCase(),
+          joinDate: user.createdAt ? user.createdAt.split("T")[0] : "",
+        }));
+        setUsers(normalized);
+      } catch (error) {
+        console.error("Failed to load users from API", error);
+      }
+    };
+
+    pullUsers();
+  }, [currentUser]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
     const handleStorageChange = (event) => {
@@ -157,23 +183,37 @@ const AdminPanel = () => {
       alert(errors.join("\n"));
       return;
     }
+    const create = async () => {
+      try {
+        const newUser = await createAdminUserApi({
+          username: formData.username,
+          email: formData.email,
+          role: formData.role,
+          status: "active",
+          password: formData.password,
+          fullName: formData.username,
+        });
 
-    const newUserObj = {
-      id: users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1,
-      username: formData.username,
-      email: formData.email,
-      role: formData.role,
-      status: "active",
-      joinDate: new Date().toISOString().split("T")[0],
+        const userRecord = {
+          id: newUser.id,
+          username: newUser.username,
+          email: newUser.email,
+          role: newUser.role,
+          status: (newUser.status || "active").toLowerCase(),
+          joinDate: newUser.createdAt ? newUser.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
+        };
+
+        const updatedUsers = [...users, userRecord];
+        setUsers(updatedUsers);
+        saveData(updatedUsers, null, null);
+        setShowAddUserModal(false);
+        showNotification("User added successfully");
+      } catch (error) {
+        alert(error.message || "Failed to add user");
+      }
     };
 
-    const updatedUsers = [...users, newUserObj];
-    setUsers(updatedUsers);
-    saveData(updatedUsers, null, null);
-
-    setShowAddUserModal(false);
-
-    showNotification("User added successfully");
+    create();
   };
 
   const handleEditUser = (userId) => {
@@ -193,25 +233,40 @@ const AdminPanel = () => {
       return;
     }
 
-    const updatedUsers = users.map((user) => {
-      if (user.id === editingUser.id) {
-        return {
-          ...user,
+    const update = async () => {
+      try {
+        const updated = await updateAdminUserApi(editingUser.id, {
           username: formData.username,
           email: formData.email,
           role: formData.role,
           status: formData.status,
-        };
+        });
+
+        const updatedUsers = users.map((user) => {
+          if (user.id === editingUser.id) {
+            return {
+              ...user,
+              username: updated.username,
+              email: updated.email,
+              role: updated.role,
+              status: (updated.status || formData.status).toLowerCase(),
+            };
+          }
+          return user;
+        });
+
+        setUsers(updatedUsers);
+        saveData(updatedUsers, null, null);
+
+        setShowEditUserModal(false);
+        setEditingUser(null);
+        showNotification("User updated successfully");
+      } catch (error) {
+        alert(error.message || "Failed to update user");
       }
-      return user;
-    });
+    };
 
-    setUsers(updatedUsers);
-    saveData(updatedUsers, null, null);
-
-    setShowEditUserModal(false);
-    setEditingUser(null);
-    showNotification("User updated successfully");
+    update();
   };
 
   const handleDeleteUser = (userId) => {
@@ -220,10 +275,19 @@ const AdminPanel = () => {
         "Are you sure you want to delete this user? This action cannot be undone.",
       )
     ) {
-      const updatedUsers = users.filter((user) => user.id !== userId);
-      setUsers(updatedUsers);
-      saveData(updatedUsers, null, null);
-      showNotification("User deleted successfully");
+      const remove = async () => {
+        try {
+          await deleteAdminUserApi(userId);
+          const updatedUsers = users.filter((user) => user.id !== userId);
+          setUsers(updatedUsers);
+          saveData(updatedUsers, null, null);
+          showNotification("User deleted successfully");
+        } catch (error) {
+          alert(error.message || "Failed to delete user");
+        }
+      };
+
+      remove();
     }
   };
 

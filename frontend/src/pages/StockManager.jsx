@@ -32,6 +32,10 @@ import {
   initialStockBooks,
   initialStockOrders,
   initialPublishers,
+  fetchBooksFromApi,
+  createBookApi,
+  updateBookApi,
+  deleteBookApi,
 } from "../components/StockManager/utils";
 
 const StockManager = () => {
@@ -142,6 +146,65 @@ const StockManager = () => {
     if (typeof window === "undefined") return [];
     return JSON.parse(window.localStorage.getItem("bookRequests")) || [];
   });
+
+  const computeStockStatus = useCallback((stock, minStock) => {
+    const safeStock = Number.isFinite(stock) ? stock : 0;
+    const safeMin = Number.isFinite(minStock) ? minStock : 0;
+    if (safeStock === 0) return "Out of Stock";
+    if (safeStock <= safeMin) return "Low Stock";
+    return "In Stock";
+  }, []);
+
+  const normalizeBook = useCallback((book) => {
+    if (!book) return null;
+    const images = Array.isArray(book.images)
+      ? book.images
+      : book.images
+        ? book.images
+        : [];
+
+    const stockValue = Number(book.stock) || 0;
+    const minValue = Number(book.minStock ?? book.min_stock ?? 0);
+
+    return {
+      ...book,
+      price: Number(book.price) || 0,
+      costPrice:
+        book.costPrice !== undefined
+          ? Number(book.costPrice)
+          : book.cost_price !== undefined
+            ? Number(book.cost_price)
+            : null,
+      stock: stockValue,
+      minStock: minValue,
+      maxStock: Number(book.maxStock ?? book.max_stock ?? 0),
+      status: book.status || computeStockStatus(stockValue, minValue),
+      images,
+      image: book.image || (Array.isArray(images) && images[0]) || "",
+    };
+  }, [computeStockStatus]);
+
+  const persistBooks = useCallback((books) => {
+    setStockBooks(books);
+    localStorage.setItem("stockBooks", JSON.stringify(books));
+    window.dispatchEvent(new Event("storage"));
+  }, []);
+
+  useEffect(() => {
+    const loadBooksFromApi = async () => {
+      try {
+        const apiBooks = await fetchBooksFromApi();
+        if (Array.isArray(apiBooks) && apiBooks.length) {
+          const normalized = apiBooks.map((b) => normalizeBook(b)).filter(Boolean);
+          persistBooks(normalized);
+        }
+      } catch (error) {
+        console.error("Failed to load books from API", error);
+      }
+    };
+
+    loadBooksFromApi();
+  }, [normalizeBook, persistBooks]);
 
   const loadAllData = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -382,10 +445,9 @@ const StockManager = () => {
     });
   };
 
-  const handleAddBook = (e) => {
+  const handleAddBook = async (e) => {
     e.preventDefault();
 
-    // Validate form
     if (
       !newBook.isbn ||
       !newBook.title ||
@@ -397,33 +459,28 @@ const StockManager = () => {
       return;
     }
 
-    // Calculate status
-    let status;
-    if (parseInt(newBook.stock) === 0) {
-      status = "Out of Stock";
-    } else if (parseInt(newBook.stock) <= parseInt(newBook.minStock)) {
-      status = "Low Stock";
-    } else {
-      status = "In Stock";
-    }
+    const stockValue = parseInt(newBook.stock, 10);
+    const minValue = parseInt(newBook.minStock, 10);
+    const status = computeStockStatus(stockValue, minValue);
 
-    const newBookObj = {
-      id: Date.now(),
+    const payload = {
       isbn: newBook.isbn,
       title: newBook.title,
       author: newBook.author,
       category: newBook.category,
       price: parseFloat(newBook.price),
       costPrice:
-        parseFloat(newBook.costPrice) || parseFloat(newBook.price) * 0.6,
-      stock: parseInt(newBook.stock),
-      minStock: parseInt(newBook.minStock),
-      maxStock: parseInt(newBook.maxStock),
-      status: status,
+        newBook.costPrice !== undefined && newBook.costPrice !== ""
+          ? parseFloat(newBook.costPrice)
+          : parseFloat(newBook.price) * 0.6,
+      stock: stockValue,
+      minStock: minValue,
+      maxStock: parseInt(newBook.maxStock, 10),
+      status,
       description: newBook.description,
       publisher: newBook.publisher,
-      publicationYear: parseInt(newBook.publicationYear),
-      pages: parseInt(newBook.pages),
+      publicationYear: parseInt(newBook.publicationYear, 10),
+      pages: parseInt(newBook.pages, 10),
       language: newBook.language,
       weight: newBook.weight,
       dimensions: newBook.dimensions,
@@ -431,31 +488,29 @@ const StockManager = () => {
       image:
         newBook.image ||
         (Array.isArray(newBook.images) ? newBook.images[0] : ""),
-      lastRestocked: new Date().toISOString().split("T")[0],
+      featured: false,
       salesThisMonth: 0,
       totalSales: 0,
-      featured: false,
-      createdAt: new Date().toISOString(),
     };
 
-    const updatedBooks = [...stockBooks, newBookObj];
-    setStockBooks(updatedBooks);
-    localStorage.setItem("stockBooks", JSON.stringify(updatedBooks));
+    try {
+      const created = await createBookApi(payload);
+      const normalized = normalizeBook(created);
+      const updatedBooks = [...stockBooks, normalized];
+      persistBooks(updatedBooks);
 
-    // Reset form
-    resetBookForm();
-
-    setShowAddBookModal(false);
-    showNotification("Book added successfully!", "success");
-    window.dispatchEvent(new Event("storage"));
+      resetBookForm();
+      setShowAddBookModal(false);
+      showNotification("Book added successfully!", "success");
+    } catch (error) {
+      showNotification(error.message || "Failed to add book", "danger");
+    }
   };
 
-  const handleUpdateBook = (e) => {
+  const handleUpdateBook = async (e) => {
     e.preventDefault();
 
-    if (!editingBookId) {
-      return;
-    }
+    if (!editingBookId) return;
 
     if (
       !newBook.isbn ||
@@ -468,59 +523,52 @@ const StockManager = () => {
       return;
     }
 
-    let status;
-    if (parseInt(newBook.stock) === 0) {
-      status = "Out of Stock";
-    } else if (parseInt(newBook.stock) <= parseInt(newBook.minStock)) {
-      status = "Low Stock";
-    } else {
-      status = "In Stock";
-    }
+    const stockValue = parseInt(newBook.stock, 10);
+    const minValue = parseInt(newBook.minStock, 10);
+    const status = computeStockStatus(stockValue, minValue);
 
-    const existingBook = stockBooks.find((b) => b.id === editingBookId);
-    if (!existingBook) {
-      return;
-    }
-
-    const updatedBook = {
-      ...existingBook,
+    const payload = {
       isbn: newBook.isbn,
       title: newBook.title,
       author: newBook.author,
       category: newBook.category,
       price: parseFloat(newBook.price),
       costPrice:
-        parseFloat(newBook.costPrice) || parseFloat(newBook.price) * 0.6,
-      stock: parseInt(newBook.stock),
-      minStock: parseInt(newBook.minStock),
-      maxStock: parseInt(newBook.maxStock),
+        newBook.costPrice !== undefined && newBook.costPrice !== ""
+          ? parseFloat(newBook.costPrice)
+          : parseFloat(newBook.price) * 0.6,
+      stock: stockValue,
+      minStock: minValue,
+      maxStock: parseInt(newBook.maxStock, 10),
       status,
       description: newBook.description,
       publisher: newBook.publisher,
-      publicationYear: parseInt(newBook.publicationYear),
-      pages: parseInt(newBook.pages),
+      publicationYear: parseInt(newBook.publicationYear, 10),
+      pages: parseInt(newBook.pages, 10),
       language: newBook.language,
       weight: newBook.weight,
       dimensions: newBook.dimensions,
-      images: newBook.images || existingBook.images || [],
+      images: newBook.images || [],
       image:
         newBook.image ||
         (Array.isArray(newBook.images) && newBook.images[0]) ||
-        existingBook.image ||
-        (Array.isArray(existingBook.images) ? existingBook.images[0] : ""),
+        "",
     };
 
-    const updatedBooks = stockBooks.map((book) =>
-      book.id === editingBookId ? updatedBook : book,
-    );
+    try {
+      const updated = await updateBookApi(editingBookId, payload);
+      const normalized = normalizeBook(updated);
+      const updatedBooks = stockBooks.map((book) =>
+        book.id === editingBookId ? normalized : book,
+      );
 
-    setStockBooks(updatedBooks);
-    localStorage.setItem("stockBooks", JSON.stringify(updatedBooks));
-
-    resetBookForm();
-    setShowAddBookModal(false);
-    showNotification("Book updated successfully!", "success");
-    window.dispatchEvent(new Event("storage"));
+      persistBooks(updatedBooks);
+      resetBookForm();
+      setShowAddBookModal(false);
+      showNotification("Book updated successfully!", "success");
+    } catch (error) {
+      showNotification(error.message || "Failed to update book", "danger");
+    }
   };
 
   const handleAddPublisher = (e) => {
@@ -598,11 +646,18 @@ const StockManager = () => {
         "Are you sure you want to delete this book from inventory?",
       )
     ) {
-      const updatedBooks = stockBooks.filter((book) => book.id !== bookId);
-      setStockBooks(updatedBooks);
-      localStorage.setItem("stockBooks", JSON.stringify(updatedBooks));
-      showNotification("Book deleted successfully", "success");
-      window.dispatchEvent(new Event("storage"));
+      const remove = async () => {
+        try {
+          await deleteBookApi(bookId);
+          const updatedBooks = stockBooks.filter((book) => book.id !== bookId);
+          persistBooks(updatedBooks);
+          showNotification("Book deleted successfully", "success");
+        } catch (error) {
+          showNotification(error.message || "Failed to delete book", "danger");
+        }
+      };
+
+      remove();
     }
   };
 
@@ -635,32 +690,30 @@ const StockManager = () => {
   };
 
   const handleRestockBook = (bookId, quantity) => {
-    const updatedBooks = stockBooks.map((book) => {
-      if (book.id === bookId) {
-        const newStock = book.stock + quantity;
-        let status = book.status;
-        if (newStock === 0) {
-          status = "Out of Stock";
-        } else if (newStock <= book.minStock) {
-          status = "Low Stock";
-        } else {
-          status = "In Stock";
-        }
+    const target = stockBooks.find((b) => b.id === bookId);
+    if (!target) return;
 
-        return {
-          ...book,
+    const newStock = target.stock + quantity;
+    const status = computeStockStatus(newStock, target.minStock);
+
+    const update = async () => {
+      try {
+        const updated = await updateBookApi(bookId, {
           stock: newStock,
-          status: status,
-          lastRestocked: new Date().toISOString().split("T")[0],
-        };
+          status,
+        });
+        const normalized = normalizeBook(updated);
+        const updatedBooks = stockBooks.map((book) =>
+          book.id === bookId ? normalized : book,
+        );
+        persistBooks(updatedBooks);
+        showNotification(`Restocked ${quantity} items`, "success");
+      } catch (error) {
+        showNotification(error.message || "Failed to restock", "danger");
       }
-      return book;
-    });
+    };
 
-    setStockBooks(updatedBooks);
-    localStorage.setItem("stockBooks", JSON.stringify(updatedBooks));
-    showNotification(`Restocked ${quantity} items`, "success");
-    window.dispatchEvent(new Event("storage"));
+    update();
   };
 
   const handleViewOrder = (orderId) => {
@@ -814,22 +867,32 @@ const StockManager = () => {
   };
 
   const toggleFeaturedBook = (bookId) => {
-    const updatedBooks = stockBooks.map((book) =>
-      book.id === bookId ? { ...book, featured: !book.featured } : book,
-    );
+    const target = stockBooks.find((b) => b.id === bookId);
+    if (!target) return;
 
-    setStockBooks(updatedBooks);
-    localStorage.setItem("stockBooks", JSON.stringify(updatedBooks));
+    const nextFeatured = !target.featured;
 
-    const book = updatedBooks.find((b) => b.id === bookId);
-    showNotification(
-      book.featured
-        ? "Book marked as featured for home page"
-        : "Book removed from featured",
-      "success",
-    );
+    const toggle = async () => {
+      try {
+        const updated = await updateBookApi(bookId, { featured: nextFeatured });
+        const normalized = normalizeBook(updated);
+        const updatedBooks = stockBooks.map((book) =>
+          book.id === bookId ? normalized : book,
+        );
+        persistBooks(updatedBooks);
 
-    window.dispatchEvent(new Event("storage"));
+        showNotification(
+          nextFeatured
+            ? "Book marked as featured for home page"
+            : "Book removed from featured",
+          "success",
+        );
+      } catch (error) {
+        showNotification(error.message || "Failed to update book", "danger");
+      }
+    };
+
+    toggle();
   };
 
   const handlePrintReport = () => {

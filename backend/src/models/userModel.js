@@ -1,59 +1,300 @@
 import bcrypt from 'bcryptjs';
 import { query } from '../config/database.js';
 
-// Ensure the users table exists. This runs once on import.
-const ensureTable = async () => {
-  await query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      name TEXT NOT NULL,
-      email TEXT NOT NULL UNIQUE,
-      username TEXT NOT NULL UNIQUE,
-      password_hash TEXT NOT NULL,
-      role TEXT NOT NULL DEFAULT 'user',
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    );
-  `);
-};
+const DEFAULT_STATUSES = ['active', 'inactive', 'pending'];
+const DEFAULT_ROLES = ['admin', 'user', 'stock'];
 
-ensureTable().catch((err) => {
-  console.error('Failed to ensure users table', err);
+const baseUserSelect = `
+  SELECT
+    u.user_id,
+    u.role_id,
+    u.status_id,
+    u.full_name,
+    u.email,
+    u.username,
+    u.password_hash,
+    u.terms_accepted,
+    u.terms_accepted_at,
+    u.ai_email_opt_in,
+    u.ai_email_opt_in_at,
+    u.created_at,
+    r.role_name,
+    s.status AS status_value
+  FROM users u
+  LEFT JOIN user_roles r ON u.role_id = r.role_id
+  LEFT JOIN status s ON u.status_id = s.id
+`;
+
+const mapUserRow = (row) => ({
+  id: row.user_id,
+  name: row.full_name,
+  email: row.email,
+  username: row.username,
+  role: row.role_name,
+  roleId: row.role_id,
+  status: row.status_value,
+  statusId: row.status_id,
+  termsAccepted: row.terms_accepted,
+  termsAcceptedAt: row.terms_accepted_at,
+  aiEmailOptIn: row.ai_email_opt_in,
+  aiEmailOptInAt: row.ai_email_opt_in_at,
+  createdAt: row.created_at,
 });
 
-export const findByUsernameOrEmail = async (identifier) => {
+const seedDefaultLookups = async () => {
+  await Promise.all(
+    DEFAULT_STATUSES.map((status) =>
+      query(
+        'INSERT INTO status (status, is_active) VALUES ($1, true) ON CONFLICT (status) DO NOTHING',
+        [status]
+      )
+    )
+  );
+
+  await Promise.all(
+    DEFAULT_ROLES.map((role) =>
+      query(
+        'INSERT INTO user_roles (role_name) VALUES ($1) ON CONFLICT (role_name) DO NOTHING',
+        [role]
+      )
+    )
+  );
+};
+
+const ensureTables = async () => {
+  await query(`
+    CREATE TABLE IF NOT EXISTS status (
+      id BIGSERIAL PRIMARY KEY,
+      status VARCHAR(50) NOT NULL UNIQUE,
+      is_active BOOLEAN DEFAULT TRUE
+    );
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS user_roles (
+      role_id BIGSERIAL PRIMARY KEY,
+      role_name VARCHAR(50) UNIQUE
+    );
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS users (
+      user_id BIGSERIAL PRIMARY KEY,
+      role_id BIGINT REFERENCES user_roles(role_id),
+      status_id BIGINT REFERENCES status(id),
+      full_name VARCHAR(150),
+      email VARCHAR(255) UNIQUE,
+      username VARCHAR(50) UNIQUE,
+      password_hash TEXT,
+      terms_accepted BOOLEAN,
+      terms_accepted_at TIMESTAMPTZ,
+      ai_email_opt_in BOOLEAN,
+      ai_email_opt_in_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
+  await seedDefaultLookups();
+};
+
+ensureTables().catch((err) => {
+  console.error('Failed to ensure user-related tables', err);
+});
+
+const getRoleId = async (roleName = 'user') => {
+  const normalized = (roleName || 'user').toLowerCase();
+  const { rows } = await query('SELECT role_id FROM user_roles WHERE LOWER(role_name) = $1 LIMIT 1', [normalized]);
+
+  if (rows[0]) return rows[0].role_id;
+
+  const insert = await query(
+    'INSERT INTO user_roles (role_name) VALUES ($1) RETURNING role_id',
+    [normalized]
+  );
+  return insert.rows[0].role_id;
+};
+
+const getStatusId = async (statusName = 'active') => {
+  const normalized = (statusName || 'active').toLowerCase();
+  const { rows } = await query('SELECT id FROM status WHERE LOWER(status) = $1 LIMIT 1', [normalized]);
+
+  if (rows[0]) return rows[0].id;
+
+  const insert = await query(
+    'INSERT INTO status (status, is_active) VALUES ($1, TRUE) RETURNING id',
+    [normalized]
+  );
+  return insert.rows[0].id;
+};
+
+const findRawByUsernameOrEmail = async (identifier) => {
   const { rows } = await query(
-    'SELECT id, name, email, username, password_hash, role, created_at FROM users WHERE username = $1 OR email = $1 LIMIT 1',
+    `${baseUserSelect} WHERE u.username = $1 OR u.email = $1 LIMIT 1`,
     [identifier]
   );
   return rows[0] || null;
 };
 
-export const userExists = async (username, email) => {
+export const findByUsernameOrEmail = async (identifier) => {
+  const row = await findRawByUsernameOrEmail(identifier);
+  if (!row) return null;
+  return mapUserRow(row);
+};
+
+export const userExists = async (username, email, excludeUserId = null) => {
+  const params = [username, email];
+  const excludeClause = excludeUserId ? 'AND user_id <> $3' : '';
+  if (excludeUserId) params.push(excludeUserId);
+
   const { rows } = await query(
-    'SELECT 1 FROM users WHERE username = $1 OR email = $2 LIMIT 1',
-    [username, email]
+    `SELECT 1 FROM users WHERE (username = $1 OR email = $2) ${excludeClause} LIMIT 1`,
+    params
   );
   return rows.length > 0;
 };
 
-export const createUser = async ({ name, email, username, password, role = 'user' }) => {
-  const passwordHash = await bcrypt.hash(password, 10);
+export const listRoles = async () => {
+  const { rows } = await query('SELECT role_id, role_name FROM user_roles ORDER BY role_name ASC');
+  return rows;
+};
+
+export const listStatuses = async () => {
+  const { rows } = await query('SELECT id, status, is_active FROM status ORDER BY status ASC');
+  return rows;
+};
+
+export const getAllUsers = async () => {
+  const { rows } = await query(`${baseUserSelect} ORDER BY u.created_at DESC`);
+  return rows.map(mapUserRow);
+};
+
+export const getUserById = async (id) => {
+  const { rows } = await query(`${baseUserSelect} WHERE u.user_id = $1 LIMIT 1`, [id]);
+  if (!rows[0]) return null;
+  return mapUserRow(rows[0]);
+};
+
+export const createUser = async ({
+  fullName,
+  email,
+  username,
+  password,
+  role = 'user',
+  status = 'active',
+  termsAccepted = false,
+  aiEmailOptIn = false,
+}) => {
+  const passwordHash = password ? await bcrypt.hash(password, 10) : null;
+  const roleId = await getRoleId(role);
+  const statusId = await getStatusId(status);
+
+  const termsAcceptedAt = termsAccepted ? new Date() : null;
+  const aiEmailOptInAt = aiEmailOptIn ? new Date() : null;
+
   const { rows } = await query(
-    `INSERT INTO users (name, email, username, password_hash, role)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING id, name, email, username, role, created_at`,
-    [name, email, username, passwordHash, role]
+    `INSERT INTO users (
+        role_id,
+        status_id,
+        full_name,
+        email,
+        username,
+        password_hash,
+        terms_accepted,
+        terms_accepted_at,
+        ai_email_opt_in,
+        ai_email_opt_in_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING user_id`,
+    [
+      roleId,
+      statusId,
+      fullName || username,
+      email,
+      username,
+      passwordHash,
+      termsAccepted,
+      termsAcceptedAt,
+      aiEmailOptIn,
+      aiEmailOptInAt,
+    ]
   );
-  return rows[0];
+
+  return getUserById(rows[0].user_id);
+};
+
+export const updateUser = async (id, updates) => {
+  const fields = [];
+  const values = [];
+  let idx = 1;
+
+  if (updates.fullName !== undefined) {
+    fields.push(`full_name = $${idx++}`);
+    values.push(updates.fullName);
+  }
+
+  if (updates.email !== undefined) {
+    fields.push(`email = $${idx++}`);
+    values.push(updates.email);
+  }
+
+  if (updates.username !== undefined) {
+    fields.push(`username = $${idx++}`);
+    values.push(updates.username);
+  }
+
+  if (updates.password) {
+    const hashed = await bcrypt.hash(updates.password, 10);
+    fields.push(`password_hash = $${idx++}`);
+    values.push(hashed);
+  }
+
+  if (updates.role) {
+    const roleId = await getRoleId(updates.role);
+    fields.push(`role_id = $${idx++}`);
+    values.push(roleId);
+  }
+
+  if (updates.status) {
+    const statusId = await getStatusId(updates.status);
+    fields.push(`status_id = $${idx++}`);
+    values.push(statusId);
+  }
+
+  if (updates.termsAccepted !== undefined) {
+    fields.push(`terms_accepted = $${idx++}`);
+    values.push(updates.termsAccepted);
+    fields.push(`terms_accepted_at = $${idx++}`);
+    values.push(updates.termsAccepted ? new Date() : null);
+  }
+
+  if (updates.aiEmailOptIn !== undefined) {
+    fields.push(`ai_email_opt_in = $${idx++}`);
+    values.push(updates.aiEmailOptIn);
+    fields.push(`ai_email_opt_in_at = $${idx++}`);
+    values.push(updates.aiEmailOptIn ? new Date() : null);
+  }
+
+  if (fields.length === 0) {
+    return getUserById(id);
+  }
+
+  values.push(id);
+  const setClause = fields.join(', ');
+
+  await query(`UPDATE users SET ${setClause} WHERE user_id = $${idx}`, values);
+  return getUserById(id);
+};
+
+export const deleteUser = async (id) => {
+  await query('DELETE FROM users WHERE user_id = $1', [id]);
 };
 
 export const verifyUser = async (identifier, password) => {
-  const user = await findByUsernameOrEmail(identifier);
+  const user = await findRawByUsernameOrEmail(identifier);
   if (!user) return null;
 
-  const isMatch = await bcrypt.compare(password, user.password_hash);
+  const isMatch = await bcrypt.compare(password, user.password_hash || '');
   if (!isMatch) return null;
 
-  const { password_hash, ...safeUser } = user;
-  return safeUser;
+  return mapUserRow(user);
 };
