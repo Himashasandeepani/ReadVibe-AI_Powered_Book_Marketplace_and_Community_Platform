@@ -83,34 +83,6 @@ export const calculateEstimatedDelivery = (shippingMethod) => {
   return deliveryDate.toISOString();
 };
 
-// Create order object
-export const createOrder = (user, orderData, paymentResult) => {
-  return {
-    id: "ORD" + Date.now(),
-    userId: user.id,
-    userEmail: user.email,
-    userName: user.name,
-    items: orderData.items,
-    shipping: {
-      ...orderData.shipping,
-      shippingCost: orderData.totals.shipping,
-      estimatedDelivery: calculateEstimatedDelivery(
-        orderData.shipping.shippingMethod
-      ),
-    },
-    payment: {
-      method: "credit_card",
-      transactionId: paymentResult.transactionId,
-      amount: orderData.totals.total,
-      timestamp: paymentResult.timestamp,
-    },
-    totals: orderData.totals,
-    status: "confirmed",
-    orderDate: new Date().toISOString(),
-    orderNumber: "RV" + Date.now().toString().slice(-8),
-  };
-};
-
 // Simulate payment processing
 export const processPayment = async () => {
   return new Promise((resolve, reject) => {
@@ -137,11 +109,4 @@ export const clearCheckoutData = () => {
   sessionStorage.removeItem("deliveryData");
   sessionStorage.removeItem("checkoutCart");
   sessionStorage.removeItem("orderSummary");
-};
-
-// Save order to storage
-export const saveOrderToStorage = (order) => {
-  const orders = JSON.parse(localStorage.getItem("userOrders")) || [];
-  orders.push(order);
-  localStorage.setItem("userOrders", JSON.stringify(orders));
 };

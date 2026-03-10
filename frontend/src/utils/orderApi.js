@@ -44,3 +44,12 @@ export const getOrdersApi = async (userId) => {
   });
   return data.orders || [];
 };
+
+export const getOrderApi = async (userId, orderId) => {
+  const data = await handleApi(`/api/orders/${orderId}?userId=${encodeURIComponent(userId)}`, {
+    headers: {
+      "x-user-id": userId,
+    },
+  });
+  return data.order;
+};

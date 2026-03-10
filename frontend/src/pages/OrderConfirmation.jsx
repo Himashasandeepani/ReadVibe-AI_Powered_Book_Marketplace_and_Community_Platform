@@ -7,6 +7,7 @@ import { useDispatch } from "react-redux";
 import { getCurrentUser } from "../utils/auth";
 import { showNotification } from "../utils/helpers";
 import { addItem } from "../store/slices/cartSlice";
+import { getOrderApi, getOrdersApi } from "../utils/orderApi";
 
 // Import Components
 import ProgressSteps from "../components/common/ProgressSteps";
@@ -25,9 +26,6 @@ import LiveChatModal from "../components/OrderConfirmation/LiveChatModal";
 
 // Import Utilities
 import {
-  getOrderById,
-  getLatestUserOrder,
-  getTrackingUpdates,
   getOrderedCategories,
   getRecommendedBooks,
   calculateEstimatedDates,
@@ -42,6 +40,8 @@ const OrderConfirmation = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Modal states
   const [showTrackModal, setShowTrackModal] = useState(false);
@@ -106,15 +106,72 @@ const OrderConfirmation = () => {
   const currentUser = useMemo(() => getCurrentUser(), []);
   const orderId = searchParams.get("orderId");
 
-  const order = useMemo(() => {
-    if (!currentUser) return null;
-    return orderId ? getOrderById(orderId) : getLatestUserOrder();
+  useEffect(() => {
+    const loadOrder = async () => {
+      if (!currentUser) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        if (orderId) {
+          const fetched = await getOrderApi(currentUser.id, orderId);
+          if (fetched) {
+            setOrder({
+              id: fetched.id,
+              items:
+                fetched.items?.map((item) => ({
+                  id: item.bookId,
+                  title: item.title,
+                  quantity: item.quantity,
+                  price: item.unitPrice,
+                  image: item.image,
+                })) || [],
+              shipping: fetched.shippingAddress || {},
+              totals: {
+                subtotal: fetched.subtotal,
+                shipping: fetched.shippingCost,
+                tax: fetched.tax,
+                total: fetched.total,
+              },
+            });
+          }
+        } else {
+          const orders = await getOrdersApi(currentUser.id);
+          const first = orders[0];
+          if (first) {
+            setOrder({
+              id: first.id,
+              items:
+                first.items?.map((item) => ({
+                  id: item.bookId,
+                  title: item.title,
+                  quantity: item.quantity,
+                  price: item.unitPrice,
+                  image: item.image,
+                })) || [],
+              shipping: first.shippingAddress || {},
+              totals: {
+                subtotal: first.subtotal,
+                shipping: first.shippingCost,
+                tax: first.tax,
+                total: first.total,
+              },
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load order", err);
+        showNotification(err.message || "Failed to load order", "danger");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOrder();
   }, [currentUser, orderId]);
 
-  const trackingUpdates = useMemo(() => {
-    if (!order) return [];
-    return getTrackingUpdates(order.id);
-  }, [order]);
+  const trackingUpdates = [];
 
   const recommendedBooks = useMemo(() => {
     if (!order) return [];
@@ -177,6 +234,19 @@ const OrderConfirmation = () => {
     alert("Your support request has been submitted. We will contact you soon.");
     setShowSupportModal(false);
   };
+
+  if (loading) {
+    return (
+      <div className="order-confirmation-page">
+        <Container className="mt-5">
+          <div className="form-container text-center py-5">
+            <FontAwesomeIcon icon={faBookOpen} size="3x" className="mb-3 text-muted" />
+            <h4>Loading order...</h4>
+          </div>
+        </Container>
+      </div>
+    );
+  }
 
   if (!order) {
     return (

@@ -66,7 +66,8 @@ export const getOrderedCategories = (order, books) => {
 
   const categories = [];
   order.items.forEach((item) => {
-    const book = books.find((b) => b.id === item.id);
+    const bookId = item.id ?? item.bookId;
+    const book = books.find((b) => b.id === bookId);
     if (book && book.category && !categories.includes(book.category)) {
       categories.push(book.category);
     }
