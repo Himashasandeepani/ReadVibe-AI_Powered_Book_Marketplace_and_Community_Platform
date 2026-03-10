@@ -3,6 +3,7 @@ import { Container, Row, Col, Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser } from "../utils/auth";
 import { books, showNotification } from "../utils/helpers";
+import { createOrderApi } from "../utils/orderApi";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTruck } from "@fortawesome/free-solid-svg-icons";
 
@@ -211,36 +212,62 @@ const DeliveryDetails = () => {
       return;
     }
 
-    setLoading(true);
+    const submit = async () => {
+      setLoading(true);
+      try {
+        const shippingPrice =
+          shippingMethods[formData.shippingMethod]?.price ?? 500;
 
-    // Simulate API call
-    setTimeout(() => {
-      // Save address for future use
-      saveAddress();
+        const order = await createOrderApi({
+          userId: currentUser.id,
+          items: cartItems.map((item) => ({
+            bookId: item.id,
+            quantity: item.quantity,
+          })),
+          shipping: formData,
+          shippingMethod: formData.shippingMethod,
+          shippingCost: shippingPrice,
+        });
 
-      // Prepare delivery data
-      const deliveryData = {
-        shipping: formData,
-        cartItems: cartItems,
-        orderSummary: orderSummary,
-        selectedShippingMethod: shippingMethods[formData.shippingMethod],
-        timestamp: new Date().toISOString(),
-      };
+        // Save address for future use
+        saveAddress();
 
-      // Save to session storage
-      sessionStorage.setItem("deliveryData", JSON.stringify(deliveryData));
+        const deliveryData = {
+          shipping: formData,
+          cartItems: cartItems,
+          orderSummary: orderSummary,
+          selectedShippingMethod: shippingMethods[formData.shippingMethod],
+          orderId: order?.id,
+          serverTotals: order
+            ? {
+                subtotal: order.subtotal,
+                shipping: order.shippingCost,
+                tax: order.tax,
+                total: order.total,
+              }
+            : null,
+          timestamp: new Date().toISOString(),
+        };
 
-      setLoading(false);
-      showNotification(
-        "Delivery information saved! Redirecting to payment...",
-        "success",
-      );
+        sessionStorage.setItem("deliveryData", JSON.stringify(deliveryData));
 
-      // Redirect to checkout
-      setTimeout(() => {
+        showNotification(
+          "Delivery information saved! Redirecting to payment...",
+          "success",
+        );
+
         navigate("/checkout");
-      }, 1000);
-    }, 1000);
+      } catch (error) {
+        showNotification(
+          error.message || "Failed to save delivery details",
+          "danger",
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    submit();
   };
 
   const setShippingMethod = (method) => {

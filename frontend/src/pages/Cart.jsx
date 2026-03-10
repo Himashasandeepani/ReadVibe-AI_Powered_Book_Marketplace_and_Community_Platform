@@ -4,10 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import {
   selectCartItems,
-  removeItem,
-  updateQuantity,
   clearCart,
   syncFromStorage,
+  setCart,
 } from "../store/slices/cartSlice";
 
 // Import Components
