@@ -11,7 +11,7 @@ const pool = new Pool({
   port: Number(process.env.DB_PORT) || 5432,
   database: process.env.DB_NAME || 'readvibe_db',
   user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'password',
+  password: process.env.DB_PASSWORD || '1234',
   max: Number(process.env.DB_POOL_MAX) || 10,
   idleTimeoutMillis: Number(process.env.DB_IDLE_TIMEOUT_MS) || 30000,
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
