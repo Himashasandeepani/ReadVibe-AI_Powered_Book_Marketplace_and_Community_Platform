@@ -15,6 +15,9 @@ import ordersRoutes from './routes/orders.js';
 import communityRoutes from './routes/community.js';
 import wishlistRoutes from './routes/wishlist.js';
 import profileRoutes from './routes/profile.js';
+import publishersRoutes from './routes/publishers.js';
+import categoriesRoutes from './routes/categories.js';
+import authorsRoutes from './routes/authors.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -37,6 +40,9 @@ app.use('/api/orders', ordersRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/publishers', publishersRoutes);
+app.use('/api/categories', categoriesRoutes);
+app.use('/api/authors', authorsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
