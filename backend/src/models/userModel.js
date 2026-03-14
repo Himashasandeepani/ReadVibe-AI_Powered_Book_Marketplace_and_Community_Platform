@@ -163,6 +163,64 @@ export const listStatuses = async () => {
   return rows;
 };
 
+export const getStatusById = async (id) => {
+  const { rows } = await query('SELECT id, status, is_active FROM status WHERE id = $1 LIMIT 1', [id]);
+  return rows[0] || null;
+};
+
+export const createStatus = async ({ status, isActive = true }) => {
+  const name = (status || '').trim();
+  if (!name) {
+    throw new Error('Status name is required');
+  }
+
+  const { rows } = await query(
+    'INSERT INTO status (status, is_active) VALUES ($1, $2) RETURNING id, status, is_active',
+    [name.toLowerCase(), isActive]
+  );
+
+  return rows[0];
+};
+
+export const updateStatus = async (id, updates = {}) => {
+  const fields = [];
+  const values = [];
+  let idx = 1;
+
+  if (updates.status !== undefined) {
+    const name = (updates.status || '').trim();
+    if (!name) {
+      throw new Error('Status name is required');
+    }
+    fields.push(`status = $${idx++}`);
+    values.push(name.toLowerCase());
+  }
+
+  if (updates.isActive !== undefined) {
+    fields.push(`is_active = $${idx++}`);
+    values.push(!!updates.isActive);
+  }
+
+  if (fields.length === 0) {
+    return getStatusById(id);
+  }
+
+  values.push(id);
+  const setClause = fields.join(', ');
+
+  const result = await query(
+    `UPDATE status SET ${setClause} WHERE id = $${idx} RETURNING id, status, is_active`,
+    values
+  );
+
+  return result.rows[0] || null;
+};
+
+export const deleteStatus = async (id) => {
+  const result = await query('DELETE FROM status WHERE id = $1', [id]);
+  return result.rowCount > 0;
+};
+
 export const getAllUsers = async () => {
   const { rows } = await query(`${baseUserSelect} ORDER BY u.created_at DESC`);
   return rows.map(mapUserRow);

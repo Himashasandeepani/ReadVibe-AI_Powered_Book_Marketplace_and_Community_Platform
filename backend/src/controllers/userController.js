@@ -3,8 +3,12 @@ import {
   deleteUser,
   getAllUsers,
   getUserById,
+  createStatus,
+  deleteStatus,
+  getStatusById,
   listRoles,
   listStatuses,
+  updateStatus,
   updateUser,
   userExists,
 } from '../models/userModel.js';
@@ -106,6 +110,59 @@ export const getStatuses = async (_req, res, next) => {
   try {
     const statuses = await listStatuses();
     res.json({ statuses });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createStatusHandler = async (req, res, next) => {
+  try {
+    const { status, isActive } = req.body || {};
+
+    const created = await createStatus({ status, isActive });
+    res.status(201).json({ status: created });
+  } catch (err) {
+    if (err.message && err.message.includes('duplicate key')) {
+      return res.status(409).json({ error: 'Status already exists' });
+    }
+    next(err);
+  }
+};
+
+export const updateStatusHandler = async (req, res, next) => {
+  const id = Number(req.params.id);
+
+  try {
+    const existing = await getStatusById(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Status not found' });
+    }
+
+    const updated = await updateStatus(id, req.body || {});
+    res.json({ status: updated });
+  } catch (err) {
+    if (err.message && err.message.includes('duplicate key')) {
+      return res.status(409).json({ error: 'Status already exists' });
+    }
+    next(err);
+  }
+};
+
+export const deleteStatusHandler = async (req, res, next) => {
+  const id = Number(req.params.id);
+
+  try {
+    const existing = await getStatusById(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Status not found' });
+    }
+
+    const deleted = await deleteStatus(id);
+    if (!deleted) {
+      return res.status(400).json({ error: 'Unable to delete status' });
+    }
+
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }

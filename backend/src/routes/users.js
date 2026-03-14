@@ -7,6 +7,9 @@ import {
   getStatuses,
   getUser,
   getUsers,
+   createStatusHandler,
+   updateStatusHandler,
+   deleteStatusHandler,
   updateUserHandler,
 } from '../controllers/userController.js';
 
@@ -25,6 +28,34 @@ router.get('/', getUsers);
 router.get('/roles', getRoles);
 
 router.get('/statuses', getStatuses);
+
+router.post(
+  '/statuses',
+  [
+    body('status').isLength({ min: 1 }).withMessage('Status name is required'),
+    body('isActive').optional().isBoolean(),
+  ],
+  handleValidation,
+  createStatusHandler
+);
+
+router.put(
+  '/statuses/:id',
+  [
+    param('id').isInt().withMessage('Status id must be an integer'),
+    body('status').optional().isLength({ min: 1 }).withMessage('Status name cannot be empty'),
+    body('isActive').optional().isBoolean(),
+  ],
+  handleValidation,
+  updateStatusHandler
+);
+
+router.delete(
+  '/statuses/:id',
+  [param('id').isInt().withMessage('Status id must be an integer')],
+  handleValidation,
+  deleteStatusHandler
+);
 
 // @route   GET /api/users/:id
 // @desc    Get single user by id
