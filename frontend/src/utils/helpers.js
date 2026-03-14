@@ -1,3 +1,5 @@
+import { addWishlistItemApi } from "./wishlistApi";
+
 // Books data
 export const books = [
   {
@@ -135,19 +137,20 @@ export const searchBooks = (query, booksArray = getAllBooks()) => {
   );
 };
 
-// Add this function to your existing helpers.js file
+// Add or sync wishlist entry via backend API
 export const addToWishlist = (bookId, userId) => {
-  const wishlistKey = `wishlist_${userId}`;
-  const currentWishlist = JSON.parse(localStorage.getItem(wishlistKey)) || [];
-  const catalog = getAllBooks();
-  const book = catalog.find((b) => b.id === bookId);
+  if (!userId || !bookId) return false;
 
-  if (book && !currentWishlist.some((item) => item.id === bookId)) {
-    currentWishlist.push(book);
-    localStorage.setItem(wishlistKey, JSON.stringify(currentWishlist));
-    return true;
-  }
-  return false;
+  // Fire-and-forget call to persist in DB; UI uses Wishlist APIs for display
+  (async () => {
+    try {
+      await addWishlistItemApi({ userId, bookId, priority: 3, notes: "" });
+    } catch (err) {
+      console.error("Failed to add to wishlist via API", err);
+    }
+  })();
+
+  return true;
 };
 
 

@@ -12,6 +12,13 @@ import PostCard from "../components/Community/PostCard";
 import Sidebar from "../components/Community/Sidebar";
 import CreatePostModal from "../components/Community/CreatePostModal";
 import RequestBookModal from "../components/Community/RequestBookModal";
+import {
+  fetchCommunityPostsApi,
+  createCommunityPostApi,
+  toggleCommunityPostLikeApi,
+  addCommunityCommentApi,
+  createBookRequestApi,
+} from "../utils/communityApi";
 
 const createDefaultCommunityPosts = () => [
   {
@@ -77,35 +84,64 @@ const getStoredCurrentUser = () => {
   }
 };
 
-const getStoredCommunityPosts = () => {
-  const storedPosts = localStorage.getItem("communityPosts");
-  if (!storedPosts) {
-    return null;
-  }
-
-  try {
-    const parsedPosts = JSON.parse(storedPosts);
-    return Array.isArray(parsedPosts) ? parsedPosts : null;
-  } catch {
-    return null;
-  }
+const humanizeUsername = (username) => {
+  if (!username) return "User";
+  return username
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 };
 
-const getInitialCommunityPosts = () => {
-  const storedPosts = getStoredCommunityPosts();
-  if (Array.isArray(storedPosts)) {
-    return storedPosts;
-  }
+const mapApiPostToUi = (post) => {
+  if (!post) return null;
 
-  return createDefaultCommunityPosts();
+  const username = post.username || (post.userId ? `user_${post.userId}` : "user");
+  const name = post.userFullName || humanizeUsername(username);
+  const avatar = name.substring(0, 2).toUpperCase();
+
+  return {
+    id: String(post.id),
+    user: username,
+    content: post.content,
+    category: post.category || "Discussion",
+    bookReference: post.bookTitle || null,
+    image: "",
+    likes: typeof post.likesCount === "number" ? post.likesCount : 0,
+    comments: typeof post.commentsCount === "number" ? post.commentsCount : 0,
+    status: !post.status || post.status.toLowerCase() === "active" ? "Active" : post.status,
+    timestamp: post.createdAt || new Date().toISOString(),
+    commentsList: [],
+    likedBy: [],
+    userDisplay: {
+      name,
+      avatar,
+    },
+  };
+};
+
+const mapApiCommentToUi = (comment) => {
+  if (!comment) return null;
+
+  const username = comment.username || (comment.userId ? `user_${comment.userId}` : "user");
+  const name = comment.userFullName || humanizeUsername(username);
+  const avatar = name.substring(0, 2).toUpperCase();
+
+  return {
+    id: comment.id,
+    user: username,
+    content: comment.content,
+    timestamp: comment.createdAt || new Date().toISOString(),
+    userDisplay: {
+      name,
+      avatar,
+    },
+  };
 };
 
 const Community = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(() => getStoredCurrentUser());
-  const [communityPosts, setCommunityPosts] = useState(() =>
-    getInitialCommunityPosts(),
-  );
+  const [communityPosts, setCommunityPosts] = useState([]);
 
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [showRequestBookModal, setShowRequestBookModal] = useState(false);
@@ -142,22 +178,9 @@ const Community = () => {
   ];
 
   useEffect(() => {
-    const syncCommunityPostsFromStorage = () => {
-      const storedPosts = getStoredCommunityPosts();
-      if (Array.isArray(storedPosts)) {
-        setCommunityPosts(storedPosts);
-      } else {
-        setCommunityPosts(createDefaultCommunityPosts());
-      }
-    };
-
     const handleStorageChange = (event) => {
       if (event.key === "currentUser") {
         setCurrentUser(getStoredCurrentUser());
-      }
-
-      if (event.key === "communityPosts") {
-        syncCommunityPostsFromStorage();
       }
     };
 
@@ -165,19 +188,35 @@ const Community = () => {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
-  // Function to generate unique post ID
-  const generatePostId = () => {
-    try {
-      const posts = JSON.parse(localStorage.getItem("communityPosts")) || [];
-      if (posts.length > 0 && posts[0].id) {
-        const lastId = parseInt(posts[0].id.substring(1)) || posts.length;
-        return `P${String(lastId + 1).padStart(3, "0")}`;
+  useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        const posts = await fetchCommunityPostsApi();
+        const mapped = posts
+          .map(mapApiPostToUi)
+          .filter((p) => p !== null);
+        setCommunityPosts(mapped);
+
+        try {
+          const adminPosts = mapped.map((p) => {
+            const { userDisplay, commentsList, likedBy, ...rest } = p;
+            return rest;
+          });
+          localStorage.setItem(
+            "adminCommunityPosts",
+            JSON.stringify(adminPosts),
+          );
+        } catch (err) {
+          console.error("Error syncing adminCommunityPosts from API:", err);
+        }
+      } catch (err) {
+        console.error("Failed to load community posts from API, using defaults", err);
+        setCommunityPosts(createDefaultCommunityPosts());
       }
-    } catch (error) {
-      console.error("Error generating post ID:", error);
-    }
-    return `P${String((communityPosts.length || 0) + 1).padStart(3, "0")}`;
-  };
+    };
+
+    loadPosts();
+  }, []);
 
   // Safe function to get user avatar
   const getUserAvatar = (user) => {
@@ -261,7 +300,7 @@ const Community = () => {
     return { canProceed: true };
   };
 
-  const handleCreatePost = () => {
+  const handleCreatePost = async () => {
     const check = canCreatePost();
     if (!check.canProceed) {
       if (window.confirm(`${check.message}. Do you want to login now?`)) {
@@ -275,68 +314,50 @@ const Community = () => {
       return;
     }
 
-    // Generate new post with Admin Panel compatible structure
-    const newPost = {
-      id: generatePostId(),
-      user:
-        currentUser.username ||
-        currentUser.name?.toLowerCase().replace(/\s+/g, "_") ||
-        "user",
-      content: postContent,
-      category: postCategory,
-      bookReference: selectedBook !== "Select a book..." ? selectedBook : null,
-      image: "", // In real app, handle image upload
-      likes: 0,
-      comments: 0,
-      status: "Active",
-      timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
-      commentsList: [],
-      likedBy: [],
-      // For community page display
-      userDisplay: {
-        name: currentUser.name || currentUser.username || "User",
-        avatar: currentUser.name
-          ? currentUser.name.substring(0, 2).toUpperCase()
-          : "US",
-      },
-    };
+    try {
+      const createdPost = await createCommunityPostApi({
+        userId: currentUser.id,
+        content: postContent,
+        category: postCategory,
+        // selectedBook is a free-text reference, not a real bookId
+      });
 
-    // Get existing posts and add new one at the beginning
-    const existingPosts =
-      JSON.parse(localStorage.getItem("communityPosts")) || [];
-    const updatedPosts = [newPost, ...existingPosts];
+      const uiPostFromApi = mapApiPostToUi(createdPost);
+      const uiPost = {
+        ...uiPostFromApi,
+        bookReference: selectedBook || uiPostFromApi.bookReference,
+      };
 
-    // Update state and localStorage
-    setCommunityPosts(updatedPosts);
-    localStorage.setItem("communityPosts", JSON.stringify(updatedPosts));
+      setCommunityPosts((prev) => [uiPost, ...prev]);
 
-    // Update Admin Panel data if it exists
-    const adminPanelPosts =
-      JSON.parse(localStorage.getItem("adminCommunityPosts")) || [];
-    const adminPost = {
-      ...newPost,
-      // Remove community-specific display fields for admin panel
-      userDisplay: undefined,
-    };
-    const updatedAdminPosts = [adminPost, ...adminPanelPosts];
-    localStorage.setItem(
-      "adminCommunityPosts",
-      JSON.stringify(updatedAdminPosts),
-    );
+      try {
+        const adminPosts =
+          JSON.parse(localStorage.getItem("adminCommunityPosts")) || [];
+        const { userDisplay, commentsList, likedBy, ...adminPost } = uiPost;
+        const updatedAdminPosts = [adminPost, ...adminPosts];
+        localStorage.setItem(
+          "adminCommunityPosts",
+          JSON.stringify(updatedAdminPosts),
+        );
+      } catch (error) {
+        console.error("Error updating admin panel posts from created post:", error);
+      }
 
-    // Reset form
-    setPostContent("");
-    setPostCategory("Discussion");
-    setSelectedBook("");
-    setShowCreatePostModal(false);
+      setPostContent("");
+      setPostCategory("Discussion");
+      setSelectedBook("");
+      setShowCreatePostModal(false);
 
-    // Show success message
-    alert(
-      "Post created successfully! It will now appear in the Admin Panel for review.",
-    );
+      alert(
+        "Post created successfully! It will now appear in the Admin Panel for review.",
+      );
+    } catch (error) {
+      console.error("Failed to create post:", error);
+      alert(error.message || "Failed to create post. Please try again.");
+    }
   };
 
-  const handleLikePost = (postId) => {
+  const handleLikePost = async (postId) => {
     const check = canInteract();
     if (!check.canProceed) {
       if (window.confirm(`${check.message}. Do you want to login now?`)) {
@@ -345,43 +366,47 @@ const Community = () => {
       return;
     }
 
-    const updatedPosts = communityPosts.map((post) => {
-      if (post.id === postId) {
-        const userIndex = post.likedBy.indexOf(currentUser.id);
+    const numericId = Number(postId);
+    if (!Number.isFinite(numericId)) {
+      console.error("Invalid postId for like:", postId);
+      return;
+    }
 
-        if (userIndex === -1) {
-          // Add like
-          const updatedPost = {
-            ...post,
-            likes: post.likes + 1,
-            likedBy: [...post.likedBy, currentUser.id],
-          };
+    try {
+      const result = await toggleCommunityPostLikeApi({
+        userId: currentUser.id,
+        postId: numericId,
+      });
 
-          // Also update in admin posts
-          updatePostInAdminPanel(updatedPost);
+      setCommunityPosts((prev) =>
+        prev.map((post) => {
+          if (post.id === postId || Number(post.id) === numericId) {
+            const likedBySet = new Set(post.likedBy || []);
+            if (result?.liked) {
+              likedBySet.add(currentUser.id);
+            } else {
+              likedBySet.delete(currentUser.id);
+            }
 
-          return updatedPost;
-        } else {
-          // Remove like
-          const newLikedBy = [...post.likedBy];
-          newLikedBy.splice(userIndex, 1);
-          const updatedPost = {
-            ...post,
-            likes: post.likes - 1,
-            likedBy: newLikedBy,
-          };
+            const updatedPost = {
+              ...post,
+              likes:
+                typeof result?.likesCount === "number"
+                  ? result.likesCount
+                  : post.likes,
+              likedBy: Array.from(likedBySet),
+            };
 
-          // Also update in admin posts
-          updatePostInAdminPanel(updatedPost);
-
-          return updatedPost;
-        }
-      }
-      return post;
-    });
-
-    setCommunityPosts(updatedPosts);
-    localStorage.setItem("communityPosts", JSON.stringify(updatedPosts));
+            updatePostInAdminPanel(updatedPost);
+            return updatedPost;
+          }
+          return post;
+        }),
+      );
+    } catch (error) {
+      console.error("Failed to toggle like:", error);
+      alert(error.message || "Failed to update like. Please try again.");
+    }
   };
 
   // Helper function to update post in admin panel storage
@@ -406,7 +431,7 @@ const Community = () => {
     }
   };
 
-  const handleAddComment = (postId, commentText) => {
+  const handleAddComment = async (postId, commentText) => {
     const check = canInteract();
     if (!check.canProceed) {
       if (window.confirm(`${check.message}. Do you want to login now?`)) {
@@ -418,46 +443,43 @@ const Community = () => {
     const comment = commentText || "";
     if (!comment.trim()) return;
 
-    const updatedPosts = communityPosts.map((post) => {
-      if (post.id === postId) {
-        const newComment = {
-          user:
-            currentUser.username ||
-            currentUser.name?.toLowerCase().replace(/\s+/g, "_") ||
-            "user",
-          content: comment,
-          timestamp: new Date()
-            .toISOString()
-            .replace("T", " ")
-            .substring(0, 19),
-          // For community display
-          userDisplay: {
-            name: currentUser.name || currentUser.username || "User",
-            avatar: currentUser.name
-              ? currentUser.name.substring(0, 2).toUpperCase()
-              : "US",
-          },
-        };
+    const numericId = Number(postId);
+    if (!Number.isFinite(numericId)) {
+      console.error("Invalid postId for comment:", postId);
+      return;
+    }
 
-        const updatedPost = {
-          ...post,
-          comments: post.comments + 1,
-          commentsList: [newComment, ...post.commentsList],
-        };
+    try {
+      const comments = await addCommunityCommentApi({
+        userId: currentUser.id,
+        postId: numericId,
+        content: comment,
+      });
 
-        // Also update in admin posts
-        updatePostInAdminPanel(updatedPost);
+      const mappedComments = comments
+        .map(mapApiCommentToUi)
+        .filter((c) => c !== null);
 
-        return updatedPost;
-      }
-      return post;
-    });
+      setCommunityPosts((prev) =>
+        prev.map((post) => {
+          if (post.id === postId || Number(post.id) === numericId) {
+            const updatedPost = {
+              ...post,
+              comments: mappedComments.length,
+              commentsList: mappedComments,
+            };
+            updatePostInAdminPanel(updatedPost);
+            return updatedPost;
+          }
+          return post;
+        }),
+      );
 
-    setCommunityPosts(updatedPosts);
-    localStorage.setItem("communityPosts", JSON.stringify(updatedPosts));
-
-    // Clear comment input
-    setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
+      setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
+    } catch (error) {
+      console.error("Failed to add comment:", error);
+      alert(error.message || "Failed to add comment. Please try again.");
+    }
   };
 
   // Enhanced modal open handlers with login check
@@ -512,7 +534,7 @@ const Community = () => {
     }
   };
 
-  const handleRequestBook = () => {
+  const handleRequestBook = async () => {
     const check = canRequestBook();
     if (!check.canProceed) {
       if (window.confirm(`${check.message}. Do you want to login now?`)) {
@@ -526,36 +548,30 @@ const Community = () => {
       return;
     }
 
-    const bookRequests = JSON.parse(localStorage.getItem("bookRequests")) || [];
-    const newRequest = {
-      id: Date.now(),
-      userId: currentUser.id,
-      userName: currentUser.name,
-      userEmail: currentUser.email,
-      bookTitle: requestForm.title,
-      author: requestForm.author,
-      isbn: requestForm.isbn,
-      category: requestForm.category,
-      reason: requestForm.reason,
-      status: "Pending",
-      dateRequested: new Date().toISOString(),
-      dateUpdated: new Date().toISOString(),
-    };
+    try {
+      await createBookRequestApi({
+        userId: currentUser.id,
+        bookTitle: requestForm.title,
+        author: requestForm.author,
+        isbn: requestForm.isbn,
+        category: requestForm.category,
+        reason: requestForm.reason,
+      });
 
-    bookRequests.push(newRequest);
-    localStorage.setItem("bookRequests", JSON.stringify(bookRequests));
+      setRequestForm({
+        title: "",
+        author: "",
+        isbn: "",
+        category: "",
+        reason: "",
+      });
+      setShowRequestBookModal(false);
 
-    // Reset form
-    setRequestForm({
-      title: "",
-      author: "",
-      isbn: "",
-      category: "",
-      reason: "",
-    });
-    setShowRequestBookModal(false);
-
-    alert("Book request submitted successfully!");
+      alert("Book request submitted successfully!");
+    } catch (error) {
+      console.error("Failed to submit book request:", error);
+      alert(error.message || "Failed to submit book request. Please try again.");
+    }
   };
 
   const handleTagClick = (tag) => {
