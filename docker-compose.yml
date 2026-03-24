@@ -25,6 +25,25 @@ services:
       timeout: 5s
       retries: 5
 
+  # PgAdmin UI for inspecting the PostgreSQL instance (no extra database is created)
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: readvibe-pgadmin
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5050:80" # open http://localhost:5050 to view the DB
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com
+      - PGADMIN_DEFAULT_PASSWORD=changeme
+      - PGADMIN_CONFIG_SERVER_MODE=False
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - readvibe-network
+
   # Backend API
   backend:
     build:
@@ -80,6 +99,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  pgadmin_data:
     driver: local
 
 networks:
