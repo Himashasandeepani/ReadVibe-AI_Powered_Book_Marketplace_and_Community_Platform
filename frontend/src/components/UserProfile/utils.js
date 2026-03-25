@@ -168,6 +168,7 @@ export const submitBookRequest = (user, requestData) => {
   const storedRequests = JSON.parse(localStorage.getItem("bookRequests")) || [];
   storedRequests.push(newRequest);
   localStorage.setItem("bookRequests", JSON.stringify(storedRequests));
+  window.dispatchEvent(new Event("storage"));
 
   return newRequest;
 };

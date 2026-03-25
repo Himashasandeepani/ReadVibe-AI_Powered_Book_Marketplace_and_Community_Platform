@@ -320,6 +320,27 @@ const AdminPanel = () => {
     }
   };
 
+  const handleToggleFeaturedPost = (postId) => {
+    setPosts((prev) => {
+      const target = prev.find((p) => p.id === postId);
+      if (!target) return prev;
+
+      const featuredCount = prev.filter((p) => p.featured).length;
+      const willFeature = !target.featured;
+
+      if (willFeature && featuredCount >= 2) {
+        alert("Only two community posts can be featured on the home page. Unfeature another post first.");
+        return prev;
+      }
+
+      const updated = prev.map((post) =>
+        post.id === postId ? { ...post, featured: willFeature } : post,
+      );
+      saveData(null, updated, null);
+      return updated;
+    });
+  };
+
   const handleSystemSettingsChange = (key, value) => {
     setSystemSettings((prev) => ({ ...prev, [key]: value }));
   };
@@ -389,6 +410,8 @@ const AdminPanel = () => {
             <PostsTable
               posts={posts}
               onViewPost={handleViewPost}
+              onToggleFeatured={handleToggleFeaturedPost}
+              maxFeatured={2}
               onDeletePost={handleDeletePost}
             />
           </>

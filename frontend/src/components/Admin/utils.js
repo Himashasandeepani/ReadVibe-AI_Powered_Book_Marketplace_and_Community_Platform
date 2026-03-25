@@ -91,10 +91,17 @@ export const loadData = () => {
         status: post.status || "Active",
         timestamp: post.timestamp || new Date().toISOString().replace("T", " ").substring(0, 19),
         category: post.category || "Discussion",
+        featured: !!post.featured,
       };
     });
     localStorage.setItem("adminCommunityPosts", JSON.stringify(posts));
   }
+
+  // Ensure all posts carry the featured flag
+  posts = (posts || []).map((post) => ({
+    ...post,
+    featured: !!post.featured,
+  }));
 
   return { users, posts, settings, statuses };
 };

@@ -245,15 +245,24 @@ const Community = () => {
       return;
     }
 
-    if (!postContent.trim()) {
+    const userId = Number(
+      currentUser?.id || currentUser?.user_id || currentUser?.userId,
+    );
+    if (!Number.isFinite(userId) || userId <= 0) {
+      alert("Your session is missing an id. Please log out and log back in.");
+      return;
+    }
+
+    const trimmedContent = postContent.trim();
+    if (!trimmedContent) {
       alert("Please enter post content");
       return;
     }
 
     try {
       const createdPost = await createCommunityPostApi({
-        userId: currentUser.id,
-        content: postContent,
+        userId,
+        content: trimmedContent,
         category: postCategory,
         // selectedBook is a free-text reference, not a real bookId
       });
@@ -302,6 +311,14 @@ const Community = () => {
       return;
     }
 
+    const userId = Number(
+      currentUser?.id || currentUser?.user_id || currentUser?.userId,
+    );
+    if (!Number.isFinite(userId) || userId <= 0) {
+      alert("Your session is missing an id. Please log out and log back in.");
+      return;
+    }
+
     const numericId = Number(postId);
     if (!Number.isFinite(numericId)) {
       console.error("Invalid postId for like:", postId);
@@ -310,7 +327,7 @@ const Community = () => {
 
     try {
       const result = await toggleCommunityPostLikeApi({
-        userId: currentUser.id,
+        userId,
         postId: numericId,
       });
 
@@ -376,6 +393,14 @@ const Community = () => {
       return;
     }
 
+    const userId = Number(
+      currentUser?.id || currentUser?.user_id || currentUser?.userId,
+    );
+    if (!Number.isFinite(userId) || userId <= 0) {
+      alert("Your session is missing an id. Please log out and log back in.");
+      return;
+    }
+
     const comment = commentText || "";
     if (!comment.trim()) return;
 
@@ -387,7 +412,7 @@ const Community = () => {
 
     try {
       const comments = await addCommunityCommentApi({
-        userId: currentUser.id,
+        userId,
         postId: numericId,
         content: comment,
       });
@@ -485,7 +510,7 @@ const Community = () => {
     }
 
     try {
-      await createBookRequestApi({
+      const createdRequest = await createBookRequestApi({
         userId: currentUser.id,
         bookTitle: requestForm.title,
         author: requestForm.author,
@@ -493,6 +518,35 @@ const Community = () => {
         category: requestForm.category,
         reason: requestForm.reason,
       });
+
+      // Persist locally so Stock Manager can pick it up immediately
+      try {
+        const newRequest = {
+          id: createdRequest?.id || Date.now(),
+          userId: currentUser.id,
+          userName: currentUser.name || currentUser.username || "User",
+          userEmail: currentUser.email || "",
+          bookTitle: requestForm.title,
+          author: requestForm.author,
+          isbn: requestForm.isbn,
+          category: requestForm.category,
+          reason: requestForm.reason,
+          status: "Pending",
+          dateRequested: new Date().toISOString(),
+          dateUpdated: new Date().toISOString(),
+          source: "Community",
+        };
+
+        const existing =
+          JSON.parse(localStorage.getItem("bookRequests")) || [];
+        localStorage.setItem(
+          "bookRequests",
+          JSON.stringify([newRequest, ...existing]),
+        );
+        window.dispatchEvent(new Event("storage"));
+      } catch (storageError) {
+        console.error("Failed to sync book request to local storage", storageError);
+      }
 
       setRequestForm({
         title: "",

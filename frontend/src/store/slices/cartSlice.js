@@ -23,7 +23,8 @@ const emitCartEvent = () => {
 const persistCart = (items) => {
   try {
     window.localStorage.setItem("cart", JSON.stringify(items));
-    emitCartEvent();
+    // Defer events so Redux reducers finish before listeners dispatch actions
+    setTimeout(() => emitCartEvent(), 0);
   } catch {
     console.warn("Failed to persist cart");
   }

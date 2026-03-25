@@ -64,25 +64,14 @@ const CreatePostModal = ({
                   <label className="form-label fw-semibold">
                     Add a book reference (optional)
                   </label>
-                  <select
-                    className="form-select"
+                  <input
+                    type="text"
+                    className="form-control"
                     value={selectedBook}
                     onChange={(e) => setSelectedBook(e.target.value)}
-                  >
-                    <option value="">Select a book...</option>
-                    <option value="The Midnight Library by Matt Haig">
-                      The Midnight Library by Matt Haig
-                    </option>
-                    <option value="Project Hail Mary by Andy Weir">
-                      Project Hail Mary by Andy Weir
-                    </option>
-                    <option value="Dune by Frank Herbert">
-                      Dune by Frank Herbert
-                    </option>
-                    <option value="The Hobbit by J.R.R. Tolkien">
-                      The Hobbit by J.R.R. Tolkien
-                    </option>
-                  </select>
+                    placeholder="Type a book title or author"
+                  />
+                  <small className="text-muted">This is a free-text note; it is not linked to inventory.</small>
                 </div>
               </div>
               <div className="alert alert-info">
@@ -107,6 +96,7 @@ const CreatePostModal = ({
               type="button"
               className="btn btn-primary"
               onClick={handleCreatePost}
+              disabled={!postContent.trim()}
             >
               <i className="fas fa-paper-plane me-2"></i>Post to Community
             </button>

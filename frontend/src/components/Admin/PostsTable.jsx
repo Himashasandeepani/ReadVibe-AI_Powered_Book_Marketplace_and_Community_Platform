@@ -1,7 +1,9 @@
 import React from "react";
 import { getStatusBadgeClass } from "./utils";
 
-const PostsTable = ({ posts, onViewPost, onDeletePost }) => {
+const PostsTable = ({ posts, onViewPost, onDeletePost, onToggleFeatured = () => {}, maxFeatured = 2 }) => {
+  const featuredCount = posts.filter((post) => post.featured).length;
+
   return (
     <div className="admin-dashboard-card">
       <div className="table-responsive">
@@ -47,6 +49,14 @@ const PostsTable = ({ posts, onViewPost, onDeletePost }) => {
                 <td>{post.timestamp}</td>
                 <td>
                   <div className="admin-action-buttons">
+                    <button
+                      className={`btn btn-sm ${post.featured ? "btn-warning" : "btn-outline-secondary"} me-1`}
+                      onClick={() => onToggleFeatured(post.id)}
+                      title={post.featured ? "Unfeature from Home" : featuredCount >= maxFeatured ? "Limit reached (max 2 featured)" : "Feature on Home"}
+                      disabled={!post.featured && featuredCount >= maxFeatured}
+                    >
+                      <i className="fas fa-star"></i>
+                    </button>
                     <button
                       className="btn btn-sm btn-outline-primary me-1"
                       onClick={() => onViewPost(post.id)}
