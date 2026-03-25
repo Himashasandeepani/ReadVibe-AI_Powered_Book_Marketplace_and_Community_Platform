@@ -24,6 +24,24 @@ const DashboardTab = ({ users, posts }) => {
     const nowTime = now.getTime();
     const thirtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
 
+    // Pull additional activity sources from localStorage (book requests, orders)
+    let bookRequests = [];
+    let orders = [];
+
+    if (typeof window !== "undefined") {
+      try {
+        bookRequests = JSON.parse(localStorage.getItem("bookRequests")) || [];
+      } catch (err) {
+        console.error("Failed to read bookRequests from storage", err);
+      }
+
+      try {
+        orders = JSON.parse(localStorage.getItem("stockOrders")) || [];
+      } catch (err) {
+        console.error("Failed to read stockOrders from storage", err);
+      }
+    }
+
     const userStats = {
       total: users.length,
       newThisMonth: users.filter((user) => {
@@ -55,7 +73,25 @@ const DashboardTab = ({ users, posts }) => {
         timestamp: new Date(post.createdAt || nowTime).getTime(),
       }));
 
-    const combined = [...userActivity, ...postActivity]
+    const requestActivity = bookRequests
+      .map((req) => ({
+        user: req.userName || req.userEmail || `user_${req.userId || ""}`,
+        activity: req.bookTitle ? `Requested "${req.bookTitle}"` : "Requested a book",
+        time: formatRelativeTime(req.dateRequested || req.date || req.createdAt),
+        status: (req.status || "Pending").charAt(0).toUpperCase() + (req.status || "Pending").slice(1),
+        timestamp: new Date(req.dateRequested || req.date || req.createdAt || nowTime).getTime(),
+      }));
+
+    const orderActivity = orders
+      .map((order) => ({
+        user: order.customerName || order.userName || order.userEmail || `user_${order.userId || ""}`,
+        activity: `Order ${order.id || ""} placed`,
+        time: formatRelativeTime(order.orderDate || order.createdAt),
+        status: order.status || "Pending",
+        timestamp: new Date(order.orderDate || order.createdAt || nowTime).getTime(),
+      }));
+
+    const combined = [...userActivity, ...postActivity, ...requestActivity, ...orderActivity]
       .filter((item) => !Number.isNaN(item.timestamp))
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, 8);
