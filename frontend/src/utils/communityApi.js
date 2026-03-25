@@ -32,13 +32,23 @@ const resolveUserId = (raw) => {
   return parsed;
 };
 
-export const fetchCommunityPostsApi = async () => {
-  const data = await handleApi(`/api/community/posts`);
+export const fetchCommunityPostsApi = async ({ userId } = {}) => {
+  const headers = {};
+  if (userId) {
+    headers["x-user-id"] = userId;
+  }
+
+  const data = await handleApi(`/api/community/posts`, { headers });
   return data.posts || [];
 };
 
-export const fetchCommunityPostWithCommentsApi = async (postId) => {
-  const data = await handleApi(`/api/community/posts/${postId}`);
+export const fetchCommunityPostWithCommentsApi = async (postId, { userId } = {}) => {
+  const headers = {};
+  if (userId) {
+    headers["x-user-id"] = userId;
+  }
+
+  const data = await handleApi(`/api/community/posts/${postId}`, { headers });
   return { post: data.post, comments: data.comments || [] };
 };
 

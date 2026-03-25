@@ -1,9 +1,10 @@
 const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 const handleApi = async (path, options = {}) => {
+  // Spread options first so our merged headers are not overwritten by options.headers
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
     ...options,
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
   });
 
   const data = await res.json().catch(() => ({}));

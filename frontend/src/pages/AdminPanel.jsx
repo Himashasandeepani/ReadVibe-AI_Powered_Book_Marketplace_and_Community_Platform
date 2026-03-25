@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../styles/pages/AdminPanel.css";
 import AdminHeader from "../components/common/AdminHeader";
 import AdminFooter from "../components/common/AdminFooter";
+import { useDispatch, useSelector } from "react-redux";
 
 // Import Admin Components
 import AdminSidebar from "../components/Admin/AdminSidebar";
@@ -32,71 +33,37 @@ import {
   deleteAdminUserApi,
 } from "../components/Admin/utils";
 import { deleteCommunityPostApi } from "../utils/communityApi";
-
-const DEFAULT_SYSTEM_SETTINGS = {
-  platformName: "ReadVibe",
-  maintenanceMode: "Disabled",
-  emailNotifications: true,
-};
-
-const getStoredUser = () => {
-  if (typeof window === "undefined") return null;
-  try {
-    return JSON.parse(window.localStorage.getItem("currentUser"));
-  } catch (error) {
-    console.error("Failed to parse currentUser from storage", error);
-    return null;
-  }
-};
-
-const getInitialAdminData = () => {
-  if (typeof window === "undefined") {
-    return {
-      users: [],
-      posts: [],
-      settings: DEFAULT_SYSTEM_SETTINGS,
-    };
-  }
-
-  const {
-    users = [],
-    posts = [],
-    settings = DEFAULT_SYSTEM_SETTINGS,
-  } = loadData();
-  return {
-    users,
-    posts,
-    settings: { ...DEFAULT_SYSTEM_SETTINGS, ...settings },
-  };
-};
+import {
+  selectAdminUsers,
+  selectAdminPosts,
+  selectAdminSystemSettings,
+  selectAdminStatuses,
+  setAll,
+  setUsers,
+  setPosts,
+  setSystemSettings,
+  setStatuses,
+} from "../store/slices/adminSlice";
+import { selectCurrentUser } from "../store/slices/authSlice";
 
 const AdminPanel = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
+
+  const currentUser = useSelector(selectCurrentUser);
+  const users = useSelector(selectAdminUsers);
+  const posts = useSelector(selectAdminPosts);
+  const systemSettings = useSelector(selectAdminSystemSettings);
+  const statuses = useSelector(selectAdminStatuses);
 
   // Extract tab from query parameters
   const queryParams = new URLSearchParams(location.search);
   const tabFromQuery = queryParams.get("tab");
   const activeTab = tabFromQuery || "dashboard";
 
-  const storedUser = getStoredUser();
-  const initialAdminData = useMemo(() => getInitialAdminData(), []);
-
   // State
-  const [currentUser, setCurrentUser] = useState(storedUser);
   const [activeUserSubTab, setActiveUserSubTab] = useState("all");
-
-  // Data state
-  const [users, setUsers] = useState(() => [...initialAdminData.users]);
-  const [posts, setPosts] = useState(() => [...initialAdminData.posts]);
-  const [systemSettings, setSystemSettings] = useState(() => ({
-    ...DEFAULT_SYSTEM_SETTINGS,
-    ...initialAdminData.settings,
-  }));
-  const [statuses, setStatuses] = useState(() => {
-    const { statuses: loadedStatuses = [] } = loadData();
-    return [...loadedStatuses];
-  });
 
   // Modal states
   const [showAddUserModal, setShowAddUserModal] = useState(false);
@@ -130,24 +97,25 @@ const AdminPanel = () => {
           status: (user.status || "active").toLowerCase(),
           joinDate: user.createdAt ? user.createdAt.split("T")[0] : "",
         }));
-        setUsers(normalized);
+        dispatch(setUsers(normalized));
       } catch (error) {
         console.error("Failed to load users from API", error);
       }
     };
 
     pullUsers();
-  }, [currentUser]);
+  }, [currentUser, dispatch]);
+
+  // Persist admin data to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    saveData(users, posts, systemSettings, statuses);
+  }, [users, posts, systemSettings, statuses]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
     const handleStorageChange = (event) => {
-      if (event.key === "currentUser") {
-        setCurrentUser(getStoredUser());
-        return;
-      }
-
       if (
         event.key === "adminUsers" ||
         event.key === "adminCommunityPosts" ||
@@ -160,16 +128,20 @@ const AdminPanel = () => {
           settings: storedSettings,
           statuses: storedStatuses,
         } = loadData();
-        setUsers([...storedUsers]);
-        setPosts([...storedPosts]);
-        setSystemSettings({ ...DEFAULT_SYSTEM_SETTINGS, ...storedSettings });
-        setStatuses(Array.isArray(storedStatuses) ? [...storedStatuses] : []);
+        dispatch(
+          setAll({
+            users: [...storedUsers],
+            posts: [...storedPosts],
+            systemSettings: storedSettings,
+            statuses: Array.isArray(storedStatuses) ? [...storedStatuses] : [],
+          }),
+        );
       }
     };
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+  }, [dispatch]);
 
   const handleTabChange = (tab) => {
     navigate(`${location.pathname}?tab=${tab}`);
@@ -205,8 +177,7 @@ const AdminPanel = () => {
         };
 
         const updatedUsers = [...users, userRecord];
-        setUsers(updatedUsers);
-        saveData(updatedUsers, null, null);
+        dispatch(setUsers(updatedUsers));
         setShowAddUserModal(false);
         showNotification("User added successfully");
       } catch (error) {
@@ -256,8 +227,7 @@ const AdminPanel = () => {
           return user;
         });
 
-        setUsers(updatedUsers);
-        saveData(updatedUsers, null, null);
+        dispatch(setUsers(updatedUsers));
 
         setShowEditUserModal(false);
         setEditingUser(null);
@@ -280,8 +250,7 @@ const AdminPanel = () => {
         try {
           await deleteAdminUserApi(userId);
           const updatedUsers = users.filter((user) => user.id !== userId);
-          setUsers(updatedUsers);
-          saveData(updatedUsers, null, null);
+          dispatch(setUsers(updatedUsers));
           showNotification("User deleted successfully");
         } catch (error) {
           alert(error.message || "Failed to delete user");
@@ -316,8 +285,7 @@ const AdminPanel = () => {
       }
 
       const updatedPosts = posts.filter((post) => post.id !== postId);
-      setPosts(updatedPosts);
-      saveData(null, updatedPosts, null);
+      dispatch(setPosts(updatedPosts));
 
       // Keep any legacy cache in sync
       try {
@@ -342,33 +310,29 @@ const AdminPanel = () => {
   };
 
   const handleToggleFeaturedPost = (postId) => {
-    setPosts((prev) => {
-      const target = prev.find((p) => p.id === postId);
-      if (!target) return prev;
+    const target = posts.find((p) => p.id === postId);
+    if (!target) return;
 
-      const featuredCount = prev.filter((p) => p.featured).length;
-      const willFeature = !target.featured;
+    const featuredCount = posts.filter((p) => p.featured).length;
+    const willFeature = !target.featured;
 
-      if (willFeature && featuredCount >= 2) {
-        alert("Only two community posts can be featured on the home page. Unfeature another post first.");
-        return prev;
-      }
+    if (willFeature && featuredCount >= 2) {
+      alert("Only two community posts can be featured on the home page. Unfeature another post first.");
+      return;
+    }
 
-      const updated = prev.map((post) =>
-        post.id === postId ? { ...post, featured: willFeature } : post,
-      );
-      saveData(null, updated, null);
-      return updated;
-    });
+    const updated = posts.map((post) =>
+      post.id === postId ? { ...post, featured: willFeature } : post,
+    );
+    dispatch(setPosts(updated));
   };
 
   const handleSystemSettingsChange = (key, value) => {
-    setSystemSettings((prev) => ({ ...prev, [key]: value }));
+    dispatch(setSystemSettings({ ...systemSettings, [key]: value }));
   };
 
   const handleSaveSettings = (e) => {
     e.preventDefault();
-    saveData(null, null, systemSettings);
     showNotification("System settings saved successfully");
   };
 
@@ -376,29 +340,23 @@ const AdminPanel = () => {
     const trimmed = (name || "").trim();
     if (!trimmed) return;
 
-    setStatuses((prev) => {
-      let next;
-      if (existingId) {
-        next = prev.map((s) =>
-          s.id === existingId ? { ...s, status: trimmed } : s,
-        );
-      } else {
-        const maxId =
-          prev.length > 0 ? Math.max(...prev.map((s) => s.id || 0)) : 0;
-        next = [...prev, { id: maxId + 1, status: trimmed, isActive: true }];
-      }
+    const prev = statuses || [];
+    let next;
+    if (existingId) {
+      next = prev.map((s) =>
+        s.id === existingId ? { ...s, status: trimmed } : s,
+      );
+    } else {
+      const maxId = prev.length > 0 ? Math.max(...prev.map((s) => s.id || 0)) : 0;
+      next = [...prev, { id: maxId + 1, status: trimmed, isActive: true }];
+    }
 
-      saveData(null, null, null, next);
-      return next;
-    });
+    dispatch(setStatuses(next));
   };
 
   const handleDeleteStatus = (id) => {
-    setStatuses((prev) => {
-      const next = prev.filter((s) => s.id !== id);
-      saveData(null, null, null, next);
-      return next;
-    });
+    const next = statuses.filter((s) => s.id !== id);
+    dispatch(setStatuses(next));
   };
 
   const renderActiveTab = () => {

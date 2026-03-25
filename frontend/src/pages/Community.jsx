@@ -14,6 +14,7 @@ import CreatePostModal from "../components/Community/CreatePostModal";
 import RequestBookModal from "../components/Community/RequestBookModal";
 import {
   fetchCommunityPostsApi,
+  fetchCommunityPostWithCommentsApi,
   createCommunityPostApi,
   toggleCommunityPostLikeApi,
   addCommunityCommentApi,
@@ -41,7 +42,7 @@ const humanizeUsername = (username) => {
     .join(" ");
 };
 
-const mapApiPostToUi = (post) => {
+const mapApiPostToUi = (post, currentUserId) => {
   if (!post) return null;
 
   const username = post.username || (post.userId ? `user_${post.userId}` : "user");
@@ -60,7 +61,10 @@ const mapApiPostToUi = (post) => {
     status: !post.status || post.status.toLowerCase() === "active" ? "Active" : post.status,
     timestamp: post.createdAt || new Date().toISOString(),
     commentsList: [],
-    likedBy: [],
+    likedBy:
+      post.likedByCurrent && Number.isFinite(currentUserId)
+        ? [currentUserId]
+        : [],
     userDisplay: {
       name,
       avatar,
@@ -99,6 +103,7 @@ const Community = () => {
   const [selectedBook, setSelectedBook] = useState("");
   const [commentInputs, setCommentInputs] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
+  const [commentsLoaded, setCommentsLoaded] = useState({});
 
   // Book request form state
   const [requestForm, setRequestForm] = useState({
@@ -127,9 +132,15 @@ const Community = () => {
   useEffect(() => {
     const loadPosts = async () => {
       try {
-        const posts = await fetchCommunityPostsApi();
+        const userId = Number(
+          currentUser?.id || currentUser?.user_id || currentUser?.userId,
+        );
+
+        const posts = await fetchCommunityPostsApi({
+          userId: Number.isFinite(userId) && userId > 0 ? userId : undefined,
+        });
         const mapped = posts
-          .map(mapApiPostToUi)
+          .map((p) => mapApiPostToUi(p, userId))
           .filter((p) => p !== null);
         setCommunityPosts(mapped);
 
@@ -268,7 +279,7 @@ const Community = () => {
         // selectedBook is a free-text reference, not a real bookId
       });
 
-      const uiPostFromApi = mapApiPostToUi(createdPost);
+      const uiPostFromApi = mapApiPostToUi(createdPost, userId);
       const uiPost = {
         ...uiPostFromApi,
         bookReference: selectedBook || uiPostFromApi.bookReference,
@@ -468,11 +479,45 @@ const Community = () => {
     setShowRequestBookModal(true);
   };
 
-  const toggleComments = (postId) => {
+  const toggleComments = async (postId) => {
+    const isExpanding = !expandedComments[postId];
     setExpandedComments((prev) => ({
       ...prev,
       [postId]: !prev[postId],
     }));
+
+    // Lazy-load comments from the backend the first time a post is expanded
+    if (isExpanding && !commentsLoaded[postId]) {
+      try {
+        const userId = Number(
+          currentUser?.id || currentUser?.user_id || currentUser?.userId,
+        );
+
+        const { comments } = await fetchCommunityPostWithCommentsApi(postId, {
+          userId: Number.isFinite(userId) && userId > 0 ? userId : undefined,
+        });
+
+        const mappedComments = comments
+          .map(mapApiCommentToUi)
+          .filter((c) => c !== null);
+
+        setCommunityPosts((prev) =>
+          prev.map((post) =>
+            post.id === postId || Number(post.id) === Number(postId)
+              ? {
+                  ...post,
+                  comments: mappedComments.length,
+                  commentsList: mappedComments,
+                }
+              : post,
+          ),
+        );
+
+        setCommentsLoaded((prev) => ({ ...prev, [postId]: true }));
+      } catch (err) {
+        console.error("Failed to load comments for post", postId, err);
+      }
+    }
   };
 
   const handleSharePost = (postId) => {

@@ -20,9 +20,10 @@ const ensureUserId = (req) => {
   return parsed;
 };
 
-export const getCommunityPosts = async (_req, res, next) => {
+export const getCommunityPosts = async (req, res, next) => {
   try {
-    const posts = await listPosts();
+    const currentUserId = Number(req.headers['x-user-id']);
+    const posts = await listPosts(Number.isInteger(currentUserId) ? currentUserId : null);
     res.json({ posts });
   } catch (err) {
     next(err);
@@ -32,7 +33,8 @@ export const getCommunityPosts = async (_req, res, next) => {
 export const getCommunityPost = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const post = await getPostById(id);
+    const currentUserId = Number(req.headers['x-user-id']);
+    const post = await getPostById(id, Number.isInteger(currentUserId) ? currentUserId : null);
     if (!post) {
       return res.status(404).json({ error: 'Post not found' });
     }
