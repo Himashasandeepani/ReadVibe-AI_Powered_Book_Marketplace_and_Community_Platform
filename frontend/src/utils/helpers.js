@@ -1,52 +1,7 @@
 import { addWishlistItemApi } from "./wishlistApi";
 
 // Books data
-export const books = [
-  {
-    id: 1,
-    title: "The Midnight Library",
-    author: "Matt Haig",
-    price: 6000.00,
-    category: "Fiction",
-    rating: 4.3,
-    reviews: 128,
-    inStock: true,
-    image: "/assets/The_Midnight_Library.jpeg"
-  },
-  {
-    id: 2,
-    title: "Project Hail Mary",
-    author: "Andy Weir",
-    price: 6500.00,
-    category: "Science Fiction",
-    rating: 4.8,
-    reviews: 95,
-    inStock: true,
-    image: "/assets/project_hail_mary.jpg"
-  },
-  {
-    id: 3,
-    title: "Dune",
-    author: "Frank Herbert",
-    price: 5400.00,
-    category: "Science Fiction",
-    rating: 4.0,
-    reviews: 210,
-    inStock: true,
-    image: "/assets/dune.jpg"
-  },
-  {
-    id: 4,
-    title: "The Hobbit",
-    author: "J.R.R. Tolkien",
-    price: 3500.00,
-    category: "Fantasy",
-    rating: 4.9,
-    reviews: 305,
-    inStock: false,
-    image: "/assets/the_hobbit.jpg"
-  }
-];
+export const books = [];
 
 // Return inventory books from localStorage; fallback to seed list
 export const getAllBooks = () => {
