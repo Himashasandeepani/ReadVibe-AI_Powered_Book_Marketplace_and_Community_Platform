@@ -31,6 +31,7 @@ import {
   updateAdminUserApi,
   deleteAdminUserApi,
 } from "../components/Admin/utils";
+import { deleteCommunityPostApi } from "../utils/communityApi";
 
 const DEFAULT_SYSTEM_SETTINGS = {
   platformName: "ReadVibe",
@@ -300,24 +301,44 @@ const AdminPanel = () => {
   };
 
   const handleDeletePost = (postId) => {
-    if (window.confirm("Are you sure you want to delete this post?")) {
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
+
+    const performDelete = async () => {
+      try {
+        const actorId = currentUser?.id || currentUser?.user_id || currentUser?.userId;
+        if (actorId) {
+          await deleteCommunityPostApi({ userId: actorId, postId });
+        }
+      } catch (err) {
+        console.error("Failed to delete post via API", err);
+        showNotification(err.message || "Failed to delete post", "danger");
+        return;
+      }
+
       const updatedPosts = posts.filter((post) => post.id !== postId);
       setPosts(updatedPosts);
       saveData(null, updatedPosts, null);
 
-      // Also delete from community storage
-      const communityStoragePosts =
-        JSON.parse(localStorage.getItem("communityPosts")) || [];
-      const updatedCommunityPosts = communityStoragePosts.filter(
-        (post) => post.id !== postId,
-      );
-      localStorage.setItem(
-        "communityPosts",
-        JSON.stringify(updatedCommunityPosts),
-      );
+      // Keep any legacy cache in sync
+      try {
+        const communityStoragePosts =
+          JSON.parse(localStorage.getItem("communityPosts")) || [];
+        const updatedCommunityPosts = communityStoragePosts.filter(
+          (post) => post.id !== postId,
+        );
+        localStorage.setItem(
+          "communityPosts",
+          JSON.stringify(updatedCommunityPosts),
+        );
+        window.dispatchEvent(new Event("storage"));
+      } catch (err) {
+        console.error("Failed to sync local community cache", err);
+      }
 
       showNotification("Post deleted successfully");
-    }
+    };
+
+    performDelete();
   };
 
   const handleToggleFeaturedPost = (postId) => {

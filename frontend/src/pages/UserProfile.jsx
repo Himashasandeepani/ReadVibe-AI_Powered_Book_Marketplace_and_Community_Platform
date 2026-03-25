@@ -99,6 +99,29 @@ const UserProfile = () => {
       navigate("/login");
       return;
     }
+
+    // Load data once user is available
+    initializeUserData(user);
+
+    // Keep data in sync across tabs (orders, reviews, book requests, profile updates)
+    const handleStorage = (event) => {
+      if (
+        event.key === "userOrders" ||
+        event.key === "userReviews" ||
+        event.key === "bookRequests" ||
+        event.key === "adminCommunityPosts" ||
+        event.key === "currentUser"
+      ) {
+        const refreshedUser = getCurrentUser();
+        if (refreshedUser) {
+          setUser(refreshedUser);
+          initializeUserData(refreshedUser);
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, [user, navigate]);
 
   const handleUpdateProfile = (updatedData) => {

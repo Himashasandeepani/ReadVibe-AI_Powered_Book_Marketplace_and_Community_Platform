@@ -142,6 +142,7 @@ const Community = () => {
             "adminCommunityPosts",
             JSON.stringify(adminPosts),
           );
+          window.dispatchEvent(new Event("storage"));
         } catch (err) {
           console.error("Error syncing adminCommunityPosts from API:", err);
         }
@@ -284,6 +285,7 @@ const Community = () => {
           "adminCommunityPosts",
           JSON.stringify(updatedAdminPosts),
         );
+        window.dispatchEvent(new Event("storage"));
       } catch (error) {
         console.error("Error updating admin panel posts from created post:", error);
       }

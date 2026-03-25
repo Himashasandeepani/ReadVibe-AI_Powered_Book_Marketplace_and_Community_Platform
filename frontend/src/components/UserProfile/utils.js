@@ -68,17 +68,30 @@ export const loadUserData = (user) => {
 
   const wishlistItems =
     JSON.parse(localStorage.getItem(`wishlist_${user.id}`)) || [];
-  const communityPosts =
-    JSON.parse(localStorage.getItem("communityPosts")) || [];
-  const userPosts = communityPosts.filter(
-    (post) => post.user.name === user.name
-  );
+    const adminCommunityPosts = JSON.parse(localStorage.getItem("adminCommunityPosts")) || [];
+    const communityPosts = JSON.parse(localStorage.getItem("communityPosts")) || [];
+
+    const belongsToUser = (post) => {
+      const postUser = post.user || post.username || post.userName || post.userEmail;
+      const postUserId = post.userId || post.user_id;
+
+      if (postUserId && Number(postUserId) === Number(user.id)) return true;
+
+      const normalizedUser = (val) => (val || "").toString().toLowerCase();
+      const targets = [user.username, user.name, user.email, `user_${user.id}`]
+        .filter(Boolean)
+        .map(normalizedUser);
+
+      return targets.includes(normalizedUser(postUser));
+    };
+
+    const userPosts = [...adminCommunityPosts, ...communityPosts].filter(belongsToUser);
 
   const userStats = {
     booksRead,
     reviewsWritten: userReviews.length,
     wishlistCount: wishlistItems.length,
-    communityPosts: userPosts.length,
+      communityPosts: userPosts.length,
     myBookRequests: userRequests.length,
   };
 

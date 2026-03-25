@@ -94,6 +94,19 @@ export const addCommunityCommentApi = async ({ userId, postId, content }) => {
   return data.comments || [];
 };
 
+export const deleteCommunityPostApi = async ({ userId, postId }) => {
+  const uid = resolveUserId(userId);
+
+  await handleApi(`/api/community/posts/${postId}`, {
+    method: "DELETE",
+    headers: {
+      "x-user-id": uid,
+    },
+  });
+
+  return true;
+};
+
 export const createBookRequestApi = async ({
   userId,
   bookTitle,
