@@ -6,12 +6,12 @@ dotenv.config();
 const { Pool } = pkg;
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, // prefer single URL when provided
+  connectionString: process.env.DATABASE_URL || undefined, // prefer single URL when provided
   host: process.env.DB_HOST || 'localhost',
   port: Number(process.env.DB_PORT) || 5432,
   database: process.env.DB_NAME || 'readvibe_db',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || '1234',
+  user: process.env.DB_USER || 'readvibe',
+  password: process.env.DB_PASSWORD || 'readvibe_password',
   max: Number(process.env.DB_POOL_MAX) || 10,
   idleTimeoutMillis: Number(process.env.DB_IDLE_TIMEOUT_MS) || 30000,
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,

@@ -113,6 +113,8 @@ export const getBookById = async (id) => {
 };
 
 export const createBook = async (payload) => {
+  const imagesArray = Array.isArray(payload.images) ? payload.images : [];
+  const imagesJson = JSON.stringify(imagesArray);
   const status = payload.status || computeStatus(payload.stock ?? 0, payload.minStock ?? 0);
   const { rows } = await query(
     `INSERT INTO books (
@@ -160,7 +162,7 @@ export const createBook = async (payload) => {
       payload.weight || null,
       payload.dimensions || null,
       payload.image || null,
-      payload.images || [],
+      imagesJson,
       payload.featured ?? false,
       payload.salesThisMonth ?? 0,
       payload.totalSales ?? 0,
@@ -198,7 +200,10 @@ export const updateBook = async (id, updates = {}) => {
   if (updates.weight !== undefined) addField('weight', updates.weight);
   if (updates.dimensions !== undefined) addField('dimensions', updates.dimensions);
   if (updates.image !== undefined) addField('image', updates.image);
-  if (updates.images !== undefined) addField('images', updates.images);
+  if (updates.images !== undefined) {
+    const imagesArray = Array.isArray(updates.images) ? updates.images : [];
+    addField('images', JSON.stringify(imagesArray));
+  }
   if (updates.featured !== undefined) addField('featured', updates.featured);
   if (updates.salesThisMonth !== undefined) addField('sales_this_month', updates.salesThisMonth);
   if (updates.totalSales !== undefined) addField('total_sales', updates.totalSales);
