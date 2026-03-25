@@ -20,57 +20,6 @@ import {
   createBookRequestApi,
 } from "../utils/communityApi";
 
-const createDefaultCommunityPosts = () => [
-  {
-    id: "P001",
-    user: "john_doe",
-    content:
-      "Just finished 'Project Hail Mary' and it's absolutely mind-blowing! The character development is incredible. Highly recommend to all sci-fi lovers!",
-    image: "/assets/The_Midnight_Library.jpeg",
-    likes: 24,
-    comments: 8,
-    status: "Active",
-    timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
-    category: "Book Review",
-    commentsList: [
-      {
-        user: "sarah_j",
-        content:
-          "I totally agree! The ending had me in tears. One of the best books I've read this year.",
-        timestamp: new Date(Date.now() - 3600000)
-          .toISOString()
-          .replace("T", " ")
-          .substring(0, 19),
-      },
-    ],
-    likedBy: [],
-    userDisplay: {
-      name: "John Doe",
-      avatar: "JD",
-    },
-  },
-  {
-    id: "P002",
-    user: "sarah_j",
-    content:
-      "Looking for fantasy recommendations similar to Brandon Sanderson's works. Any suggestions? I've already read Wheel of Time and Kingkiller Chronicle.",
-    likes: 45,
-    comments: 12,
-    status: "Active",
-    timestamp: new Date(Date.now() - 18000000)
-      .toISOString()
-      .replace("T", " ")
-      .substring(0, 19),
-    category: "Recommendation",
-    commentsList: [],
-    likedBy: [],
-    userDisplay: {
-      name: "Sarah Johnson",
-      avatar: "SJ",
-    },
-  },
-];
-
 const getStoredCurrentUser = () => {
   const storedUser = localStorage.getItem("currentUser");
   if (!storedUser) {
@@ -160,22 +109,9 @@ const Community = () => {
     reason: "",
   });
 
-  const topContributors = [
-    { name: "John Doe", avatar: "JD", posts: 124 },
-    { name: "Sarah Johnson", avatar: "SJ", posts: 98 },
-    { name: "Mike Brown", avatar: "MB", posts: 76 },
-  ];
+  const topContributors = [];
 
-  const popularTags = [
-    "#Fantasy",
-    "#SciFi",
-    "#Mystery",
-    "#Romance",
-    "#Classics",
-    "#Biography",
-    "#SelfHelp",
-    "#Thriller",
-  ];
+  const popularTags = [];
 
   useEffect(() => {
     const handleStorageChange = (event) => {
@@ -199,7 +135,7 @@ const Community = () => {
 
         try {
           const adminPosts = mapped.map((p) => {
-            const { userDisplay, commentsList, likedBy, ...rest } = p;
+            const { userDisplay: _ud, commentsList: _cl, likedBy: _lb, ...rest } = p; // drop UI-only fields
             return rest;
           });
           localStorage.setItem(
@@ -210,8 +146,8 @@ const Community = () => {
           console.error("Error syncing adminCommunityPosts from API:", err);
         }
       } catch (err) {
-        console.error("Failed to load community posts from API, using defaults", err);
-        setCommunityPosts(createDefaultCommunityPosts());
+        console.error("Failed to load community posts from API", err);
+        setCommunityPosts([]);
       }
     };
 
@@ -333,7 +269,7 @@ const Community = () => {
       try {
         const adminPosts =
           JSON.parse(localStorage.getItem("adminCommunityPosts")) || [];
-        const { userDisplay, commentsList, likedBy, ...adminPost } = uiPost;
+        const { userDisplay: _ud, commentsList: _cl, likedBy: _lb, ...adminPost } = uiPost; // strip UI-only fields
         const updatedAdminPosts = [adminPost, ...adminPosts];
         localStorage.setItem(
           "adminCommunityPosts",
