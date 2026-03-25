@@ -325,6 +325,13 @@ const AdminPanel = () => {
       post.id === postId ? { ...post, featured: willFeature } : post,
     );
     dispatch(setPosts(updated));
+
+    showNotification(
+      willFeature
+        ? "Post featured on Home"
+        : "Post removed from Home",
+      "success",
+    );
   };
 
   const handleSystemSettingsChange = (key, value) => {
