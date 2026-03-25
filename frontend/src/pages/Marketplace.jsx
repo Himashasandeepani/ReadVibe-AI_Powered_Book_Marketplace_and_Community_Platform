@@ -301,18 +301,25 @@ const Marketplace = () => {
     navigate("/delivery-details");
   };
 
-  const handleAddToWishlist = (bookId, e = null) => {
+  const handleAddToWishlist = async (bookId, e = null) => {
     if (e) e.stopPropagation();
 
     if (!requireLogin("add items to wishlist")) return;
 
-    addToWishlist(bookId, user.id);
-    const updatedWishlist =
-      JSON.parse(localStorage.getItem(`wishlist_${user.id}`)) || [];
-    setUserWishlist(updatedWishlist);
+    const numericId = Number(bookId);
+    if (!Number.isInteger(numericId) || numericId <= 0) {
+      showNotification("This book cannot be wishlisted (missing id)", "danger");
+      return;
+    }
 
-    window.dispatchEvent(new CustomEvent("wishlist-updated"));
-    showNotification("Book added to wishlist!", "success");
+    try {
+      const items = await addToWishlist(numericId, Number(user.id));
+      setUserWishlist(items);
+      window.dispatchEvent(new CustomEvent("wishlist-updated"));
+      showNotification("Book added to wishlist!", "success");
+    } catch (err) {
+      showNotification(err.message || "Failed to add to wishlist", "danger");
+    }
   };
 
   const isInWishlist = (bookId) => {

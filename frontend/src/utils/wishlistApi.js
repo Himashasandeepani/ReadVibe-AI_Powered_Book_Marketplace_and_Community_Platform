@@ -8,7 +8,10 @@ const handleApi = async (path, options = {}) => {
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const msg = data?.error || data?.message || "Request failed";
+    const validationMsg = Array.isArray(data?.errors)
+      ? data.errors.map((e) => e.msg || e.message).filter(Boolean).join("; ")
+      : null;
+    const msg = validationMsg || data?.error || data?.message || "Request failed";
     throw new Error(msg);
   }
   return data;
@@ -22,10 +25,18 @@ export const fetchWishlistApi = async (userId) => {
 };
 
 export const addWishlistItemApi = async ({ userId, bookId, priority, notes }) => {
-  const data = await handleApi(`/api/wishlist`, {
+  const uid = Number(userId);
+  const bid = Number(bookId);
+  if (!Number.isInteger(uid) || uid <= 0) {
+    throw new Error("Login required to add to wishlist");
+  }
+  if (!Number.isInteger(bid) || bid <= 0) {
+    throw new Error("Invalid book id for wishlist");
+  }
+  const data = await handleApi(`/api/wishlist?userId=${encodeURIComponent(uid)}`, {
     method: "POST",
-    body: JSON.stringify({ userId, bookId, priority, notes }),
-    headers: { "x-user-id": userId },
+    body: JSON.stringify({ userId: uid, bookId: bid, priority, notes }),
+    headers: { "x-user-id": uid },
   });
   return data.items || [];
 };

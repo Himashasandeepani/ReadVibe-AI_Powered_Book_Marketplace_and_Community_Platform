@@ -97,6 +97,17 @@ const Wishlist = () => {
   });
   const [loading, setLoading] = useState(true);
 
+  const persistWishlist = useCallback(
+    (items) => {
+      setWishlist(items);
+      if (user?.id) {
+        localStorage.setItem(`wishlist_${user.id}`, JSON.stringify(items));
+        window.dispatchEvent(new Event("storage"));
+      }
+    },
+    [user?.id],
+  );
+
   useEffect(() => {
     const handleStorageChange = (event) => {
       if (event.key === "currentUser") {
@@ -127,7 +138,7 @@ const Wishlist = () => {
       setLoading(true);
       try {
         const items = await fetchWishlistApi(user.id);
-        setWishlist(normalizeWishlistItems(items, allBooks));
+        persistWishlist(normalizeWishlistItems(items, allBooks));
       } catch (error) {
         console.error("Failed to load wishlist", error);
         showNotification(error.message || "Failed to load wishlist", "danger");
@@ -137,7 +148,7 @@ const Wishlist = () => {
     };
 
     loadWishlist();
-  }, [user, allBooks, normalizeWishlistItems]);
+  }, [user, allBooks, normalizeWishlistItems, persistWishlist]);
 
   const filteredWishlist = useMemo(() => {
     if (!user) return [];
@@ -201,7 +212,7 @@ const Wishlist = () => {
           priority: priorityLevel,
           notes: notesText,
         });
-        setWishlist(normalizeWishlistItems(items, allBooks));
+        persistWishlist(normalizeWishlistItems(items, allBooks));
         showNotification("Book added to wishlist!", "success");
         setSearchTerm("");
         setSearchResults([]);
@@ -237,7 +248,7 @@ const Wishlist = () => {
     const remove = async () => {
       try {
         const items = await deleteWishlistItemApi({ userId: user.id, bookId });
-        setWishlist(normalizeWishlistItems(items, allBooks));
+        persistWishlist(normalizeWishlistItems(items, allBooks));
         showNotification("Book removed from wishlist", "info");
       } catch (error) {
         showNotification(error.message || "Failed to remove item", "danger");
@@ -264,7 +275,7 @@ const Wishlist = () => {
     const clear = async () => {
       try {
         await clearWishlistApi(user.id);
-        setWishlist([]);
+        persistWishlist([]);
         showNotification("Wishlist cleared", "info");
       } catch (error) {
         showNotification(error.message || "Failed to clear wishlist", "danger");
@@ -294,7 +305,7 @@ const Wishlist = () => {
           priority,
           notes,
         });
-        setWishlist(normalizeWishlistItems(items, allBooks));
+        persistWishlist(normalizeWishlistItems(items, allBooks));
         setShowEditModal(false);
         showNotification("Wishlist item updated!", "success");
       } catch (error) {

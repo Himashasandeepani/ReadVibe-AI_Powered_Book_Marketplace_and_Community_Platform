@@ -100,16 +100,15 @@ const UserProfile = () => {
       return;
     }
 
-    // Load data once user is available
-    initializeUserData(user);
-
     // Keep data in sync across tabs (orders, reviews, book requests, profile updates)
     const handleStorage = (event) => {
+      const isWishlistKey = event.key && event.key.startsWith("wishlist_");
       if (
         event.key === "userOrders" ||
         event.key === "userReviews" ||
         event.key === "bookRequests" ||
         event.key === "adminCommunityPosts" ||
+        isWishlistKey ||
         event.key === "currentUser"
       ) {
         const refreshedUser = getCurrentUser();

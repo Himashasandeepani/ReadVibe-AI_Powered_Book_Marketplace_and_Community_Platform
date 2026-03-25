@@ -157,6 +157,9 @@ const StockManager = () => {
 
   const normalizeBook = useCallback((book) => {
     if (!book) return null;
+    const rawId = book.id ?? book.bookId ?? book.book_id;
+    const normalizedId = Number(rawId);
+    const id = Number.isInteger(normalizedId) && normalizedId > 0 ? normalizedId : rawId;
     const images = Array.isArray(book.images)
       ? book.images
       : book.images
@@ -168,6 +171,7 @@ const StockManager = () => {
 
     return {
       ...book,
+      id,
       price: Number(book.price) || 0,
       costPrice:
         book.costPrice !== undefined
@@ -204,6 +208,22 @@ const StockManager = () => {
     };
 
     loadBooksFromApi();
+  }, [normalizeBook, persistBooks]);
+
+  // Normalize any legacy stored books that might lack a usable id
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const stored = JSON.parse(window.localStorage.getItem("stockBooks")) || [];
+      if (!Array.isArray(stored) || !stored.length) return;
+      const normalized = stored.map((b) => normalizeBook(b)).filter(Boolean);
+      const changed = JSON.stringify(stored) !== JSON.stringify(normalized);
+      if (normalized.length && changed) {
+        persistBooks(normalized);
+      }
+    } catch (err) {
+      console.error("Failed to normalize stored stockBooks", err);
+    }
   }, [normalizeBook, persistBooks]);
 
   const loadAllData = useCallback(() => {

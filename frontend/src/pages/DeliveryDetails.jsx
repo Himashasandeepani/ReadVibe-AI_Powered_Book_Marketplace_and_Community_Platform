@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Container, Row, Col, Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser } from "../utils/auth";
-import { books, showNotification } from "../utils/helpers";
+import { books, getAllBooks, showNotification } from "../utils/helpers";
 import { createOrderApi } from "../utils/orderApi";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTruck } from "@fortawesome/free-solid-svg-icons";
@@ -84,19 +84,38 @@ const buildInitialFormData = (user) => {
 };
 
 const getCheckoutCartItems = () => {
+  // Prefer the enriched cart items from session if available
+  const enriched = safeParseJSON(sessionStorage.getItem("cartItems"));
+  if (Array.isArray(enriched) && enriched.length) {
+    return enriched;
+  }
+
   const savedCart = safeParseJSON(sessionStorage.getItem("checkoutCart")) || [];
-  return savedCart.map((item) => {
-    const book = books.find((b) => b.id === item.id) || {};
-    return {
-      ...item,
-      title: book.title || "Unknown Book",
-      author: book.author || "Unknown Author",
-      price: book.price || 0,
-      image:
-        book.image ||
-        "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
-    };
-  });
+  const catalog = getAllBooks();
+
+  return savedCart
+    .map((item) => {
+      const rawId = item.id;
+      const numericId = Number(rawId);
+      const id = Number.isInteger(numericId) && numericId > 0 ? numericId : rawId;
+
+      const book =
+        catalog.find((b) => b.id === id) ||
+        books.find((b) => b.id === id) ||
+        {};
+
+      return {
+        ...item,
+        id,
+        title: book.title || "Unknown Book",
+        author: book.author || "Unknown Author",
+        price: book.price || item.price || 0,
+        image:
+          book.image ||
+          "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
+      };
+    })
+    .filter((item) => Number.isInteger(Number(item.id)) && Number(item.id) > 0);
 };
 
 const DeliveryDetails = () => {
@@ -212,6 +231,15 @@ const DeliveryDetails = () => {
       return;
     }
 
+    const invalidItems = cartItems.filter(
+      (item) => !Number.isInteger(Number(item.id)) || Number(item.id) <= 0,
+    );
+    if (invalidItems.length) {
+      showNotification("Checkout cart has invalid items. Please re-add them.", "danger");
+      navigate("/cart");
+      return;
+    }
+
     const submit = async () => {
       setLoading(true);
       try {
@@ -221,7 +249,7 @@ const DeliveryDetails = () => {
         const order = await createOrderApi({
           userId: currentUser.id,
           items: cartItems.map((item) => ({
-            bookId: item.id,
+            bookId: Number(item.id),
             quantity: item.quantity,
           })),
           shipping: formData,

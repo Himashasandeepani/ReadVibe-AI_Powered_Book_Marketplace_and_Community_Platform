@@ -46,16 +46,26 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
     return wishlist.some((item) => item.id === bookId);
   };
 
-  const handleAddToWishlist = () => {
+  const handleAddToWishlist = async () => {
     if (!isLoggedIn()) {
       onHide();
       navigate("/login");
       return;
     }
 
-    addToWishlist(book.id, currentUser.id);
-    window.dispatchEvent(new CustomEvent("wishlist-updated"));
-    showNotification("Book added to wishlist!", "success");
+    const numericId = Number(book.id);
+    if (!Number.isInteger(numericId) || numericId <= 0) {
+      showNotification("This book cannot be wishlisted (missing id)", "danger");
+      return;
+    }
+
+    try {
+      await addToWishlist(numericId, Number(currentUser.id));
+      window.dispatchEvent(new CustomEvent("wishlist-updated"));
+      showNotification("Book added to wishlist!", "success");
+    } catch (err) {
+      showNotification(err.message || "Failed to add to wishlist", "danger");
+    }
   };
 
   const handleAddToCart = () => {
