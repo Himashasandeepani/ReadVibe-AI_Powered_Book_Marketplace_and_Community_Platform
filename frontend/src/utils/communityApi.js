@@ -1,76 +1,51 @@
 const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 const handleApi = async (path, options = {}) => {
-  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
   const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
     ...options,
-    headers,
   });
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const validationMsg = Array.isArray(data?.errors)
-      ? data.errors.map((e) => e.msg || e.message).filter(Boolean).join("; ")
-      : null;
-    const msg = validationMsg || data?.error || data?.message || "Request failed";
-    const err = new Error(msg);
-    err.status = res.status;
-    err.details = data;
-    throw err;
+    const msg =
+      data?.error ||
+      data?.message ||
+      data?.errors?.[0]?.msg ||
+      "Request failed";
+    throw new Error(msg);
   }
   return data;
 };
 
-const resolveUserId = (raw) => {
-  const candidate = raw ?? null;
-  const parsed = Number(
-    candidate?.id ?? candidate?.user_id ?? candidate?.userId ?? candidate,
-  );
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error("userId is required to perform this action");
-  }
-  return parsed;
-};
-
-export const fetchCommunityPostsApi = async ({ userId } = {}) => {
-  const headers = {};
-  if (userId) {
-    headers["x-user-id"] = userId;
-  }
-
-  const data = await handleApi(`/api/community/posts`, { headers });
+export const fetchCommunityPostsApi = async () => {
+  const data = await handleApi(`/api/community/posts`);
   return data.posts || [];
 };
 
-export const fetchCommunityPostWithCommentsApi = async (postId, { userId } = {}) => {
-  const headers = {};
-  if (userId) {
-    headers["x-user-id"] = userId;
-  }
-
-  const data = await handleApi(`/api/community/posts/${postId}`, { headers });
+export const fetchCommunityPostWithCommentsApi = async (postId) => {
+  const data = await handleApi(`/api/community/posts/${postId}`);
   return { post: data.post, comments: data.comments || [] };
 };
 
 export const createCommunityPostApi = async ({ userId, content, category, bookId }) => {
-  const uid = resolveUserId(userId);
+  if (!userId) throw new Error("userId is required to create a post");
 
   const body = {
-    userId: uid,
-    content: (content || "").trim(),
+    userId,
+    content,
     category,
   };
 
-  const parsedBookId = Number(bookId);
-  if (Number.isInteger(parsedBookId) && parsedBookId > 0) {
-    body.bookId = parsedBookId;
+  if (bookId) {
+    body.bookId = bookId;
   }
 
   const data = await handleApi(`/api/community/posts`, {
     method: "POST",
     body: JSON.stringify(body),
     headers: {
-      "x-user-id": uid,
+      "x-user-id": userId,
     },
   });
 
@@ -78,12 +53,12 @@ export const createCommunityPostApi = async ({ userId, content, category, bookId
 };
 
 export const toggleCommunityPostLikeApi = async ({ userId, postId }) => {
-  const uid = resolveUserId(userId);
+  if (!userId) throw new Error("userId is required to like a post");
 
   const data = await handleApi(`/api/community/posts/${postId}/like`, {
     method: "POST",
     headers: {
-      "x-user-id": uid,
+      "x-user-id": userId,
     },
   });
 
@@ -91,30 +66,17 @@ export const toggleCommunityPostLikeApi = async ({ userId, postId }) => {
 };
 
 export const addCommunityCommentApi = async ({ userId, postId, content }) => {
-  const uid = resolveUserId(userId);
+  if (!userId) throw new Error("userId is required to comment on a post");
 
   const data = await handleApi(`/api/community/posts/${postId}/comments`, {
     method: "POST",
-    body: JSON.stringify({ userId: uid, content }),
+    body: JSON.stringify({ userId, content }),
     headers: {
-      "x-user-id": uid,
+      "x-user-id": userId,
     },
   });
 
   return data.comments || [];
-};
-
-export const deleteCommunityPostApi = async ({ userId, postId }) => {
-  const uid = resolveUserId(userId);
-
-  await handleApi(`/api/community/posts/${postId}`, {
-    method: "DELETE",
-    headers: {
-      "x-user-id": uid,
-    },
-  });
-
-  return true;
 };
 
 export const createBookRequestApi = async ({
@@ -125,10 +87,10 @@ export const createBookRequestApi = async ({
   category,
   reason,
 }) => {
-  const uid = resolveUserId(userId);
+  if (!userId) throw new Error("userId is required to create a book request");
 
   const body = {
-    userId: uid,
+    userId,
     bookTitle,
     author,
     isbn,
@@ -140,7 +102,7 @@ export const createBookRequestApi = async ({
     method: "POST",
     body: JSON.stringify(body),
     headers: {
-      "x-user-id": uid,
+      "x-user-id": userId,
     },
   });
 

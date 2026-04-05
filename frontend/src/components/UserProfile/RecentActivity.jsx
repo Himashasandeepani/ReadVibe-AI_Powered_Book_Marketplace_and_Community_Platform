@@ -1,7 +1,19 @@
 import React from "react";
 import { Card, Button } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faClock, faSyncAlt } from "@fortawesome/free-solid-svg-icons";
+import {
+  faClock,
+  faSyncAlt,
+  faShoppingBag,
+  faStar,
+  faBook,
+} from "@fortawesome/free-solid-svg-icons";
+
+const iconMap = {
+  shoppingBag: faShoppingBag,
+  star: faStar,
+  book: faBook,
+};
 
 const RecentActivity = ({ activities, onRefresh }) => {
   return (
@@ -29,7 +41,7 @@ const RecentActivity = ({ activities, onRefresh }) => {
               >
                 <div>
                   <FontAwesomeIcon
-                    icon={activity.icon}
+                    icon={iconMap[activity.icon] || faClock}
                     className="me-2 text-primary"
                   />
                   {activity.text}

@@ -35,6 +35,7 @@ import {
 } from "../utils/helpers";
 import { setCart } from "../store/slices/cartSlice";
 import { addCartItemApi, fetchCartApi } from "../utils/cartApi";
+import { fetchBookByIdApi } from "../components/StockManager/utils";
 import "../styles/pages/Marketplace.css";
 
 // Components
@@ -301,25 +302,18 @@ const Marketplace = () => {
     navigate("/delivery-details");
   };
 
-  const handleAddToWishlist = async (bookId, e = null) => {
+  const handleAddToWishlist = (bookId, e = null) => {
     if (e) e.stopPropagation();
 
     if (!requireLogin("add items to wishlist")) return;
 
-    const numericId = Number(bookId);
-    if (!Number.isInteger(numericId) || numericId <= 0) {
-      showNotification("This book cannot be wishlisted (missing id)", "danger");
-      return;
-    }
+    addToWishlist(bookId, user.id);
+    const updatedWishlist =
+      JSON.parse(localStorage.getItem(`wishlist_${user.id}`)) || [];
+    setUserWishlist(updatedWishlist);
 
-    try {
-      const items = await addToWishlist(numericId, Number(user.id));
-      setUserWishlist(items);
-      window.dispatchEvent(new CustomEvent("wishlist-updated"));
-      showNotification("Book added to wishlist!", "success");
-    } catch (err) {
-      showNotification(err.message || "Failed to add to wishlist", "danger");
-    }
+    window.dispatchEvent(new CustomEvent("wishlist-updated"));
+    showNotification("Book added to wishlist!", "success");
   };
 
   const isInWishlist = (bookId) => {
@@ -329,6 +323,32 @@ const Marketplace = () => {
   const handleViewDetails = (book) => {
     setSelectedBook(book);
     setShowBookModal(true);
+
+    const loadBookDetails = async () => {
+      try {
+        const detailedBook = await fetchBookByIdApi(book.id);
+        if (detailedBook) {
+          setSelectedBook((current) =>
+            current && current.id === book.id
+              ? {
+                  ...current,
+                  ...detailedBook,
+                  image: resolveBookImage(detailedBook),
+                  inStock: detailedBook.inStock ?? detailedBook.stock > 0,
+                  reviews:
+                    detailedBook.reviews ??
+                    detailedBook.reviewsList?.length ??
+                    current.reviews,
+                }
+              : current,
+          );
+        }
+      } catch (error) {
+        console.error("Failed to load book details", error);
+      }
+    };
+
+    void loadBookDetails();
   };
 
   const getCategoryIcon = (category) => {

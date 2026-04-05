@@ -19,6 +19,11 @@ export const fetchBooksFromApi = async () => {
   return data.books || [];
 };
 
+export const fetchBookByIdApi = async (bookId) => {
+  const data = await handleApi(`/api/books/${bookId}`);
+  return data.book || null;
+};
+
 export const createBookApi = async (payload) => {
   const data = await handleApi("/api/books", {
     method: "POST",
@@ -37,6 +42,45 @@ export const updateBookApi = async (bookId, payload) => {
 
 export const deleteBookApi = async (bookId) => {
   await handleApi(`/api/books/${bookId}`, { method: "DELETE" });
+  return true;
+};
+
+export const fetchAllOrdersApi = async () => {
+  const data = await handleApi("/api/orders/all");
+  return data.orders || [];
+};
+
+export const updateOrderStatusApi = async (orderId, status) => {
+  const data = await handleApi(`/api/orders/${orderId}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  });
+  return data.order;
+};
+
+export const fetchPublishersFromApi = async () => {
+  const data = await handleApi("/api/publishers");
+  return data.publishers || [];
+};
+
+export const createPublisherApi = async (payload) => {
+  const data = await handleApi("/api/publishers", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return data.publisher;
+};
+
+export const updatePublisherApi = async (publisherId, payload) => {
+  const data = await handleApi(`/api/publishers/${publisherId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  return data.publisher;
+};
+
+export const deletePublisherApi = async (publisherId) => {
+  await handleApi(`/api/publishers/${publisherId}`, { method: "DELETE" });
   return true;
 };
 
@@ -131,19 +175,29 @@ export const calculateInventoryStats = (stockBooks) => {
     outOfStockBooks: stockBooks.filter((book) => book.status === "Out of Stock").length,
     lowStockItems: stockBooks.filter((book) => book.stock <= book.minStock && book.stock > 0).length,
     totalStockValue: stockBooks.reduce((sum, book) => sum + book.price * book.stock, 0),
-    totalCostValue: stockBooks.reduce((sum, book) => sum + book.costPrice * book.stock, 0),
-    potentialProfit: stockBooks.reduce((sum, book) => sum + (book.price - book.costPrice) * book.stock, 0),
+    totalCostValue: stockBooks.reduce((sum, book) => sum + (book.costPrice || 0) * book.stock, 0),
+    potentialProfit: stockBooks.reduce((sum, book) => sum + ((book.price || 0) - (book.costPrice || 0)) * book.stock, 0),
+    totalSalesCount: stockBooks.reduce((sum, book) => sum + (Number(book.totalSales) || 0), 0),
+    totalProfitEarned: stockBooks.reduce(
+      (sum, book) => sum + (((Number(book.price) || 0) - (Number(book.costPrice) || 0)) * (Number(book.totalSales) || 0)),
+      0,
+    ),
     featuredBooks: stockBooks.filter((book) => book.featured).length,
     totalMonthlySales: stockBooks.reduce((sum, book) => sum + book.salesThisMonth, 0),
   };
 };
 
 export const calculateOrderStats = (stockOrders) => {
+  const normalizeStatus = (status) => String(status || "").toLowerCase();
+
   return {
     total: stockOrders.length,
-    processing: stockOrders.filter((order) => order.status === "Processing").length,
-    shipped: stockOrders.filter((order) => order.status === "Shipped").length,
-    delivered: stockOrders.filter((order) => order.status === "Delivered").length,
+    processing: stockOrders.filter((order) => {
+      const status = normalizeStatus(order.status);
+      return status === "processing" || status === "pending";
+    }).length,
+    shipped: stockOrders.filter((order) => normalizeStatus(order.status) === "shipped").length,
+    delivered: stockOrders.filter((order) => normalizeStatus(order.status) === "delivered").length,
     totalRevenue: stockOrders.reduce((sum, order) => sum + order.total, 0),
     avgOrderValue: stockOrders.length > 0
       ? stockOrders.reduce((sum, order) => sum + order.total, 0) / stockOrders.length
@@ -183,11 +237,227 @@ export const showNotification = (message, type) => {
 };
 
 // Initial data
-export const initialStockBooks = () => [];
+export const initialStockBooks = () => {
+  return [
+    {
+      id: 1,
+      isbn: "978-0525559474",
+      title: "The Midnight Library",
+      author: "Matt Haig",
+      category: "Fiction",
+      price: 4000.00,
+      costPrice: 3500.00,
+      stock: 15,
+      minStock: 5,
+      maxStock: 50,
+      status: "In Stock",
+      publisher: "Penguin Books",
+      publicationYear: 2020,
+      pages: 304,
+      lastRestocked: "2024-01-15",
+      salesThisMonth: 8,
+      totalSales: 45,
+      featured: true,
+    },
+    {
+      id: 2,
+      isbn: "978-0593135204",
+      title: "Project Hail Mary",
+      author: "Andy Weir",
+      category: "Science Fiction",
+      price: 5000.00,
+      costPrice: 4500.00,
+      stock: 8,
+      minStock: 5,
+      maxStock: 40,
+      status: "In Stock",
+      publisher: "Ballantine Books",
+      publicationYear: 2021,
+      pages: 476,
+      lastRestocked: "2024-01-10",
+      salesThisMonth: 12,
+      totalSales: 67,
+      featured: true,
+    },
+    {
+      id: 3,
+      isbn: "978-0441172719",
+      title: "Dune",
+      author: "Frank Herbert",
+      category: "Science Fiction",
+      price: 3000.00,
+      costPrice: 2500.00,
+      stock: 3,
+      minStock: 5,
+      maxStock: 30,
+      status: "Low Stock",
+      publisher: "Ace Books",
+      publicationYear: 1965,
+      pages: 412,
+      lastRestocked: "2023-12-20",
+      salesThisMonth: 5,
+      totalSales: 89,
+      featured: true,
+    },
+    {
+      id: 4,
+      isbn: "978-0547928227",
+      title: "The Hobbit",
+      author: "J.R.R. Tolkien",
+      category: "Fantasy",
+      price: 3500.00,
+      costPrice: 2800.00,
+      stock: 0,
+      minStock: 5,
+      maxStock: 25,
+      status: "Out of Stock",
+      publisher: "Houghton Mifflin",
+      publicationYear: 1937,
+      pages: 310,
+      lastRestocked: "2023-11-05",
+      salesThisMonth: 3,
+      totalSales: 56,
+      featured: false,
+    },
+    {
+      id: 5,
+      isbn: "978-1250217288",
+      title: "The Silent Patient",
+      author: "Alex Michaelides",
+      category: "Mystery",
+      price: 3800.00,
+      costPrice: 3200.00,
+      stock: 12,
+      minStock: 5,
+      maxStock: 35,
+      status: "In Stock",
+      publisher: "Celadon Books",
+      publicationYear: 2019,
+      pages: 336,
+      lastRestocked: "2024-01-05",
+      salesThisMonth: 7,
+      totalSales: 34,
+      featured: false,
+    },
+    {
+      id: 6,
+      isbn: "978-0735219090",
+      title: "Where the Crawdads Sing",
+      author: "Delia Owens",
+      category: "Fiction",
+      price: 3600.00,
+      costPrice: 3200.00,
+      stock: 20,
+      minStock: 5,
+      maxStock: 45,
+      status: "In Stock",
+      publisher: "G.P. Putnam's Sons",
+      publicationYear: 2018,
+      pages: 384,
+      lastRestocked: "2024-01-12",
+      salesThisMonth: 15,
+      totalSales: 78,
+      featured: true,
+    },
+  ];
+};
 
-export const initialStockOrders = () => [];
+export const initialStockOrders = () => {
+  return [
+    {
+      id: "ORD001",
+      customer: "John Doe",
+      customerEmail: "john@example.com",
+      items: 2,
+      total: 5000.00 * 2,
+      status: "Processing",
+      orderDate: "2024-01-20",
+      shippingAddress: "123 Main St, Colombo",
+      paymentMethod: "Credit Card",
+      trackingNumber: "TRK789456123",
+      courier: "Aramex",
+      estimatedDelivery: "2024-01-27",
+    },
+    {
+      id: "ORD002",
+      customer: "Sarah Johnson",
+      customerEmail: "sarah@example.com",
+      items: 1,
+      total: 3500.00 * 1,
+      status: "Shipped",
+      orderDate: "2024-01-19",
+      shippingAddress: "456 Park Ave, Kandy",
+      paymentMethod: "PayPal",
+      trackingNumber: "TRK321654987",
+      courier: "DHL",
+      estimatedDelivery: "2024-01-25",
+    },
+    {
+      id: "ORD003",
+      customer: "Michael Brown",
+      customerEmail: "michael@example.com",
+      items: 3,
+      total: 3000.00 * 3,
+      status: "Delivered",
+      orderDate: "2024-01-18",
+      shippingAddress: "789 Beach Rd, Galle",
+      paymentMethod: "Credit Card",
+      trackingNumber: "TRK147258369",
+      courier: "FedEx",
+      deliveryDate: "2024-01-23",
+    },
+  ];
+};
 
-export const initialPublishers = () => [];
+export const initialPublishers = () => {
+  return [
+    {
+      id: "SUP001",
+      name: "Book Distributors Inc.",
+      contact: "John Smith",
+      email: "john@bookdist.com",
+      phone: "+94 11 234 5678",
+      address: "123 Business Ave, Colombo 05",
+      website: "www.bookdist.com",
+      booksSupplied: 45,
+      status: "Active",
+      rating: 4.5,
+      paymentTerms: "30 days",
+      leadTime: "5-7 days",
+      lastOrder: "2024-01-15",
+    },
+    {
+      id: "SUP002",
+      name: "Global Publishers Ltd.",
+      contact: "Sarah Johnson",
+      email: "sarah@globalpub.com",
+      phone: "+94 11 345 6789",
+      address: "456 Commerce St, Colombo 03",
+      website: "www.globalpub.com",
+      booksSupplied: 32,
+      status: "Active",
+      rating: 4.2,
+      paymentTerms: "45 days",
+      leadTime: "7-10 days",
+      lastOrder: "2024-01-10",
+    },
+    {
+      id: "SUP003",
+      name: "Literary Works Co.",
+      contact: "Michael Brown",
+      email: "michael@literaryworks.com",
+      phone: "+94 11 456 7890",
+      address: "789 Trade Rd, Colombo 07",
+      website: "www.literaryworks.com",
+      booksSupplied: 18,
+      status: "Inactive",
+      rating: 3.8,
+      paymentTerms: "15 days",
+      leadTime: "10-14 days",
+      lastOrder: "2023-12-20",
+    },
+  ];
+};
 
 // Format price
 export const formatPrice = (price) => {

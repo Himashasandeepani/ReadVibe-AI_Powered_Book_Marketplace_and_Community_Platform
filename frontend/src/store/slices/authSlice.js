@@ -14,7 +14,7 @@ const getStoredUser = () => {
 const saveUser = (user) => {
   try {
     window.localStorage.setItem("currentUser", JSON.stringify(user));
-    setTimeout(() => window.dispatchEvent(new Event("storage")), 0);
+    window.dispatchEvent(new Event("storage"));
   } catch (err) {
     console.warn("Failed to persist user", err);
   }
@@ -23,7 +23,7 @@ const saveUser = (user) => {
 const clearUser = () => {
   try {
     window.localStorage.removeItem("currentUser");
-    setTimeout(() => window.dispatchEvent(new Event("storage")), 0);
+    window.dispatchEvent(new Event("storage"));
   } catch (err) {
     console.warn("Failed to clear user", err);
   }

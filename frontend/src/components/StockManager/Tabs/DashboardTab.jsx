@@ -57,7 +57,24 @@ const DashboardTab = ({
         <div className="col-md-3 mb-4">
           <StatsCard
             number={formatCurrency(stats.orders.totalRevenue)}
-            label="Total Revenue"
+            label="Total Sales"
+            variant="success"
+          />
+        </div>
+      </div>
+
+      <div className="row">
+        <div className="col-md-6 mb-4">
+          <StatsCard
+            number={stats.inventory.totalSalesCount}
+            label="Books Sold"
+            variant="info"
+          />
+        </div>
+        <div className="col-md-6 mb-4">
+          <StatsCard
+            number={formatCurrency(stats.inventory.totalProfitEarned)}
+            label="Total Profit"
             variant="success"
           />
         </div>

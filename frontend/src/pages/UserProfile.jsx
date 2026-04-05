@@ -51,24 +51,19 @@ const EMPTY_USER_DATA = {
 
 const UserProfile = () => {
   const seededUser = typeof window === "undefined" ? null : getCurrentUser();
-  const initialData = seededUser ? loadUserData(seededUser) : EMPTY_USER_DATA;
-
   const [user, setUser] = useState(seededUser);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [activeSection, setActiveSection] = useState("overview");
+  const [loading, setLoading] = useState(true);
 
   // User data
-  const [userStats, setUserStats] = useState({ ...initialData.userStats });
-  const [recentActivity, setRecentActivity] = useState([
-    ...initialData.recentActivity,
-  ]);
-  const [orders, setOrders] = useState([...initialData.orders]);
-  const [myReviews, setMyReviews] = useState([...initialData.reviews]);
-  const [bookRequests, setBookRequests] = useState([
-    ...initialData.bookRequests,
-  ]);
+  const [userStats, setUserStats] = useState({ ...EMPTY_USER_STATS });
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [myReviews, setMyReviews] = useState([]);
+  const [bookRequests, setBookRequests] = useState([]);
 
   // Modal data
   const [selectedBook, setSelectedBook] = useState(null);
@@ -76,22 +71,24 @@ const UserProfile = () => {
 
   const navigate = useNavigate();
 
-  const initializeUserData = (currentUser) => {
+  const initializeUserData = async (currentUser) => {
     if (!currentUser) return;
 
+    setLoading(true);
     const {
       orders: userOrders,
       reviews: userReviews,
       bookRequests: userRequests,
       userStats: stats,
       recentActivity: activity,
-    } = loadUserData(currentUser);
+    } = await loadUserData(currentUser);
 
     setOrders(userOrders);
     setMyReviews(userReviews);
     setBookRequests(userRequests);
     setUserStats(stats);
     setRecentActivity(activity);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -100,43 +97,50 @@ const UserProfile = () => {
       return;
     }
 
-    // Keep data in sync across tabs (orders, reviews, book requests, profile updates)
-    const handleStorage = (event) => {
-      const isWishlistKey = event.key && event.key.startsWith("wishlist_");
-      if (
-        event.key === "userOrders" ||
-        event.key === "userReviews" ||
-        event.key === "bookRequests" ||
-        event.key === "adminCommunityPosts" ||
-        isWishlistKey ||
-        event.key === "currentUser"
-      ) {
-        const refreshedUser = getCurrentUser();
-        if (refreshedUser) {
-          setUser(refreshedUser);
-          initializeUserData(refreshedUser);
+    void initializeUserData(user);
+
+    const handleStorageChange = (event) => {
+      if (event.key === "currentUser") {
+        const updatedUser = getCurrentUser();
+        setUser(updatedUser);
+        if (updatedUser) {
+          void initializeUserData(updatedUser);
         }
       }
     };
 
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    const handleRefresh = () => {
+      const currentUser = getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+        void initializeUserData(currentUser);
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("focus", handleRefresh);
+    window.addEventListener("wishlist-updated", handleRefresh);
+    window.addEventListener("cart-updated", handleRefresh);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("focus", handleRefresh);
+      window.removeEventListener("wishlist-updated", handleRefresh);
+      window.removeEventListener("cart-updated", handleRefresh);
+    };
   }, [user, navigate]);
 
-  const handleUpdateProfile = (updatedData) => {
-    const updatedUser = updateUserProfile(user, updatedData);
+  const handleUpdateProfile = async (updatedData) => {
+    const updatedUser = await updateUserProfile(user, updatedData);
     setUser(updatedUser);
     setShowEditModal(false);
+    await initializeUserData(updatedUser);
     showNotification("Profile updated successfully!", "success");
   };
 
-  const handleSubmitBookRequest = (requestData) => {
-    const newRequest = submitBookRequest(user, requestData);
-    setBookRequests([...bookRequests, newRequest]);
-    setUserStats((prev) => ({
-      ...prev,
-      myBookRequests: prev.myBookRequests + 1,
-    }));
+  const handleSubmitBookRequest = async (requestData) => {
+    await submitBookRequest(user, requestData);
+    await initializeUserData(user);
     setShowRequestModal(false);
     showNotification("Book request submitted successfully!", "success");
   };
@@ -163,7 +167,7 @@ const UserProfile = () => {
     }
   };
 
-  const handleSubmitReview = (reviewData) => {
+  const handleSubmitReview = async (reviewData) => {
     if (reviewData.rating === 0) {
       showNotification("Please select a rating", "warning");
       return;
@@ -181,18 +185,14 @@ const UserProfile = () => {
     // Ensure the review payload includes the book id required by submitReview
     const reviewPayload = { ...reviewData, bookId: selectedBook.id };
 
-    const newReview = submitReview(
+    await submitReview(
       user,
       selectedBook,
       reviewPayload,
       selectedOrderId,
     );
 
-    setMyReviews([...myReviews, newReview]);
-    setUserStats((prev) => ({
-      ...prev,
-      reviewsWritten: prev.reviewsWritten + 1,
-    }));
+    await initializeUserData(user);
     setShowReviewModal(false);
     setSelectedBook(null);
     setSelectedOrderId(null);
@@ -200,18 +200,10 @@ const UserProfile = () => {
     showNotification("Review submitted successfully!", "success");
   };
 
-  const handleDeleteReview = (reviewId) => {
+  const handleDeleteReview = async (reviewId) => {
     if (window.confirm("Are you sure you want to delete this review?")) {
-      deleteReview(reviewId, user.id);
-
-      const updatedReviews = myReviews.filter(
-        (review) => review.id !== reviewId,
-      );
-      setMyReviews(updatedReviews);
-      setUserStats((prev) => ({
-        ...prev,
-        reviewsWritten: prev.reviewsWritten - 1,
-      }));
+      await deleteReview(reviewId, user.id);
+      await initializeUserData(user);
 
       showNotification("Review deleted successfully!", "success");
     }
@@ -291,7 +283,7 @@ const UserProfile = () => {
     }
   };
 
-  if (!user) {
+  if (!user || loading) {
     return (
       <div className="user-profile-page">
         <LoadingSpinner message="Loading profile..." />

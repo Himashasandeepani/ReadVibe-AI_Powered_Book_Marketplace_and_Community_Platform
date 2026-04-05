@@ -18,27 +18,11 @@ export const formatPrice = (price, showCurrency = true) => {
 // For backward compatibility
 export const formatPriceLKR = (price) => formatPrice(price, true);
 
-const resolveBook = (books, item) => {
-  const fromCatalog = books.find((b) => b.id === item.id);
-  if (fromCatalog) return fromCatalog;
-  return {
-    id: item.id,
-    title: item.title || "Unknown Book",
-    author: item.author || "Unknown Author",
-    price: item.price || 0,
-    image:
-      item.image ||
-      "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
-    stock: item.stock,
-    inStock: item.stock === undefined ? true : item.stock > 0,
-  };
-};
-
 // Calculate cart totals
 export const calculateTotals = (cart, books) => {
   const subtotal = cart.reduce((sum, item) => {
-    const book = resolveBook(books, item);
-    return sum + (book.price || 0) * item.quantity;
+    const book = books.find((b) => b.id === item.id);
+    return sum + (book ? book.price * item.quantity : 0);
   }, 0);
 
   const shipping = subtotal > 0 ? 500.0 : 0; // LKR 500.00 for shipping
@@ -109,7 +93,7 @@ export const updateCartCount = (cart) => {
 // Check if all items are in stock
 export const checkStockAvailability = (cart, books) => {
   return cart.filter((item) => {
-    const book = resolveBook(books, item);
+    const book = books.find((b) => b.id === item.id);
     return book && !book.inStock;
   });
 };
@@ -119,7 +103,7 @@ export const prepareCheckoutData = (cart, books) => {
   const totals = calculateTotals(cart, books);
 
   const cartItems = cart.map((item) => {
-    const book = resolveBook(books, item);
+    const book = books.find((b) => b.id === item.id);
     return {
       ...item,
       title: book?.title || "Unknown Book",

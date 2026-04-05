@@ -25,7 +25,7 @@ export const DEMO_USERS = [
     name: "John Doe",
     email: "john@example.com",
     username: "johndoe",
-    password: "john123",
+    password: "john12345",
     role: "user",
     avatar: "JD",
     createdAt: new Date().toISOString(),
@@ -40,7 +40,7 @@ export const DEMO_USERS = [
     name: "Jane Smith",
     email: "jane@example.com",
     username: "janesmith",
-    password: "jane123",
+    password: "jane12345",
     role: "user",
     avatar: "JS",
     createdAt: new Date().toISOString(),
@@ -154,10 +154,24 @@ const handleApi = async (path, options = {}) => {
   return data;
 };
 
-export const registerUserApi = async ({ name, email, username, password }) => {
+export const registerUserApi = async ({
+  name,
+  email,
+  username,
+  password,
+  termsAccepted = false,
+  aiEmailOptIn = false,
+}) => {
   const data = await handleApi("/api/auth/register", {
     method: "POST",
-    body: JSON.stringify({ name, email, username, password }),
+    body: JSON.stringify({
+      name,
+      email,
+      username,
+      password,
+      termsAccepted,
+      aiEmailOptIn,
+    }),
   });
   return data.user;
 };

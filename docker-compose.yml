@@ -25,22 +25,24 @@ services:
       timeout: 5s
       retries: 5
 
-  # PgAdmin UI for inspecting the PostgreSQL instance (no extra database is created)
+  # pgAdmin Database UI
   pgadmin:
     image: dpage/pgadmin4:8
     container_name: readvibe-pgadmin
     restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@readvibe.com
+      - PGADMIN_DEFAULT_PASSWORD=admin123
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "5050:80" # open http://localhost:5050 to view the DB
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@example.com
-      - PGADMIN_DEFAULT_PASSWORD=changeme
-      - PGADMIN_CONFIG_SERVER_MODE=False
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
     networks:
       - readvibe-network
 
@@ -65,6 +67,13 @@ services:
       - JWT_SECRET=${JWT_SECRET:-development-secret-change-in-production}
       - JWT_EXPIRE=24h
       - FRONTEND_URL=http://localhost:3000
+      - EMAIL_ENABLED=${EMAIL_ENABLED:-false}
+      - EMAIL_FROM=${EMAIL_FROM:-noreply@readvibe.com}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_SECURE=${SMTP_SECURE:-false}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
     depends_on:
       postgres:
         condition: service_healthy

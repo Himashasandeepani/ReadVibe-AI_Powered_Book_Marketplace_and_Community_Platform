@@ -1,42 +1,87 @@
 import { addWishlistItemApi } from "./wishlistApi";
 
+const normalizeUser = (user) => {
+  if (!user || typeof user !== "object") return null;
+
+  const resolvedId =
+    user.id ??
+    user.userId ??
+    user.user_id ??
+    user.userID ??
+    null;
+
+  return {
+    ...user,
+    id: resolvedId !== null && resolvedId !== undefined ? Number(resolvedId) : null,
+  };
+};
+
 // Books data
-export const books = [];
+export const books = [
+  {
+    id: 1,
+    title: "The Midnight Library",
+    author: "Matt Haig",
+    price: 6000.00,
+    category: "Fiction",
+    rating: 4.3,
+    reviews: 128,
+    inStock: true,
+    image: "/assets/The_Midnight_Library.jpeg"
+  },
+  {
+    id: 2,
+    title: "Project Hail Mary",
+    author: "Andy Weir",
+    price: 6500.00,
+    category: "Science Fiction",
+    rating: 4.8,
+    reviews: 95,
+    inStock: true,
+    image: "/assets/project_hail_mary.jpg"
+  },
+  {
+    id: 3,
+    title: "Dune",
+    author: "Frank Herbert",
+    price: 5400.00,
+    category: "Science Fiction",
+    rating: 4.0,
+    reviews: 210,
+    inStock: true,
+    image: "/assets/dune.jpg"
+  },
+  {
+    id: 4,
+    title: "The Hobbit",
+    author: "J.R.R. Tolkien",
+    price: 3500.00,
+    category: "Fantasy",
+    rating: 4.9,
+    reviews: 305,
+    inStock: false,
+    image: "/assets/the_hobbit.jpg"
+  }
+];
 
 // Return inventory books from localStorage; fallback to seed list
 export const getAllBooks = () => {
   try {
     const stored = JSON.parse(localStorage.getItem("stockBooks")) || [];
-    const mapped = stored
-      .map((book) => {
-        const rawId = book.id ?? book.bookId ?? book.book_id;
-        const numericId = Number(rawId);
-        const id = Number.isInteger(numericId) && numericId > 0 ? numericId : rawId;
+    const mapped = stored.map((book) => ({
+      ...book,
+      inStock: book.stock > 0,
+      image:
+        book.image ||
+        (Array.isArray(book.images) && book.images.length
+          ? book.images[0]
+          : "/assets/default_book.jpg"),
+      rating: book.rating || 4.2,
+      reviews: book.reviews || book.totalSales || 12,
+      price: Number(book.price) || 0,
+    }));
 
-        return {
-          ...book,
-          id,
-          inStock: book.stock > 0,
-          image:
-            book.image ||
-            (Array.isArray(book.images) && book.images.length
-              ? book.images[0]
-              : "/assets/default_book.jpg"),
-          rating: book.rating || 4.2,
-          reviews: book.reviews || book.totalSales || 12,
-          price: Number(book.price) || 0,
-        };
-      })
-      .filter((book) => Number.isInteger(Number(book.id)) && Number(book.id) > 0);
-
-    if (mapped.length) {
-      // If we had to normalize ids, write back so other views stay in sync
-      if (JSON.stringify(stored) !== JSON.stringify(mapped)) {
-        localStorage.setItem("stockBooks", JSON.stringify(mapped));
-        window.dispatchEvent(new Event("storage"));
-      }
-      return mapped;
-    }
+    if (mapped.length) return mapped;
   } catch (error) {
     console.error("Error reading stockBooks:", error);
   }
@@ -108,33 +153,29 @@ export const searchBooks = (query, booksArray = getAllBooks()) => {
   );
 };
 
-// Add or sync wishlist entry via backend API and persist locally
-export const addToWishlist = async (bookId, userId, priority = 3, notes = "") => {
-  const uid = Number(userId);
-  const bid = Number(bookId);
+// Add or sync wishlist entry via backend API
+export const addToWishlist = (bookId, userId) => {
+  const normalizedUserId = Number(userId);
+  const normalizedBookId = Number(bookId);
 
-  if (!Number.isInteger(uid) || uid <= 0) {
-    throw new Error("Login required to add to wishlist");
-  }
+  if (!normalizedUserId || !normalizedBookId) return false;
 
-  if (!Number.isInteger(bid) || bid <= 0) {
-    throw new Error("Invalid book id for wishlist");
-  }
+  // Fire-and-forget call to persist in DB; UI uses Wishlist APIs for display
+  (async () => {
+    try {
+      await addWishlistItemApi({
+        userId: normalizedUserId,
+        bookId: normalizedBookId,
+        priority: 3,
+        notes: "",
+      });
+      window.dispatchEvent(new CustomEvent("wishlist-updated"));
+    } catch (err) {
+      console.error("Failed to add to wishlist via API", err);
+    }
+  })();
 
-  try {
-    const items = await addWishlistItemApi({ userId: uid, bookId: bid, priority, notes });
-    const normalized = (items || []).map((item) => ({
-      ...item,
-      id: item.bookId ?? item.id,
-    }));
-
-    localStorage.setItem(`wishlist_${uid}`, JSON.stringify(normalized));
-    window.dispatchEvent(new Event("storage"));
-    return normalized;
-  } catch (err) {
-    console.error("Failed to add to wishlist via API", err);
-    throw err;
-  }
+  return true;
 };
 
 
@@ -288,7 +329,7 @@ export const updateBookRating = (bookId, rating) => {
 
 //wishlist
 export const getWishlistCount = () => {
-  const user = JSON.parse(localStorage.getItem('currentUser'));
+  const user = normalizeUser(JSON.parse(localStorage.getItem('currentUser')));
   if (!user) return 0;
 
   const wishlist = JSON.parse(localStorage.getItem(`wishlist_${user.id}`)) || [];
@@ -299,11 +340,11 @@ export const getWishlistCount = () => {
 
 // Authentication utilities
 export const getCurrentUser = () => {
-  return JSON.parse(localStorage.getItem('currentUser'))
+  return normalizeUser(JSON.parse(localStorage.getItem('currentUser')))
 }
 
 export const setCurrentUser = (user) => {
-  localStorage.setItem('currentUser', JSON.stringify(user))
+  localStorage.setItem('currentUser', JSON.stringify(normalizeUser(user)))
 }
 
 export const logout = () => {

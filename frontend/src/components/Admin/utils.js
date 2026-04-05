@@ -41,7 +41,64 @@ export const deleteAdminUserApi = async (userId) => {
   return true;
 };
 
-export const initialUsers = [];
+export const initialUsers = [
+  {
+    id: 1,
+    username: "john_doe",
+    email: "john@example.com",
+    role: "user",
+    status: "active",
+    joinDate: "2025-01-15",
+  },
+  {
+    id: 2,
+    username: "sarah_j",
+    email: "sarah@example.com",
+    role: "user",
+    status: "active",
+    joinDate: "2025-01-20",
+  },
+  {
+    id: 3,
+    username: "admin",
+    email: "admin@readvibe.com",
+    role: "admin",
+    status: "active",
+    joinDate: "2025-01-01",
+  },
+  {
+    id: 4,
+    username: "stock_manager",
+    email: "stock@readvibe.com",
+    role: "stock",
+    status: "active",
+    joinDate: "2025-01-01",
+  },
+  {
+    id: 5,
+    username: "book_lover",
+    email: "book@example.com",
+    role: "user",
+    status: "active",
+    joinDate: "2025-01-25",
+  },
+  {
+    id: 6,
+    username: "admin2",
+    email: "admin2@readvibe.com",
+    role: "admin",
+    status: "active",
+    joinDate: "2025-01-05",
+  },
+  {
+    id: 7,
+    username: "stock2",
+    email: "stock2@readvibe.com",
+    role: "stock",
+    status: "active",
+    joinDate: "2025-01-10",
+  },
+];
 
 export const initialStatuses = [
   { id: 1, status: "Active", isActive: true },
@@ -49,7 +106,41 @@ export const initialStatuses = [
   { id: 3, status: "Pending", isActive: true },
 ];
 
-export const initialCommunityPosts = [];
+export const initialCommunityPosts = [
+  {
+    id: "P001",
+    user: "john_doe",
+    content:
+      "Just finished Project Hail Mary by Andy Weir. Absolutely mind-blowing! The science was fascinating and the character development was superb. Highly recommend to all sci-fi lovers!",
+    likes: 24,
+    comments: 8,
+    status: "Active",
+    timestamp: "2025-01-20 14:30:00",
+    category: "Book Review",
+  },
+  {
+    id: "P002",
+    user: "sarah_j",
+    content:
+      "Looking for fantasy recommendations similar to Brandon Sanderson's Stormlight Archive. I've already read Wheel of Time and Kingkiller Chronicle. Any other epic fantasy series I should check out?",
+    likes: 45,
+    comments: 12,
+    status: "Active",
+    timestamp: "2025-01-19 10:15:00",
+    category: "Recommendation",
+  },
+  {
+    id: "P003",
+    user: "mike_b",
+    content:
+      "Has anyone read Dune? I'm about to start the series and would love to hear thoughts without spoilers. How does it compare to modern sci-fi?",
+    likes: 18,
+    comments: 5,
+    status: "Flagged",
+    timestamp: "2025-01-18 16:45:00",
+    category: "Discussion",
+  },
+];
 
 export const initialSystemSettings = {
   platformName: "ReadVibe",
@@ -91,17 +182,10 @@ export const loadData = () => {
         status: post.status || "Active",
         timestamp: post.timestamp || new Date().toISOString().replace("T", " ").substring(0, 19),
         category: post.category || "Discussion",
-        featured: !!post.featured,
       };
     });
     localStorage.setItem("adminCommunityPosts", JSON.stringify(posts));
   }
-
-  // Ensure all posts carry the featured flag
-  posts = (posts || []).map((post) => ({
-    ...post,
-    featured: !!post.featured,
-  }));
 
   return { users, posts, settings, statuses };
 };

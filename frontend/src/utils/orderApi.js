@@ -1,10 +1,14 @@
 const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
+const normalizeId = (value) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+};
+
 const handleApi = async (path, options = {}) => {
-  // Spread options first so our merged headers are not overwritten by options.headers
   const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options,
   });
 
   const data = await res.json().catch(() => ({}));
@@ -16,10 +20,11 @@ const handleApi = async (path, options = {}) => {
 };
 
 export const createOrderApi = async (payload) => {
-  if (!payload?.userId) throw new Error("userId is required to create an order");
+  const normalizedUserId = normalizeId(payload?.userId);
+  if (!normalizedUserId) throw new Error("userId is required to create an order");
 
   const body = {
-    userId: payload.userId,
+    userId: normalizedUserId,
     items: payload.items,
     shipping: payload.shipping,
     shippingMethod: payload.shippingMethod,
@@ -30,7 +35,7 @@ export const createOrderApi = async (payload) => {
     method: "POST",
     body: JSON.stringify(body),
     headers: {
-      "x-user-id": payload.userId,
+      "x-user-id": normalizedUserId,
     },
   });
 
@@ -38,18 +43,20 @@ export const createOrderApi = async (payload) => {
 };
 
 export const getOrdersApi = async (userId) => {
-  const data = await handleApi(`/api/orders?userId=${encodeURIComponent(userId)}`, {
+  const normalizedUserId = normalizeId(userId);
+  const data = await handleApi(`/api/orders?userId=${encodeURIComponent(normalizedUserId)}`, {
     headers: {
-      "x-user-id": userId,
+      "x-user-id": normalizedUserId,
     },
   });
   return data.orders || [];
 };
 
 export const getOrderApi = async (userId, orderId) => {
-  const data = await handleApi(`/api/orders/${orderId}?userId=${encodeURIComponent(userId)}`, {
+  const normalizedUserId = normalizeId(userId);
+  const data = await handleApi(`/api/orders/${orderId}?userId=${encodeURIComponent(normalizedUserId)}`, {
     headers: {
-      "x-user-id": userId,
+      "x-user-id": normalizedUserId,
     },
   });
   return data.order;

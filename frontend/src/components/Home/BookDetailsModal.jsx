@@ -36,6 +36,7 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
   const dispatch = useDispatch();
 
   if (!book) return null;
+  const reviewItems = Array.isArray(book.reviewsList) ? book.reviewsList : [];
 
   const isLoggedIn = () => currentUser !== null;
 
@@ -46,26 +47,16 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
     return wishlist.some((item) => item.id === bookId);
   };
 
-  const handleAddToWishlist = async () => {
+  const handleAddToWishlist = () => {
     if (!isLoggedIn()) {
       onHide();
       navigate("/login");
       return;
     }
 
-    const numericId = Number(book.id);
-    if (!Number.isInteger(numericId) || numericId <= 0) {
-      showNotification("This book cannot be wishlisted (missing id)", "danger");
-      return;
-    }
-
-    try {
-      await addToWishlist(numericId, Number(currentUser.id));
-      window.dispatchEvent(new CustomEvent("wishlist-updated"));
-      showNotification("Book added to wishlist!", "success");
-    } catch (err) {
-      showNotification(err.message || "Failed to add to wishlist", "danger");
-    }
+    addToWishlist(book.id, currentUser.id);
+    window.dispatchEvent(new CustomEvent("wishlist-updated"));
+    showNotification("Book added to wishlist!", "success");
   };
 
   const handleAddToCart = () => {
@@ -229,7 +220,7 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
                     <FontAwesomeIcon icon={faCalendar} className="me-2" />
                     Published:
                   </strong>{" "}
-                  {book.publishedDate || "Not specified"}
+                  {book.publishedDate || book.publicationYear || "Not specified"}
                 </li>
                 <li>
                   <strong>
@@ -262,19 +253,37 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
                 <FontAwesomeIcon icon={faComments} className="me-2" />
                 Customer Reviews
               </h5>
-              <div className="mb-3 p-3 border rounded">
-                <div className="d-flex align-items-center mb-2">
-                  <span className="fw-bold fs-5 me-2">
-                    <FontAwesomeIcon icon={faUser} className="me-1" />
-                    Verified Reader
-                  </span>
-                  <span className="text-warning">{generateStarRating(5)}</span>
+              {reviewItems.length > 0 ? (
+                reviewItems.map((review, index) => (
+                  <div key={index} className="mb-3 p-3 border rounded">
+                    <div className="d-flex align-items-center mb-2">
+                      <span className="fw-bold fs-5 me-2">
+                        <FontAwesomeIcon icon={faUser} className="me-1" />
+                        {review.userName || "Reader"}
+                      </span>
+                      <span className="text-warning">
+                        {generateStarRating(review.rating)}
+                      </span>
+                    </div>
+                    {review.title ? <div className="fw-semibold mb-1">{review.title}</div> : null}
+                    <p className="mb-0">{review.text}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="mb-3 p-3 border rounded">
+                  <div className="d-flex align-items-center mb-2">
+                    <span className="fw-bold fs-5 me-2">
+                      <FontAwesomeIcon icon={faUser} className="me-1" />
+                      Verified Reader
+                    </span>
+                    <span className="text-warning">{generateStarRating(5)}</span>
+                  </div>
+                  <p className="mb-0">
+                    Sold {book.salesThisMonth || 0} copies this month! Highly
+                    recommended.
+                  </p>
                 </div>
-                <p className="mb-0">
-                  Sold {book.salesThisMonth || 0} copies this month! Highly
-                  recommended.
-                </p>
-              </div>
+              )}
             </div>
           </Col>
         </Row>

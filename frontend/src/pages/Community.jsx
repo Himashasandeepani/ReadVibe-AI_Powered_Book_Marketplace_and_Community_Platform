@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../styles/pages/Community.css";
@@ -14,12 +14,62 @@ import CreatePostModal from "../components/Community/CreatePostModal";
 import RequestBookModal from "../components/Community/RequestBookModal";
 import {
   fetchCommunityPostsApi,
-  fetchCommunityPostWithCommentsApi,
   createCommunityPostApi,
   toggleCommunityPostLikeApi,
   addCommunityCommentApi,
   createBookRequestApi,
 } from "../utils/communityApi";
+
+const createDefaultCommunityPosts = () => [
+  {
+    id: "P001",
+    user: "john_doe",
+    content:
+      "Just finished 'Project Hail Mary' and it's absolutely mind-blowing! The character development is incredible. Highly recommend to all sci-fi lovers!",
+    image: "/assets/The_Midnight_Library.jpeg",
+    likes: 24,
+    comments: 8,
+    status: "Active",
+    timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
+    category: "Book Review",
+    commentsList: [
+      {
+        user: "sarah_j",
+        content:
+          "I totally agree! The ending had me in tears. One of the best books I've read this year.",
+        timestamp: new Date(Date.now() - 3600000)
+          .toISOString()
+          .replace("T", " ")
+          .substring(0, 19),
+      },
+    ],
+    likedBy: [],
+    userDisplay: {
+      name: "John Doe",
+      avatar: "JD",
+    },
+  },
+  {
+    id: "P002",
+    user: "sarah_j",
+    content:
+      "Looking for fantasy recommendations similar to Brandon Sanderson's works. Any suggestions? I've already read Wheel of Time and Kingkiller Chronicle.",
+    likes: 45,
+    comments: 12,
+    status: "Active",
+    timestamp: new Date(Date.now() - 18000000)
+      .toISOString()
+      .replace("T", " ")
+      .substring(0, 19),
+    category: "Recommendation",
+    commentsList: [],
+    likedBy: [],
+    userDisplay: {
+      name: "Sarah Johnson",
+      avatar: "SJ",
+    },
+  },
+];
 
 const getStoredCurrentUser = () => {
   const storedUser = localStorage.getItem("currentUser");
@@ -42,7 +92,7 @@ const humanizeUsername = (username) => {
     .join(" ");
 };
 
-const mapApiPostToUi = (post, currentUserId) => {
+const mapApiPostToUi = (post) => {
   if (!post) return null;
 
   const username = post.username || (post.userId ? `user_${post.userId}` : "user");
@@ -61,10 +111,11 @@ const mapApiPostToUi = (post, currentUserId) => {
     status: !post.status || post.status.toLowerCase() === "active" ? "Active" : post.status,
     timestamp: post.createdAt || new Date().toISOString(),
     commentsList: [],
-    likedBy:
-      post.likedByCurrent && Number.isFinite(currentUserId)
-        ? [currentUserId]
-        : [],
+    likedBy: Array.isArray(post.likedByUserIds)
+      ? post.likedByUserIds
+          .map((id) => Number(id))
+          .filter((id) => Number.isInteger(id) && id > 0)
+      : [],
     userDisplay: {
       name,
       avatar,
@@ -101,9 +152,9 @@ const Community = () => {
   const [postContent, setPostContent] = useState("");
   const [postCategory, setPostCategory] = useState("Discussion");
   const [selectedBook, setSelectedBook] = useState("");
+  const postContentRef = useRef(null);
   const [commentInputs, setCommentInputs] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
-  const [commentsLoaded, setCommentsLoaded] = useState({});
 
   // Book request form state
   const [requestForm, setRequestForm] = useState({
@@ -114,9 +165,22 @@ const Community = () => {
     reason: "",
   });
 
-  const topContributors = [];
+  const topContributors = [
+    { name: "John Doe", avatar: "JD", posts: 124 },
+    { name: "Sarah Johnson", avatar: "SJ", posts: 98 },
+    { name: "Mike Brown", avatar: "MB", posts: 76 },
+  ];
 
-  const popularTags = [];
+  const popularTags = [
+    "#Fantasy",
+    "#SciFi",
+    "#Mystery",
+    "#Romance",
+    "#Classics",
+    "#Biography",
+    "#SelfHelp",
+    "#Thriller",
+  ];
 
   useEffect(() => {
     const handleStorageChange = (event) => {
@@ -132,34 +196,27 @@ const Community = () => {
   useEffect(() => {
     const loadPosts = async () => {
       try {
-        const userId = Number(
-          currentUser?.id || currentUser?.user_id || currentUser?.userId,
-        );
-
-        const posts = await fetchCommunityPostsApi({
-          userId: Number.isFinite(userId) && userId > 0 ? userId : undefined,
-        });
+        const posts = await fetchCommunityPostsApi();
         const mapped = posts
-          .map((p) => mapApiPostToUi(p, userId))
+          .map(mapApiPostToUi)
           .filter((p) => p !== null);
         setCommunityPosts(mapped);
 
         try {
           const adminPosts = mapped.map((p) => {
-            const { userDisplay: _ud, commentsList: _cl, likedBy: _lb, ...rest } = p; // drop UI-only fields
+            const { userDisplay, commentsList, likedBy, ...rest } = p;
             return rest;
           });
           localStorage.setItem(
             "adminCommunityPosts",
             JSON.stringify(adminPosts),
           );
-          window.dispatchEvent(new Event("storage"));
         } catch (err) {
           console.error("Error syncing adminCommunityPosts from API:", err);
         }
       } catch (err) {
-        console.error("Failed to load community posts from API", err);
-        setCommunityPosts([]);
+        console.error("Failed to load community posts from API, using defaults", err);
+        setCommunityPosts(createDefaultCommunityPosts());
       }
     };
 
@@ -257,15 +314,9 @@ const Community = () => {
       return;
     }
 
-    const userId = Number(
-      currentUser?.id || currentUser?.user_id || currentUser?.userId,
-    );
-    if (!Number.isFinite(userId) || userId <= 0) {
-      alert("Your session is missing an id. Please log out and log back in.");
-      return;
-    }
+    const currentContent = postContentRef.current?.value ?? postContent;
+    const trimmedContent = currentContent.trim();
 
-    const trimmedContent = postContent.trim();
     if (!trimmedContent) {
       alert("Please enter post content");
       return;
@@ -273,13 +324,14 @@ const Community = () => {
 
     try {
       const createdPost = await createCommunityPostApi({
-        userId,
+        userId: currentUser.id,
         content: trimmedContent,
         category: postCategory,
         // selectedBook is a free-text reference, not a real bookId
+        bookId: selectedBook || undefined,
       });
 
-      const uiPostFromApi = mapApiPostToUi(createdPost, userId);
+      const uiPostFromApi = mapApiPostToUi(createdPost);
       const uiPost = {
         ...uiPostFromApi,
         bookReference: selectedBook || uiPostFromApi.bookReference,
@@ -290,13 +342,12 @@ const Community = () => {
       try {
         const adminPosts =
           JSON.parse(localStorage.getItem("adminCommunityPosts")) || [];
-        const { userDisplay: _ud, commentsList: _cl, likedBy: _lb, ...adminPost } = uiPost; // strip UI-only fields
+        const { userDisplay, commentsList, likedBy, ...adminPost } = uiPost;
         const updatedAdminPosts = [adminPost, ...adminPosts];
         localStorage.setItem(
           "adminCommunityPosts",
           JSON.stringify(updatedAdminPosts),
         );
-        window.dispatchEvent(new Event("storage"));
       } catch (error) {
         console.error("Error updating admin panel posts from created post:", error);
       }
@@ -305,6 +356,9 @@ const Community = () => {
       setPostCategory("Discussion");
       setSelectedBook("");
       setShowCreatePostModal(false);
+      if (postContentRef.current) {
+        postContentRef.current.value = "";
+      }
 
       alert(
         "Post created successfully! It will now appear in the Admin Panel for review.",
@@ -324,14 +378,6 @@ const Community = () => {
       return;
     }
 
-    const userId = Number(
-      currentUser?.id || currentUser?.user_id || currentUser?.userId,
-    );
-    if (!Number.isFinite(userId) || userId <= 0) {
-      alert("Your session is missing an id. Please log out and log back in.");
-      return;
-    }
-
     const numericId = Number(postId);
     if (!Number.isFinite(numericId)) {
       console.error("Invalid postId for like:", postId);
@@ -340,7 +386,7 @@ const Community = () => {
 
     try {
       const result = await toggleCommunityPostLikeApi({
-        userId,
+        userId: currentUser.id,
         postId: numericId,
       });
 
@@ -406,14 +452,6 @@ const Community = () => {
       return;
     }
 
-    const userId = Number(
-      currentUser?.id || currentUser?.user_id || currentUser?.userId,
-    );
-    if (!Number.isFinite(userId) || userId <= 0) {
-      alert("Your session is missing an id. Please log out and log back in.");
-      return;
-    }
-
     const comment = commentText || "";
     if (!comment.trim()) return;
 
@@ -425,7 +463,7 @@ const Community = () => {
 
     try {
       const comments = await addCommunityCommentApi({
-        userId,
+        userId: currentUser.id,
         postId: numericId,
         content: comment,
       });
@@ -479,45 +517,11 @@ const Community = () => {
     setShowRequestBookModal(true);
   };
 
-  const toggleComments = async (postId) => {
-    const isExpanding = !expandedComments[postId];
+  const toggleComments = (postId) => {
     setExpandedComments((prev) => ({
       ...prev,
       [postId]: !prev[postId],
     }));
-
-    // Lazy-load comments from the backend the first time a post is expanded
-    if (isExpanding && !commentsLoaded[postId]) {
-      try {
-        const userId = Number(
-          currentUser?.id || currentUser?.user_id || currentUser?.userId,
-        );
-
-        const { comments } = await fetchCommunityPostWithCommentsApi(postId, {
-          userId: Number.isFinite(userId) && userId > 0 ? userId : undefined,
-        });
-
-        const mappedComments = comments
-          .map(mapApiCommentToUi)
-          .filter((c) => c !== null);
-
-        setCommunityPosts((prev) =>
-          prev.map((post) =>
-            post.id === postId || Number(post.id) === Number(postId)
-              ? {
-                  ...post,
-                  comments: mappedComments.length,
-                  commentsList: mappedComments,
-                }
-              : post,
-          ),
-        );
-
-        setCommentsLoaded((prev) => ({ ...prev, [postId]: true }));
-      } catch (err) {
-        console.error("Failed to load comments for post", postId, err);
-      }
-    }
   };
 
   const handleSharePost = (postId) => {
@@ -557,7 +561,7 @@ const Community = () => {
     }
 
     try {
-      const createdRequest = await createBookRequestApi({
+      await createBookRequestApi({
         userId: currentUser.id,
         bookTitle: requestForm.title,
         author: requestForm.author,
@@ -565,35 +569,6 @@ const Community = () => {
         category: requestForm.category,
         reason: requestForm.reason,
       });
-
-      // Persist locally so Stock Manager can pick it up immediately
-      try {
-        const newRequest = {
-          id: createdRequest?.id || Date.now(),
-          userId: currentUser.id,
-          userName: currentUser.name || currentUser.username || "User",
-          userEmail: currentUser.email || "",
-          bookTitle: requestForm.title,
-          author: requestForm.author,
-          isbn: requestForm.isbn,
-          category: requestForm.category,
-          reason: requestForm.reason,
-          status: "Pending",
-          dateRequested: new Date().toISOString(),
-          dateUpdated: new Date().toISOString(),
-          source: "Community",
-        };
-
-        const existing =
-          JSON.parse(localStorage.getItem("bookRequests")) || [];
-        localStorage.setItem(
-          "bookRequests",
-          JSON.stringify([newRequest, ...existing]),
-        );
-        window.dispatchEvent(new Event("storage"));
-      } catch (storageError) {
-        console.error("Failed to sync book request to local storage", storageError);
-      }
 
       setRequestForm({
         title: "",
@@ -700,6 +675,7 @@ const Community = () => {
         setShowCreatePostModal={setShowCreatePostModal}
         postContent={postContent}
         setPostContent={setPostContent}
+        postContentRef={postContentRef}
         postCategory={postCategory}
         setPostCategory={setPostCategory}
         selectedBook={selectedBook}

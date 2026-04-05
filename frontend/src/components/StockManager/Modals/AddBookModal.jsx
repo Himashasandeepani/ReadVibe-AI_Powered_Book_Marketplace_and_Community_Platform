@@ -248,7 +248,7 @@ const BookModalBase = ({
                     onChange={onInputChange}
                   />
                   <small className="text-muted">
-                    Upload one or more cover images (JPG, PNG, GIF, JPEG)
+                    Upload one or more cover images (JPG, PNG, GIF)
                   </small>
                 </div>
                 <div className="mb-3">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Container, Row, Col, Button, Form } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -13,45 +13,51 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 const CommunitySection = ({ currentUser }) => {
-  const [communityPosts, setCommunityPosts] = useState([]);
-  const [commentInputs, setCommentInputs] = useState({});
+  const [communityPosts, setCommunityPosts] = useState([
+    {
+      id: 1,
+      user: "John Doe",
+      initials: "JD",
+      time: "2 hours ago",
+      content: `"Just finished 'Project Hail Mary' and it's absolutely mind-blowing! The character development is incredible."`,
+      likes: 24,
+      comments: 8,
+      likedByUser: false,
+      commentsList: [
+        {
+          user: "Emily R.",
+          comment: `"I loved this book too! The ending was perfect."`,
+        },
+        {
+          user: "Mike T.",
+          comment: `"One of the best sci-fi books I've read this year!"`,
+        },
+      ],
+    },
+    {
+      id: 2,
+      user: "Sarah Johnson",
+      initials: "SJ",
+      time: "5 hours ago",
+      content: `"Looking for fantasy recommendations similar to Brandon Sanderson's works. Any suggestions?"`,
+      likes: 45,
+      comments: 12,
+      likedByUser: false,
+      commentsList: [
+        {
+          user: "David L.",
+          comment: `"Check out Robert Jordan's Wheel of Time series!"`,
+        },
+        {
+          user: "Anna K.",
+          comment: `"Patrick Rothfuss' books are amazing if you haven't read them."`,
+        },
+      ],
+    },
+  ]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    try {
-      const storedPosts =
-        JSON.parse(window.localStorage.getItem("adminCommunityPosts")) || [];
-
-      const featured = storedPosts.filter((post) => post.featured);
-      const sourcePosts = featured.length ? featured : storedPosts;
-
-      const normalized = sourcePosts
-        .map((post, index) => {
-          const name = post.user || "User";
-          const initials = name.substring(0, 2).toUpperCase();
-          return {
-            id: post.id || `home-${index}`,
-            user: name,
-            initials,
-            time: post.timestamp || "Recently",
-            content: post.content || "",
-            likes: post.likes || 0,
-            comments: post.comments || 0,
-            likedByUser: false,
-            commentsList: Array.isArray(post.commentsList)
-              ? post.commentsList
-              : [],
-          };
-        })
-        .slice(0, 2);
-
-      setCommunityPosts(normalized);
-    } catch (error) {
-      console.error("Failed to load community posts for home", error);
-      setCommunityPosts([]);
-    }
-  }, []);
+  const [commentText, setCommentText] = useState("");
+  const [commentText2, setCommentText2] = useState("");
 
   const handleLike = (postId) => {
     if (!currentUser) {
@@ -77,7 +83,7 @@ const CommunitySection = ({ currentUser }) => {
 
     const newComment = {
       user: currentUser?.username || "You",
-      comment,
+      comment: comment,
     };
 
     setCommunityPosts((prevPosts) =>
@@ -92,7 +98,12 @@ const CommunitySection = ({ currentUser }) => {
       ),
     );
 
-    setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
+    if (postId === 1) {
+      setCommentText("");
+    } else {
+      setCommentText2("");
+    }
+
     alert("Comment added!");
   };
 
@@ -207,34 +218,20 @@ const CommunitySection = ({ currentUser }) => {
 
       <Row>
         <Col md={6}>
-          {communityPosts[0] ? (
-            renderCommunityPost(
-              communityPosts[0],
-              commentInputs[communityPosts[0].id] || "",
-              (val) =>
-                setCommentInputs((prev) => ({ ...prev, [communityPosts[0].id]: val })),
-              handleAddComment,
-            )
-          ) : (
-            <div className="community-card h-100 d-flex align-items-center justify-content-center">
-              <p className="mb-0 text-muted">No featured posts yet. Head to the Community to create one.</p>
-            </div>
+          {renderCommunityPost(
+            communityPosts[0],
+            commentText,
+            setCommentText,
+            handleAddComment,
           )}
         </Col>
 
         <Col md={6}>
-          {communityPosts[1] ? (
-            renderCommunityPost(
-              communityPosts[1],
-              commentInputs[communityPosts[1].id] || "",
-              (val) =>
-                setCommentInputs((prev) => ({ ...prev, [communityPosts[1].id]: val })),
-              handleAddComment,
-            )
-          ) : (
-            <div className="community-card h-100 d-flex align-items-center justify-content-center">
-              <p className="mb-0 text-muted">Feature a post in Admin to spotlight it here.</p>
-            </div>
+          {renderCommunityPost(
+            communityPosts[1],
+            commentText2,
+            setCommentText2,
+            handleAddComment,
           )}
         </Col>
       </Row>

@@ -5,6 +5,7 @@ const CreatePostModal = ({
   setShowCreatePostModal,
   postContent,
   setPostContent,
+  postContentRef,
   postCategory,
   setPostCategory,
   selectedBook,
@@ -32,6 +33,7 @@ const CreatePostModal = ({
                   What's on your mind? *
                 </label>
                 <textarea
+                  ref={postContentRef}
                   className="form-control"
                   rows="4"
                   placeholder="Share your thoughts about books, reading experiences, or ask for recommendations..."
@@ -64,14 +66,25 @@ const CreatePostModal = ({
                   <label className="form-label fw-semibold">
                     Add a book reference (optional)
                   </label>
-                  <input
-                    type="text"
-                    className="form-control"
+                  <select
+                    className="form-select"
                     value={selectedBook}
                     onChange={(e) => setSelectedBook(e.target.value)}
-                    placeholder="Type a book title or author"
-                  />
-                  <small className="text-muted">This is a free-text note; it is not linked to inventory.</small>
+                  >
+                    <option value="">Select a book...</option>
+                    <option value="The Midnight Library by Matt Haig">
+                      The Midnight Library by Matt Haig
+                    </option>
+                    <option value="Project Hail Mary by Andy Weir">
+                      Project Hail Mary by Andy Weir
+                    </option>
+                    <option value="Dune by Frank Herbert">
+                      Dune by Frank Herbert
+                    </option>
+                    <option value="The Hobbit by J.R.R. Tolkien">
+                      The Hobbit by J.R.R. Tolkien
+                    </option>
+                  </select>
                 </div>
               </div>
               <div className="alert alert-info">
@@ -96,7 +109,6 @@ const CreatePostModal = ({
               type="button"
               className="btn btn-primary"
               onClick={handleCreatePost}
-              disabled={!postContent.trim()}
             >
               <i className="fas fa-paper-plane me-2"></i>Post to Community
             </button>

@@ -33,9 +33,15 @@ import {
   initialStockOrders,
   initialPublishers,
   fetchBooksFromApi,
+  fetchAllOrdersApi,
+  fetchPublishersFromApi,
   createBookApi,
   updateBookApi,
   deleteBookApi,
+  createPublisherApi,
+  updatePublisherApi,
+  deletePublisherApi,
+  updateOrderStatusApi,
 } from "../components/StockManager/utils";
 
 const StockManager = () => {
@@ -157,9 +163,6 @@ const StockManager = () => {
 
   const normalizeBook = useCallback((book) => {
     if (!book) return null;
-    const rawId = book.id ?? book.bookId ?? book.book_id;
-    const normalizedId = Number(rawId);
-    const id = Number.isInteger(normalizedId) && normalizedId > 0 ? normalizedId : rawId;
     const images = Array.isArray(book.images)
       ? book.images
       : book.images
@@ -171,7 +174,6 @@ const StockManager = () => {
 
     return {
       ...book,
-      id,
       price: Number(book.price) || 0,
       costPrice:
         book.costPrice !== undefined
@@ -194,6 +196,18 @@ const StockManager = () => {
     window.dispatchEvent(new Event("storage"));
   }, []);
 
+  const persistPublishers = useCallback((items) => {
+    setPublishers(items);
+    localStorage.setItem("publishers", JSON.stringify(items));
+    window.dispatchEvent(new Event("storage"));
+  }, []);
+
+  const persistOrders = useCallback((orders) => {
+    setStockOrders(orders);
+    localStorage.setItem("stockOrders", JSON.stringify(orders));
+    window.dispatchEvent(new Event("storage"));
+  }, []);
+
   useEffect(() => {
     const loadBooksFromApi = async () => {
       try {
@@ -210,21 +224,58 @@ const StockManager = () => {
     loadBooksFromApi();
   }, [normalizeBook, persistBooks]);
 
-  // Normalize any legacy stored books that might lack a usable id
+  const normalizeOrder = useCallback((order) => {
+    const itemsArray = Array.isArray(order.items) ? order.items : [];
+    const itemCount =
+      order.itemCount ??
+      itemsArray.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+
+    return {
+      ...order,
+      customer: order.customer || "Customer",
+      customerEmail: order.customerEmail || "",
+      items: itemCount,
+      itemsList: itemsArray,
+      total: Number(order.total) || 0,
+      status: order.status || "Processing",
+      orderDate: order.orderDate || order.createdAt,
+    };
+  }, []);
+
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const stored = JSON.parse(window.localStorage.getItem("stockBooks")) || [];
-      if (!Array.isArray(stored) || !stored.length) return;
-      const normalized = stored.map((b) => normalizeBook(b)).filter(Boolean);
-      const changed = JSON.stringify(stored) !== JSON.stringify(normalized);
-      if (normalized.length && changed) {
-        persistBooks(normalized);
+    const loadOrdersFromApi = async () => {
+      try {
+        const apiOrders = await fetchAllOrdersApi();
+        if (Array.isArray(apiOrders)) {
+          persistOrders(apiOrders.map(normalizeOrder));
+        }
+      } catch (error) {
+        console.error("Failed to load orders from API", error);
       }
-    } catch (err) {
-      console.error("Failed to normalize stored stockBooks", err);
-    }
-  }, [normalizeBook, persistBooks]);
+    };
+
+    loadOrdersFromApi();
+  }, [normalizeOrder, persistOrders]);
+
+  useEffect(() => {
+    const loadPublishersFromApi = async () => {
+      try {
+        const apiPublishers = await fetchPublishersFromApi();
+        if (Array.isArray(apiPublishers) && apiPublishers.length) {
+          const normalized = apiPublishers.map((publisher) => ({
+            ...publisher,
+            status: publisher.status || "Active",
+            booksSupplied: Number(publisher.booksSupplied || 0),
+          }));
+          persistPublishers(normalized);
+        }
+      } catch (error) {
+        console.error("Failed to load publishers from API", error);
+      }
+    };
+
+    loadPublishersFromApi();
+  }, [persistPublishers]);
 
   const loadAllData = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -599,49 +650,56 @@ const StockManager = () => {
       return;
     }
 
-    if (editingPublisherId) {
-      const updatedPublishers = publishers.map((publisher) =>
-        publisher.id === editingPublisherId
-          ? {
-              ...publisher,
-              name: newPublisher.name,
-              email: newPublisher.email,
-              phone: newPublisher.phone,
-              address: newPublisher.address,
-            }
-          : publisher,
-      );
+    const submit = async () => {
+      try {
+        if (editingPublisherId) {
+          const updatedPublisher = await updatePublisherApi(editingPublisherId, {
+            name: newPublisher.name,
+            email: newPublisher.email,
+            phone: newPublisher.phone,
+            address: newPublisher.address,
+          });
 
-      setPublishers(updatedPublishers);
-      localStorage.setItem("publishers", JSON.stringify(updatedPublishers));
-      showNotification("Publisher updated successfully!", "success");
-    } else {
-      const newPublisherObj = {
-        id: `PUB${String(publishers.length + 1).padStart(3, "0")}`,
-        name: newPublisher.name,
-        email: newPublisher.email,
-        phone: newPublisher.phone,
-        address: newPublisher.address,
-        booksSupplied: 0,
-        status: "Active",
-        rating: 5,
-        paymentTerms: "30 days",
-        leadTime: "7",
-        lastOrder: null,
-        createdAt: new Date().toISOString(),
-      };
+          const updatedPublishers = publishers.map((publisher) =>
+            publisher.id === editingPublisherId
+              ? {
+                  ...publisher,
+                  ...updatedPublisher,
+                  status: publisher.status || "Active",
+                  booksSupplied: publisher.booksSupplied || 0,
+                }
+              : publisher,
+          );
+          persistPublishers(updatedPublishers);
+          showNotification("Publisher updated successfully!", "success");
+        } else {
+          const createdPublisher = await createPublisherApi({
+            name: newPublisher.name,
+            email: newPublisher.email,
+            phone: newPublisher.phone,
+            address: newPublisher.address,
+          });
 
-      const updatedPublishers = [...publishers, newPublisherObj];
-      setPublishers(updatedPublishers);
-      localStorage.setItem("publishers", JSON.stringify(updatedPublishers));
-      showNotification("Publisher added successfully!", "success");
-    }
+          persistPublishers([
+            ...publishers,
+            {
+              ...createdPublisher,
+              booksSupplied: 0,
+              status: "Active",
+            },
+          ]);
+          showNotification("Publisher added successfully!", "success");
+        }
 
-    resetPublisherForm();
+        resetPublisherForm();
+        setShowAddPublisherModal(false);
+        handleTabChange("publishers");
+      } catch (error) {
+        showNotification(error.message || "Failed to save publisher", "danger");
+      }
+    };
 
-    setShowAddPublisherModal(false);
-    handleTabChange("publishers");
-    window.dispatchEvent(new Event("storage"));
+    void submit();
   };
 
   const handleEditPublisher = (publisher) => {
@@ -746,18 +804,21 @@ const StockManager = () => {
 
   const handleShipOrder = (orderId) => {
     if (window.confirm(`Mark order ${orderId} as shipped?`)) {
-      const updatedOrders = stockOrders.map((order) =>
-        order.id === orderId
-          ? {
-              ...order,
-              status: "Shipped",
-              shippedDate: new Date().toISOString().split("T")[0],
-            }
-          : order,
-      );
-      setStockOrders(updatedOrders);
-      localStorage.setItem("stockOrders", JSON.stringify(updatedOrders));
-      showNotification(`Order ${orderId} marked as shipped`, "success");
+      const update = async () => {
+        try {
+          const updated = await updateOrderStatusApi(orderId, "Shipped");
+          const normalized = normalizeOrder(updated);
+          const updatedOrders = stockOrders.map((order) =>
+            String(order.id) === String(orderId) ? normalized : order,
+          );
+          persistOrders(updatedOrders);
+          showNotification(`Order ${orderId} marked as shipped`, "success");
+        } catch (error) {
+          showNotification(error.message || "Failed to update order", "danger");
+        }
+      };
+
+      void update();
     }
   };
 
@@ -803,22 +864,31 @@ const StockManager = () => {
     );
 
     // Update order status
-    const updatedOrders = stockOrders.map((order) =>
-      order.id === selectedOrder.id
-        ? {
-            ...order,
-            status: trackingUpdate.status,
-            courier: trackingUpdate.courier,
-            trackingNumber: trackingUpdate.trackingNumber,
-          }
-        : order,
-    );
+    const save = async () => {
+      try {
+        const updated = await updateOrderStatusApi(
+          selectedOrder.id,
+          trackingUpdate.status,
+        );
+        const normalized = {
+          ...normalizeOrder(updated),
+          courier: trackingUpdate.courier,
+          trackingNumber: trackingUpdate.trackingNumber,
+        };
 
-    setStockOrders(updatedOrders);
-    localStorage.setItem("stockOrders", JSON.stringify(updatedOrders));
+        const updatedOrders = stockOrders.map((order) =>
+          String(order.id) === String(selectedOrder.id) ? normalized : order,
+        );
 
-    setShowTrackingModal(false);
-    showNotification("Tracking updated successfully!", "success");
+        persistOrders(updatedOrders);
+        setShowTrackingModal(false);
+        showNotification("Tracking updated successfully!", "success");
+      } catch (error) {
+        showNotification(error.message || "Failed to update tracking", "danger");
+      }
+    };
+
+    void save();
   };
 
   const handleContactPublisher = (publisherId) => {
@@ -830,10 +900,18 @@ const StockManager = () => {
 
   const handleDeletePublisher = (publisherId) => {
     if (window.confirm("Are you sure you want to delete this publisher?")) {
-      const updatedPublishers = publishers.filter((p) => p.id !== publisherId);
-      setPublishers(updatedPublishers);
-      localStorage.setItem("publishers", JSON.stringify(updatedPublishers));
-      showNotification("Publisher deleted successfully", "success");
+      const remove = async () => {
+        try {
+          await deletePublisherApi(publisherId);
+          const updatedPublishers = publishers.filter((p) => p.id !== publisherId);
+          persistPublishers(updatedPublishers);
+          showNotification("Publisher deleted successfully", "success");
+        } catch (error) {
+          showNotification(error.message || "Failed to delete publisher", "danger");
+        }
+      };
+
+      void remove();
     }
   };
 

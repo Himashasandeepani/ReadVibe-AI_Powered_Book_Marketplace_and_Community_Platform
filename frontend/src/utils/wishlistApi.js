@@ -1,5 +1,25 @@
 const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
+const normalizeId = (value) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+};
+
+const syncWishlistStorage = (userId, items) => {
+  const normalizedUserId = normalizeId(userId);
+  if (!normalizedUserId) return;
+
+  try {
+    localStorage.setItem(
+      `wishlist_${normalizedUserId}`,
+      JSON.stringify(Array.isArray(items) ? items : []),
+    );
+    window.dispatchEvent(new CustomEvent("wishlist-updated"));
+  } catch (error) {
+    console.error("Failed to sync wishlist storage", error);
+  }
+};
+
 const handleApi = async (path, options = {}) => {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
@@ -8,60 +28,75 @@ const handleApi = async (path, options = {}) => {
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const validationMsg = Array.isArray(data?.errors)
-      ? data.errors.map((e) => e.msg || e.message).filter(Boolean).join("; ")
-      : null;
-    const msg = validationMsg || data?.error || data?.message || "Request failed";
+    const msg = data?.error || data?.message || "Request failed";
     throw new Error(msg);
   }
   return data;
 };
 
 export const fetchWishlistApi = async (userId) => {
-  const data = await handleApi(`/api/wishlist?userId=${encodeURIComponent(userId)}`, {
-    headers: { "x-user-id": userId },
+  const normalizedUserId = normalizeId(userId);
+  const data = await handleApi(`/api/wishlist?userId=${encodeURIComponent(normalizedUserId)}`, {
+    headers: { "x-user-id": normalizedUserId },
   });
-  return data.items || [];
+  const items = data.items || [];
+  syncWishlistStorage(normalizedUserId, items);
+  return items;
 };
 
 export const addWishlistItemApi = async ({ userId, bookId, priority, notes }) => {
-  const uid = Number(userId);
-  const bid = Number(bookId);
-  if (!Number.isInteger(uid) || uid <= 0) {
-    throw new Error("Login required to add to wishlist");
-  }
-  if (!Number.isInteger(bid) || bid <= 0) {
-    throw new Error("Invalid book id for wishlist");
-  }
-  const data = await handleApi(`/api/wishlist?userId=${encodeURIComponent(uid)}`, {
+  const normalizedUserId = normalizeId(userId);
+  const normalizedBookId = normalizeId(bookId);
+
+  const data = await handleApi(`/api/wishlist`, {
     method: "POST",
-    body: JSON.stringify({ userId: uid, bookId: bid, priority, notes }),
-    headers: { "x-user-id": uid },
+    body: JSON.stringify({
+      userId: normalizedUserId,
+      bookId: normalizedBookId,
+      priority,
+      notes,
+    }),
+    headers: { "x-user-id": normalizedUserId },
   });
-  return data.items || [];
+  const items = data.items || [];
+  syncWishlistStorage(normalizedUserId, items);
+  return items;
 };
 
 export const updateWishlistItemApi = async ({ userId, bookId, priority, notes }) => {
-  const data = await handleApi(`/api/wishlist/${bookId}`, {
+  const normalizedUserId = normalizeId(userId);
+  const normalizedBookId = normalizeId(bookId);
+
+  const data = await handleApi(`/api/wishlist/${normalizedBookId}`, {
     method: "PUT",
-    body: JSON.stringify({ userId, priority, notes }),
-    headers: { "x-user-id": userId },
+    body: JSON.stringify({ userId: normalizedUserId, priority, notes }),
+    headers: { "x-user-id": normalizedUserId },
   });
-  return data.items || [];
+  const items = data.items || [];
+  syncWishlistStorage(normalizedUserId, items);
+  return items;
 };
 
 export const deleteWishlistItemApi = async ({ userId, bookId }) => {
-  const data = await handleApi(`/api/wishlist/${bookId}?userId=${encodeURIComponent(userId)}`, {
+  const normalizedUserId = normalizeId(userId);
+  const normalizedBookId = normalizeId(bookId);
+
+  const data = await handleApi(`/api/wishlist/${normalizedBookId}?userId=${encodeURIComponent(normalizedUserId)}`, {
     method: "DELETE",
-    headers: { "x-user-id": userId },
+    headers: { "x-user-id": normalizedUserId },
   });
-  return data.items || [];
+  const items = data.items || [];
+  syncWishlistStorage(normalizedUserId, items);
+  return items;
 };
 
 export const clearWishlistApi = async (userId) => {
-  const data = await handleApi(`/api/wishlist?userId=${encodeURIComponent(userId)}`, {
+  const normalizedUserId = normalizeId(userId);
+  const data = await handleApi(`/api/wishlist?userId=${encodeURIComponent(normalizedUserId)}`, {
     method: "DELETE",
-    headers: { "x-user-id": userId },
+    headers: { "x-user-id": normalizedUserId },
   });
-  return data.items || [];
+  const items = data.items || [];
+  syncWishlistStorage(normalizedUserId, items);
+  return items;
 };
