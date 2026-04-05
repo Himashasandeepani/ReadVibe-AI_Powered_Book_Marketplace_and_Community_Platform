@@ -157,8 +157,10 @@ const Wishlist = () => {
   };
 
   // Search books
-  const handleSearchBooks = () => {
-    if (!searchTerm.trim()) {
+  const handleSearchBooks = (term = searchTerm) => {
+    const normalizedTerm = (term || "").trim();
+
+    if (!normalizedTerm) {
       setSearchResults([]);
       return;
     }
@@ -167,10 +169,13 @@ const Wishlist = () => {
     const results = catalog
       .filter(
         (book) =>
-          book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          book.author.toLowerCase().includes(searchTerm.toLowerCase()),
+          book.title.toLowerCase().includes(normalizedTerm.toLowerCase()) ||
+          book.author.toLowerCase().includes(normalizedTerm.toLowerCase()),
       )
-      .filter((book) => !wishlist.some((item) => item.id === book.id));
+      .filter(
+        (book) =>
+          !wishlist.some((item) => String(item.id) === String(book.id ?? book.bookId)),
+      );
 
     setSearchResults(results);
   };
@@ -202,6 +207,8 @@ const Wishlist = () => {
           notes: notesText,
         });
         setWishlist(normalizeWishlistItems(items, allBooks));
+        // Always show full list after adding so the user can immediately see the new item.
+        setCurrentFilter("all");
         showNotification("Book added to wishlist!", "success");
         setSearchTerm("");
         setSearchResults([]);

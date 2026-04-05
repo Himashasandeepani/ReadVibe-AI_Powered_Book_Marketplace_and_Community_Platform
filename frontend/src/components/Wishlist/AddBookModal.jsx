@@ -64,9 +64,10 @@ const AddBookModal = ({
                   placeholder="Search by title or author..."
                   value={searchTerm}
                   onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    if (e.target.value.trim()) {
-                      onSearchBooks();
+                    const nextTerm = e.target.value;
+                    setSearchTerm(nextTerm);
+                    if (nextTerm.trim()) {
+                      onSearchBooks(nextTerm);
                     }
                   }}
                 />

@@ -90,7 +90,44 @@ const ensureTable = async () => {
   `);
 };
 
-ensureTable().catch((err) => {
+const ensureLegacyColumns = async () => {
+  // Reconcile legacy schemas where books table exists with only partial columns.
+  await query(`
+    ALTER TABLE books
+      ADD COLUMN IF NOT EXISTS id BIGSERIAL,
+      ADD COLUMN IF NOT EXISTS isbn TEXT,
+      ADD COLUMN IF NOT EXISTS title TEXT,
+      ADD COLUMN IF NOT EXISTS author TEXT,
+      ADD COLUMN IF NOT EXISTS category TEXT,
+      ADD COLUMN IF NOT EXISTS price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS cost_price NUMERIC(12, 2),
+      ADD COLUMN IF NOT EXISTS stock INTEGER NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS min_stock INTEGER NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS max_stock INTEGER NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS status TEXT,
+      ADD COLUMN IF NOT EXISTS description TEXT,
+      ADD COLUMN IF NOT EXISTS publisher TEXT,
+      ADD COLUMN IF NOT EXISTS publication_year INTEGER,
+      ADD COLUMN IF NOT EXISTS pages INTEGER,
+      ADD COLUMN IF NOT EXISTS language TEXT,
+      ADD COLUMN IF NOT EXISTS weight TEXT,
+      ADD COLUMN IF NOT EXISTS dimensions TEXT,
+      ADD COLUMN IF NOT EXISTS image TEXT,
+      ADD COLUMN IF NOT EXISTS images JSONB,
+      ADD COLUMN IF NOT EXISTS featured BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS sales_this_month INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS total_sales INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW(),
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+  `);
+};
+
+const ensureBookSchema = async () => {
+  await ensureTable();
+  await ensureLegacyColumns();
+};
+
+ensureBookSchema().catch((err) => {
   console.error('Failed to ensure books table', err);
 });
 
@@ -99,6 +136,48 @@ const computeStatus = (stock, minStock) => {
   if (stock === 0) return 'Out of Stock';
   if (stock <= (Number.isFinite(minStock) ? minStock : 0)) return 'Low Stock';
   return 'In Stock';
+};
+
+const normalizeImages = (value) => {
+  if (value === undefined) return undefined;
+  if (value === null) return [];
+
+  if (Array.isArray(value)) {
+    return value
+      .map((img) => (typeof img === 'string' ? img.trim() : String(img || '').trim()))
+      .filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((img) => (typeof img === 'string' ? img.trim() : String(img || '').trim()))
+          .filter(Boolean);
+      }
+      if (typeof parsed === 'string') {
+        const single = parsed.trim();
+        return single ? [single] : [];
+      }
+    } catch {
+      // Treat a plain URL/path string as a single image when it is not JSON.
+    }
+
+    return [trimmed];
+  }
+
+  if (typeof value === 'object') {
+    if (typeof value.url === 'string' && value.url.trim()) {
+      return [value.url.trim()];
+    }
+    return [];
+  }
+
+  return [];
 };
 
 export const listBooks = async () => {
@@ -114,6 +193,7 @@ export const getBookById = async (id) => {
 
 export const createBook = async (payload) => {
   const status = payload.status || computeStatus(payload.stock ?? 0, payload.minStock ?? 0);
+  const normalizedImages = normalizeImages(payload.images) ?? [];
   const { rows } = await query(
     `INSERT INTO books (
       isbn,
@@ -160,7 +240,7 @@ export const createBook = async (payload) => {
       payload.weight || null,
       payload.dimensions || null,
       payload.image || null,
-      payload.images || [],
+      JSON.stringify(normalizedImages),
       payload.featured ?? false,
       payload.salesThisMonth ?? 0,
       payload.totalSales ?? 0,
@@ -198,7 +278,10 @@ export const updateBook = async (id, updates = {}) => {
   if (updates.weight !== undefined) addField('weight', updates.weight);
   if (updates.dimensions !== undefined) addField('dimensions', updates.dimensions);
   if (updates.image !== undefined) addField('image', updates.image);
-  if (updates.images !== undefined) addField('images', updates.images);
+  if (updates.images !== undefined) {
+    const normalizedImages = normalizeImages(updates.images) ?? [];
+    addField('images', JSON.stringify(normalizedImages));
+  }
   if (updates.featured !== undefined) addField('featured', updates.featured);
   if (updates.salesThisMonth !== undefined) addField('sales_this_month', updates.salesThisMonth);
   if (updates.totalSales !== undefined) addField('total_sales', updates.totalSales);
