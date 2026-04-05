@@ -42,7 +42,21 @@ const ensureTable = async () => {
   `);
 };
 
-ensureTable().catch((err) => console.error('Failed to ensure cart_items table', err));
+const ensureTableWithRetry = async (attempt = 1) => {
+  try {
+    await ensureTable();
+  } catch (err) {
+    if (err?.code === '42P01' && attempt < 6) {
+      setTimeout(() => {
+        void ensureTableWithRetry(attempt + 1);
+      }, attempt * 1000);
+      return;
+    }
+    console.error('Failed to ensure cart_items table', err);
+  }
+};
+
+void ensureTableWithRetry();
 
 export const getCartForUser = async (userId) => {
   const { rows } = await query(`${baseSelect} WHERE c.user_id = $1 ORDER BY c.id DESC`, [userId]);

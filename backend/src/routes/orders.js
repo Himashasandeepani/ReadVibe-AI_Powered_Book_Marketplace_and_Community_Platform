@@ -2,8 +2,10 @@ import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import {
   createOrderHandler,
+  getAllOrdersHandler,
   getOrderHandler,
   getOrdersHandler,
+  updateOrderStatusHandler,
 } from '../controllers/orderController.js';
 
 const router = express.Router();
@@ -35,6 +37,10 @@ const handleValidation = (req, res, next) => {
 // @desc    Get user orders
 router.get('/', requireUser, getOrdersHandler);
 
+// @route   GET /api/orders/all
+// @desc    Get all orders for stock/admin dashboards
+router.get('/all', getAllOrdersHandler);
+
 // @route   POST /api/orders
 // @desc    Create new order
 router.post(
@@ -59,6 +65,18 @@ router.get(
   [param('id').isInt().withMessage('Order id must be an integer')],
   handleValidation,
   getOrderHandler
+);
+
+// @route   PUT /api/orders/:id/status
+// @desc    Update order status
+router.put(
+  '/:id/status',
+  [
+    param('id').isInt().withMessage('Order id must be an integer'),
+    body('status').trim().notEmpty().withMessage('status is required'),
+  ],
+  handleValidation,
+  updateOrderStatusHandler
 );
 
 export default router;

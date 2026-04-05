@@ -1,6 +1,6 @@
 import { query } from '../config/database.js';
 
-const postBaseSelect = (includeLikedFlag = false) => `
+const postBaseSelect = `
   SELECT
     p.id,
     p.user_id,
@@ -13,9 +13,12 @@ const postBaseSelect = (includeLikedFlag = false) => `
     p.status,
     p.created_at,
     p.updated_at,
+    COALESCE(
+      ARRAY_AGG(DISTINCT l.user_id) FILTER (WHERE l.user_id IS NOT NULL),
+      '{}'
+    ) AS liked_by_user_ids,
     COALESCE(COUNT(DISTINCT l.user_id), 0) AS likes_count,
     COALESCE(COUNT(DISTINCT c.id), 0) AS comments_count
-    ${includeLikedFlag ? ', COALESCE(bool_or(l.user_id = $1), false) AS liked_by_current' : ', false AS liked_by_current'}
   FROM community_posts p
   LEFT JOIN users u ON u.user_id = p.user_id
   LEFT JOIN books b ON b.id = p.book_id
@@ -33,9 +36,11 @@ const mapPostRow = (row) => ({
   bookId: row.book_id,
   bookTitle: row.book_title,
   status: row.status,
+  likedByUserIds: Array.isArray(row.liked_by_user_ids)
+    ? row.liked_by_user_ids.map((id) => Number(id)).filter((id) => Number.isInteger(id))
+    : [],
   likesCount: Number(row.likes_count) || 0,
   commentsCount: Number(row.comments_count) || 0,
-  likedByCurrent: Boolean(row.liked_by_current),
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -89,25 +94,32 @@ const ensureTables = async () => {
   `);
 };
 
-ensureTables().catch((err) => {
-  console.error('Failed to ensure community tables', err);
-});
+const ensureTablesWithRetry = async (attempt = 1) => {
+  try {
+    await ensureTables();
+  } catch (err) {
+    if (err?.code === '42P01' && attempt < 6) {
+      setTimeout(() => {
+        void ensureTablesWithRetry(attempt + 1);
+      }, attempt * 1000);
+      return;
+    }
+    console.error('Failed to ensure community tables', err);
+  }
+};
 
-export const listPosts = async (currentUserId = null) => {
-  const includeLikedFlag = Number.isInteger(currentUserId) && currentUserId > 0;
-  const sql = `${postBaseSelect(includeLikedFlag)} GROUP BY p.id, u.username, u.full_name, b.title ORDER BY p.created_at DESC`;
-  const params = includeLikedFlag ? [currentUserId] : [];
-  const { rows } = await query(sql, params);
+void ensureTablesWithRetry();
+
+export const listPosts = async () => {
+  const { rows } = await query(`${postBaseSelect} GROUP BY p.id, u.username, u.full_name, b.title ORDER BY p.created_at DESC`);
   return rows.map(mapPostRow);
 };
 
-export const getPostById = async (id, currentUserId = null) => {
-  const includeLikedFlag = Number.isInteger(currentUserId) && currentUserId > 0;
-  const sql = includeLikedFlag
-    ? `${postBaseSelect(true)} WHERE p.id = $2 GROUP BY p.id, u.username, u.full_name, b.title`
-    : `${postBaseSelect(false)} WHERE p.id = $1 GROUP BY p.id, u.username, u.full_name, b.title`;
-  const params = includeLikedFlag ? [currentUserId, id] : [id];
-  const { rows } = await query(sql, params);
+export const getPostById = async (id) => {
+  const { rows } = await query(
+    `${postBaseSelect} WHERE p.id = $1 GROUP BY p.id, u.username, u.full_name, b.title`,
+    [id]
+  );
   if (!rows[0]) return null;
   return mapPostRow(rows[0]);
 };
@@ -119,7 +131,7 @@ export const createPost = async ({ userId, category, content, bookId }) => {
      RETURNING id`,
     [userId, category || null, content, bookId || null]
   );
-  return getPostById(rows[0].id, userId);
+  return getPostById(rows[0].id);
 };
 
 export const deletePost = async (id) => {

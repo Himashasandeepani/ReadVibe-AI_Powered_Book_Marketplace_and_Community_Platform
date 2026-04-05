@@ -19,7 +19,21 @@ const ensureTable = async () => {
   `);
 };
 
-ensureTable().catch((err) => console.error('Failed to ensure book_reviews table', err));
+const ensureTableWithRetry = async (attempt = 1) => {
+  try {
+    await ensureTable();
+  } catch (err) {
+    if (err?.code === '42P01' && attempt < 6) {
+      setTimeout(() => {
+        void ensureTableWithRetry(attempt + 1);
+      }, attempt * 1000);
+      return;
+    }
+    console.error('Failed to ensure book_reviews table', err);
+  }
+};
+
+void ensureTableWithRetry();
 
 const baseSelect = `
   SELECT
@@ -66,6 +80,14 @@ export const listReviewsForUser = async (userId) => {
   const { rows } = await query(
     `${baseSelect} WHERE r.user_id = $1 ORDER BY r.created_at DESC`,
     [userId]
+  );
+  return rows.map(mapRow);
+};
+
+export const listReviewsForBook = async (bookId) => {
+  const { rows } = await query(
+    `${baseSelect} WHERE r.book_id = $1 ORDER BY r.created_at DESC`,
+    [bookId]
   );
   return rows.map(mapRow);
 };

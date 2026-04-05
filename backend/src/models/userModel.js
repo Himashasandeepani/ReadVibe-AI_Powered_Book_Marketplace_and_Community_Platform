@@ -3,6 +3,40 @@ import { query } from '../config/database.js';
 
 const DEFAULT_STATUSES = ['active', 'inactive', 'pending'];
 const DEFAULT_ROLES = ['admin', 'user', 'stock'];
+const DEFAULT_USERS = [
+  {
+    fullName: 'Admin User',
+    email: 'admin@readvibe.com',
+    username: 'admin',
+    password: 'admin123',
+    role: 'admin',
+    status: 'active',
+  },
+  {
+    fullName: 'Stock Manager',
+    email: 'stock@readvibe.com',
+    username: 'stock',
+    password: 'stock123',
+    role: 'stock',
+    status: 'active',
+  },
+  {
+    fullName: 'John Doe',
+    email: 'john@example.com',
+    username: 'johndoe',
+    password: 'john12345',
+    role: 'user',
+    status: 'active',
+  },
+  {
+    fullName: 'Jane Smith',
+    email: 'jane@example.com',
+    username: 'janesmith',
+    password: 'jane12345',
+    role: 'user',
+    status: 'active',
+  },
+];
 
 const baseUserSelect = `
   SELECT
@@ -61,6 +95,44 @@ const seedDefaultLookups = async () => {
   );
 };
 
+const seedDefaultUsers = async () => {
+  for (const defaultUser of DEFAULT_USERS) {
+    const existing = await query(
+      'SELECT user_id FROM users WHERE username = $1 OR email = $2 LIMIT 1',
+      [defaultUser.username, defaultUser.email]
+    );
+
+    if (existing.rows[0]) continue;
+
+    const passwordHash = await bcrypt.hash(defaultUser.password, 10);
+    const roleId = await getRoleId(defaultUser.role);
+    const statusId = await getStatusId(defaultUser.status);
+
+    await query(
+      `INSERT INTO users (
+         role_id,
+         status_id,
+         full_name,
+         email,
+         username,
+         password_hash,
+         terms_accepted,
+         terms_accepted_at,
+         ai_email_opt_in,
+         ai_email_opt_in_at
+       ) VALUES ($1, $2, $3, $4, $5, $6, TRUE, NOW(), FALSE, NULL)`,
+      [
+        roleId,
+        statusId,
+        defaultUser.fullName,
+        defaultUser.email,
+        defaultUser.username,
+        passwordHash,
+      ]
+    );
+  }
+};
+
 const ensureTables = async () => {
   await query(`
     CREATE TABLE IF NOT EXISTS status (
@@ -95,6 +167,7 @@ const ensureTables = async () => {
   `);
 
   await seedDefaultLookups();
+  await seedDefaultUsers();
 };
 
 ensureTables().catch((err) => {

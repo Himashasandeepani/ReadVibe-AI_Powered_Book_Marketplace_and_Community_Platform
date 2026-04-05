@@ -1,4 +1,4 @@
-import { query } from '../config/database.js';
+import pool, { query } from '../config/database.js';
 
 const ensureTables = async () => {
   await query(`
@@ -31,11 +31,27 @@ const ensureTables = async () => {
   `);
 };
 
-ensureTables().catch((err) => console.error('Failed to ensure orders tables', err));
+const ensureTablesWithRetry = async (attempt = 1) => {
+  try {
+    await ensureTables();
+  } catch (err) {
+    if (err?.code === '42P01' && attempt < 6) {
+      setTimeout(() => {
+        void ensureTablesWithRetry(attempt + 1);
+      }, attempt * 1000);
+      return;
+    }
+    console.error('Failed to ensure orders tables', err);
+  }
+};
+
+void ensureTablesWithRetry();
 
 const mapOrder = (row) => ({
   id: row.id,
   userId: row.user_id,
+  customer: row.customer_name || null,
+  customerEmail: row.customer_email || null,
   status: row.status,
   shippingMethod: row.shipping_method,
   shippingCost: Number(row.shipping_cost) || 0,
@@ -46,6 +62,7 @@ const mapOrder = (row) => ({
   shippingAddress: row.shipping_address || {},
   createdAt: row.created_at,
   updatedAt: row.updated_at,
+  orderDate: row.created_at,
 });
 
 const mapItem = (row) => ({
@@ -72,22 +89,69 @@ const getOrderItems = async (orderId) => {
 };
 
 export const getOrderById = async (orderId) => {
-  const { rows } = await query('SELECT * FROM orders WHERE id = $1 LIMIT 1', [orderId]);
+  const { rows } = await query(
+    `SELECT o.*, u.full_name AS customer_name, u.email AS customer_email
+     FROM orders o
+     LEFT JOIN users u ON u.user_id = o.user_id
+     WHERE o.id = $1
+     LIMIT 1`,
+    [orderId]
+  );
   if (!rows[0]) return null;
   const order = mapOrder(rows[0]);
   const items = await getOrderItems(orderId);
-  return { ...order, items };
+  return { ...order, items, itemCount: items.length };
 };
 
 export const getOrdersForUser = async (userId) => {
-  const { rows } = await query('SELECT * FROM orders WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+  const { rows } = await query(
+    `SELECT o.*, u.full_name AS customer_name, u.email AS customer_email
+     FROM orders o
+     LEFT JOIN users u ON u.user_id = o.user_id
+     WHERE o.user_id = $1
+     ORDER BY o.created_at DESC`,
+    [userId]
+  );
   const orders = [];
   for (const row of rows) {
     const order = mapOrder(row);
     const items = await getOrderItems(row.id);
-    orders.push({ ...order, items });
+    orders.push({ ...order, items, itemCount: items.length });
   }
   return orders;
+};
+
+export const getAllOrders = async () => {
+  const { rows } = await query(
+    `SELECT o.*, u.full_name AS customer_name, u.email AS customer_email
+     FROM orders o
+     LEFT JOIN users u ON u.user_id = o.user_id
+     ORDER BY o.created_at DESC`
+  );
+  const orders = [];
+  for (const row of rows) {
+    const order = mapOrder(row);
+    const items = await getOrderItems(row.id);
+    orders.push({
+      ...order,
+      items,
+      itemCount: items.reduce((sum, item) => sum + (item.quantity || 0), 0),
+    });
+  }
+  return orders;
+};
+
+export const updateOrderStatus = async (orderId, status) => {
+  const { rows } = await query(
+    `UPDATE orders
+     SET status = $1, updated_at = NOW()
+     WHERE id = $2
+     RETURNING id`,
+    [status, orderId]
+  );
+
+  if (!rows[0]) return null;
+  return getOrderById(orderId);
 };
 
 export const createOrder = async ({
@@ -110,7 +174,7 @@ export const createOrder = async ({
 
   const bookIds = items.map((i) => Number(i.bookId)).filter(Boolean);
   const { rows: bookRows } = await query(
-    'SELECT id, price, title, image FROM books WHERE id = ANY($1)',
+    'SELECT id, price, cost_price, stock, title, image, sales_this_month, total_sales FROM books WHERE id = ANY($1)',
     [bookIds]
   );
   const booksById = new Map(bookRows.map((b) => [Number(b.id), b]));
@@ -125,6 +189,11 @@ export const createOrder = async ({
   const computedItems = items.map((item) => {
     const book = booksById.get(Number(item.bookId));
     const quantity = Math.max(1, Number(item.quantity) || 1);
+    if ((Number(book.stock) || 0) < quantity) {
+      const err = new Error(`Insufficient stock for "${book.title}"`);
+      err.status = 400;
+      throw err;
+    }
     const unitPrice = Number(book.price) || 0;
     const lineTotal = Number((unitPrice * quantity).toFixed(2));
     return {
@@ -144,27 +213,51 @@ export const createOrder = async ({
 
   const address = shipping ? { ...shipping } : null;
 
-  const { rows } = await query(
-    `INSERT INTO orders (
-       user_id, status, shipping_method, shipping_cost, tax, subtotal, total, currency, shipping_address
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-     RETURNING id`,
-    [userId, 'pending', shippingMethod || null, shippingCostValue, tax, subtotal, total, 'LKR', address]
-  );
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
 
-  const orderId = rows[0].id;
+    const { rows } = await client.query(
+      `INSERT INTO orders (
+         user_id, status, shipping_method, shipping_cost, tax, subtotal, total, currency, shipping_address
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id`,
+      [userId, 'Processing', shippingMethod || null, shippingCostValue, tax, subtotal, total, 'LKR', address]
+    );
 
-  const insertItems = computedItems.map((item) =>
-    query(
-      `INSERT INTO order_items (order_id, book_id, quantity, unit_price, line_total)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [orderId, item.bookId, item.quantity, item.unitPrice, item.lineTotal]
-    )
-  );
-  await Promise.all(insertItems);
+    const orderId = rows[0].id;
 
-  // Clear cart for this user to keep states consistent
-  await query('DELETE FROM cart_items WHERE user_id = $1', [userId]);
+    for (const item of computedItems) {
+      await client.query(
+        `INSERT INTO order_items (order_id, book_id, quantity, unit_price, line_total)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [orderId, item.bookId, item.quantity, item.unitPrice, item.lineTotal]
+      );
 
-  return getOrderById(orderId);
+      await client.query(
+        `UPDATE books
+         SET stock = stock - $1,
+             sales_this_month = COALESCE(sales_this_month, 0) + $1,
+             total_sales = COALESCE(total_sales, 0) + $1,
+             status = CASE
+               WHEN stock - $1 <= 0 THEN 'Out of Stock'
+               WHEN stock - $1 <= COALESCE(min_stock, 0) THEN 'Low Stock'
+               ELSE 'In Stock'
+             END,
+             updated_at = NOW()
+         WHERE id = $2`,
+        [item.quantity, item.bookId]
+      );
+    }
+
+    await client.query('DELETE FROM cart_items WHERE user_id = $1', [userId]);
+    await client.query('COMMIT');
+
+    return getOrderById(orderId);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 };

@@ -20,10 +20,9 @@ const ensureUserId = (req) => {
   return parsed;
 };
 
-export const getCommunityPosts = async (req, res, next) => {
+export const getCommunityPosts = async (_req, res, next) => {
   try {
-    const currentUserId = Number(req.headers['x-user-id']);
-    const posts = await listPosts(Number.isInteger(currentUserId) ? currentUserId : null);
+    const posts = await listPosts();
     res.json({ posts });
   } catch (err) {
     next(err);
@@ -33,8 +32,7 @@ export const getCommunityPosts = async (req, res, next) => {
 export const getCommunityPost = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const currentUserId = Number(req.headers['x-user-id']);
-    const post = await getPostById(id, Number.isInteger(currentUserId) ? currentUserId : null);
+    const post = await getPostById(id);
     if (!post) {
       return res.status(404).json({ error: 'Post not found' });
     }
@@ -49,11 +47,13 @@ export const createCommunityPost = async (req, res, next) => {
   try {
     const userId = ensureUserId(req);
     const { category, content, bookId } = req.body;
+    const parsedBookId = Number(bookId);
+
     const post = await createPost({
       userId,
       category: category || null,
       content,
-      bookId: bookId ? Number(bookId) : null,
+      bookId: Number.isInteger(parsedBookId) && parsedBookId > 0 ? parsedBookId : null,
     });
     res.status(201).json({ post });
   } catch (err) {

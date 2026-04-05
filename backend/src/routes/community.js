@@ -45,7 +45,6 @@ router.post(
   [
     body('content').trim().notEmpty().withMessage('Content is required'),
     body('category').optional().isString(),
-    body('bookId').optional().isInt().withMessage('bookId must be an integer'),
   ],
   handleValidation,
   createCommunityPost

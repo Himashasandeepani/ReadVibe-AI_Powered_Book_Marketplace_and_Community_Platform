@@ -15,7 +15,21 @@ const ensureTable = async () => {
   `);
 };
 
-ensureTable().catch((err) => console.error('Failed to ensure wishlist_items table', err));
+const ensureTableWithRetry = async (attempt = 1) => {
+  try {
+    await ensureTable();
+  } catch (err) {
+    if (err?.code === '42P01' && attempt < 6) {
+      setTimeout(() => {
+        void ensureTableWithRetry(attempt + 1);
+      }, attempt * 1000);
+      return;
+    }
+    console.error('Failed to ensure wishlist_items table', err);
+  }
+};
+
+void ensureTableWithRetry();
 
 const baseSelect = `
   SELECT

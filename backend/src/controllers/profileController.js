@@ -1,7 +1,7 @@
 import { getUserById, updateUser } from '../models/userModel.js';
 import { getOrdersForUser } from '../models/orderModel.js';
 import { getWishlistForUser } from '../models/wishlistModel.js';
-import { listBookRequests } from '../models/communityModel.js';
+import { listBookRequests, listPosts } from '../models/communityModel.js';
 import { createReview, deleteReviewById, listReviewsForUser } from '../models/reviewModel.js';
 
 const ensureUserId = (req) => {
@@ -55,14 +55,16 @@ export const getProfileSummary = async (req, res, next) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const [orders, wishlistItems, allRequests, reviews] = await Promise.all([
+    const [orders, wishlistItems, allRequests, reviews, allPosts] = await Promise.all([
       getOrdersForUser(userId),
       getWishlistForUser(userId),
       listBookRequests(),
       listReviewsForUser(userId),
+      listPosts(),
     ]);
 
     const userRequests = allRequests.filter((r) => r.userId === userId);
+    const userPosts = allPosts.filter((post) => post.userId === userId);
 
     const booksRead = orders.reduce(
       (total, order) =>
@@ -74,7 +76,7 @@ export const getProfileSummary = async (req, res, next) => {
       booksRead,
       reviewsWritten: reviews.length,
       wishlistCount: wishlistItems.length,
-      communityPosts: 0,
+      communityPosts: userPosts.length,
       myBookRequests: userRequests.length,
     };
 
