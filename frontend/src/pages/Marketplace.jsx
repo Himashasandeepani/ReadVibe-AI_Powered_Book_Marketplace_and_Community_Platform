@@ -33,7 +33,7 @@ import {
   getUserWishlist,
   addToWishlist,
 } from "../utils/helpers";
-import { getCurrentUser as getNormalizedCurrentUser } from "../utils/auth";
+import { getCurrentUser as getNormalizedCurrentUser, isPrivilegedUser } from "../utils/auth";
 import { getBookReviewsForBook } from "../components/UserProfile/utils";
 import { setCart } from "../store/slices/cartSlice";
 import { addCartItemApi, fetchCartApi } from "../utils/cartApi";
@@ -257,6 +257,8 @@ const Marketplace = () => {
     return user !== null;
   };
 
+  const isCustomerActionAllowed = () => !isPrivilegedUser();
+
   const requireLogin = (actionName) => {
     if (!isLoggedIn()) {
       showNotification(`Please login to ${actionName}`, "warning");
@@ -270,6 +272,10 @@ const Marketplace = () => {
     if (e) e.stopPropagation();
 
     if (!requireLogin("add items to cart")) return;
+    if (!isCustomerActionAllowed()) {
+      showNotification("Admin and stock manager accounts cannot add books to cart.", "warning");
+      return;
+    }
 
     const targetBook = allBooks.find((b) => b.id === bookId);
     if (!targetBook) return;
@@ -306,6 +312,10 @@ const Marketplace = () => {
     if (e) e.stopPropagation();
 
     if (!requireLogin("buy books")) return;
+    if (!isCustomerActionAllowed()) {
+      showNotification("Admin and stock manager accounts cannot buy books.", "warning");
+      return;
+    }
 
     const targetBook = allBooks.find((b) => b.id === bookId);
     if (!targetBook || !targetBook.inStock || targetBook.stock === 0) {
@@ -335,6 +345,10 @@ const Marketplace = () => {
     if (e) e.stopPropagation();
 
     if (!requireLogin("add items to wishlist")) return;
+    if (!isCustomerActionAllowed()) {
+      showNotification("Admin and stock manager accounts cannot use the wishlist.", "warning");
+      return;
+    }
 
     try {
       const items = await addToWishlist(bookId, user.id);
@@ -474,6 +488,7 @@ const Marketplace = () => {
       <BookCard
         book={book}
         isLoggedIn={isLoggedIn()}
+        actionsDisabled={isPrivilegedUser()}
         isInWishlist={isInWishlist}
         onViewDetails={handleViewDetails}
         onAddToWishlist={handleAddToWishlist}
@@ -572,6 +587,7 @@ const Marketplace = () => {
         onHide={() => setShowBookModal(false)}
         book={selectedBook}
         isLoggedIn={isLoggedIn()}
+        actionsDisabled={isPrivilegedUser()}
         isInWishlist={isInWishlist}
         onAddToWishlist={handleAddToWishlist}
         onAddToCart={handleAddToCart}

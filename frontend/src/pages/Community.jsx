@@ -21,6 +21,7 @@ import {
   createBookRequestApi,
   emitCommunityPostsUpdated,
 } from "../utils/communityApi";
+import { isPrivilegedUser } from "../utils/auth";
 
 const createDefaultCommunityPosts = () => [
   {
@@ -327,6 +328,12 @@ const Community = () => {
         redirectTo: "/login",
       };
     }
+    if (isPrivilegedUser()) {
+      return {
+        canProceed: false,
+        message: "Admin and stock manager accounts cannot create community posts",
+      };
+    }
     return { canProceed: true };
   };
 
@@ -339,6 +346,12 @@ const Community = () => {
         redirectTo: "/login",
       };
     }
+    if (isPrivilegedUser()) {
+      return {
+        canProceed: false,
+        message: "Admin and stock manager accounts cannot like, comment, or share posts",
+      };
+    }
     return { canProceed: true };
   };
 
@@ -349,6 +362,12 @@ const Community = () => {
         canProceed: false,
         message: "Please login to request books",
         redirectTo: "/login",
+      };
+    }
+    if (isPrivilegedUser()) {
+      return {
+        canProceed: false,
+        message: "Admin and stock manager accounts cannot create book requests",
       };
     }
     return { canProceed: true };
@@ -694,6 +713,7 @@ const Community = () => {
                     key={post.id}
                     post={post}
                     currentUser={currentUser}
+                      actionsDisabled={isPrivilegedUser()}
                     onLike={handleLikePost}
                     onToggleComments={toggleComments}
                     onAddComment={handleAddComment}

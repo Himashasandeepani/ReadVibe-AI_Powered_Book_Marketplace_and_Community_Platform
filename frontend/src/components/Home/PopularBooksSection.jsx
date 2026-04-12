@@ -5,6 +5,7 @@ import BookCard from "../Home/BookCard";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFire, faBookmark, faCogs } from "@fortawesome/free-solid-svg-icons";
 import { fetchBooksFromApi } from "../StockManager/utils";
+import { isPrivilegedUser } from "../../utils/auth";
 
 const PopularBooksSection = ({ currentUser, onViewDetails }) => {
   const [featuredBooks, setFeaturedBooks] = useState([]);
@@ -102,6 +103,7 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
                 book={book}
                 currentUser={currentUser}
                 onViewDetails={() => onViewDetails(book)}
+                actionsDisabled={isPrivilegedUser()}
               />
             </Col>
           ))

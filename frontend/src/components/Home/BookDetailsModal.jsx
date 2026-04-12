@@ -31,8 +31,9 @@ import {
   getUserWishlist,
 } from "../../utils/helpers";
 import { addItem, setCart } from "../../store/slices/cartSlice";
+import { isPrivilegedUser } from "../../utils/auth";
 
-const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
+const BookDetailsModal = ({ show, onHide, book, currentUser, actionsDisabled }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -40,6 +41,7 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
   const reviewItems = Array.isArray(book.reviewsList) ? book.reviewsList : [];
 
   const isLoggedIn = () => currentUser !== null;
+  const isActionsDisabled = actionsDisabled ?? isPrivilegedUser();
 
   const isInWishlist = (bookId) => {
     if (!currentUser) return false;
@@ -48,6 +50,11 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
   };
 
   const handleAddToWishlist = async () => {
+    if (isActionsDisabled) {
+      showNotification("Admin and stock manager accounts cannot use wishlist actions.", "warning");
+      return;
+    }
+
     if (!isLoggedIn()) {
       onHide();
       navigate("/login");
@@ -63,6 +70,11 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
   };
 
   const handleAddToCart = () => {
+    if (isActionsDisabled) {
+      showNotification("Admin and stock manager accounts cannot add books to cart.", "warning");
+      return;
+    }
+
     if (!isLoggedIn()) {
       onHide();
       navigate("/login");
@@ -88,6 +100,11 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
   };
 
   const handleBuyNow = () => {
+    if (isActionsDisabled) {
+      showNotification("Admin and stock manager accounts cannot buy books.", "warning");
+      return;
+    }
+
     if (!isLoggedIn()) {
       onHide();
       navigate("/login");
@@ -303,6 +320,7 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
               variant={isInWishlist(book.id) ? "danger" : "outline-danger"}
               onClick={handleAddToWishlist}
               className="book-action-btn"
+              disabled={isActionsDisabled}
             >
               <FontAwesomeIcon
                 icon={isInWishlist(book.id) ? faHeart : faHeartRegular}
@@ -316,7 +334,7 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
               variant="outline-primary"
               onClick={handleAddToCart}
               className="book-action-btn"
-              disabled={!book.inStock || book.stock === 0}
+              disabled={isActionsDisabled || !book.inStock || book.stock === 0}
             >
               <FontAwesomeIcon icon={faShoppingCart} className="me-2" />
               Add to Cart
@@ -325,7 +343,7 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
               variant="primary"
               onClick={handleBuyNow}
               className="book-action-btn"
-              disabled={!book.inStock || book.stock === 0}
+              disabled={isActionsDisabled || !book.inStock || book.stock === 0}
             >
               <FontAwesomeIcon icon={faTruck} className="me-2" />
               Buy Now

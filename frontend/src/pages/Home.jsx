@@ -10,6 +10,7 @@ import PopularBooksSection from "../components/Home/PopularBooksSection";
 import CommunitySection from "../components/Home/CommunitySection";
 import StatsSection from "../components/Home/StatsSection";
 import BookDetailsModal from "../components/Home/BookDetailsModal";
+import { isPrivilegedUser } from "../utils/auth";
 import "../styles/pages/Home.css";
 
 const getStoredCurrentUser = () => {
@@ -85,6 +86,7 @@ const Home = () => {
         onHide={handleCloseModal}
         book={selectedBook}
         currentUser={currentUser}
+        actionsDisabled={isPrivilegedUser()}
       />
 
       {!isLoggedIn() && <GuestNotice />}

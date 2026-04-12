@@ -10,6 +10,7 @@ import {
 const PostCard = ({
   post,
   currentUser,
+  actionsDisabled = false,
   onLike,
   onToggleComments,
   onAddComment,
@@ -66,21 +67,23 @@ const PostCard = ({
               : ""
           }`}
           onClick={() => onLike(post.id)}
-          disabled={!currentUser}
-          title={!currentUser ? "Login to like posts" : ""}
+          disabled={!currentUser || actionsDisabled}
+          title={actionsDisabled ? "Not available for admin or stock manager accounts" : !currentUser ? "Login to like posts" : ""}
         >
           <FontAwesomeIcon icon={faThumbsUp} /> <span>{post.likes || 0}</span>
         </button>
         <button
           className="btn btn-sm btn-outline-secondary me-2 comment-btn"
           onClick={() => onToggleComments(post.id)}
-          title={expandedComments[post.id] ? "Hide comments" : "Show comments"}
+          title={actionsDisabled ? "Not available for admin or stock manager accounts" : expandedComments[post.id] ? "Hide comments" : "Show comments"}
+          disabled={actionsDisabled}
         >
           <FontAwesomeIcon icon={faComment} /> <span>{post.comments || 0}</span>
         </button>
         <button
           className="btn btn-sm btn-outline-secondary share-btn"
           onClick={() => onShare(post.id)}
+          disabled={actionsDisabled}
         >
           <FontAwesomeIcon icon={faShareSquare} /> Share
         </button>
@@ -127,7 +130,7 @@ const PostCard = ({
               }
               value={commentInput}
               onChange={(e) => handleCommentChange(e.target.value)}
-              disabled={!currentUser}
+              disabled={!currentUser || actionsDisabled}
               onKeyPress={(e) =>
                 e.key === "Enter" && onAddComment(post.id, commentInput)
               }
@@ -135,8 +138,8 @@ const PostCard = ({
             <button
               className="btn btn-outline-primary"
               onClick={() => onAddComment(post.id, commentInput)}
-              disabled={!currentUser}
-              title={!currentUser ? "Login to comment" : ""}
+              disabled={!currentUser || actionsDisabled}
+              title={actionsDisabled ? "Not available for admin or stock manager accounts" : !currentUser ? "Login to comment" : ""}
             >
               Post
             </button>

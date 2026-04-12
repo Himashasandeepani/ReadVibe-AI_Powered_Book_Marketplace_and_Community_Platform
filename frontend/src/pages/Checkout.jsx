@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Alert } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { getCurrentUser } from "../utils/auth";
+import { isPrivilegedUser } from "../utils/auth";
 import { showNotification } from "../utils/helpers";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBookOpen } from "@fortawesome/free-solid-svg-icons";
@@ -81,6 +82,18 @@ const Checkout = () => {
 
     showNotification("Please login to complete checkout", "warning");
     navigate("/login");
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (!user || !isPrivilegedUser()) {
+      return;
+    }
+
+    showNotification(
+      "Admin and stock manager accounts cannot complete checkout.",
+      "warning",
+    );
+    navigate("/");
   }, [user, navigate]);
 
   useEffect(() => {

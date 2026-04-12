@@ -24,7 +24,7 @@ import {
 } from "../../utils/helpers";
 import { addItem, setCart } from "../../store/slices/cartSlice";
 
-const BookCard = ({ book, currentUser, onViewDetails }) => {
+const BookCard = ({ book, currentUser, onViewDetails, actionsDisabled = false }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -38,6 +38,11 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
 
   const handleAddToWishlist = async (e) => {
     e.stopPropagation();
+
+    if (actionsDisabled) {
+      showNotification("Admin and stock manager accounts cannot use wishlist actions.", "warning");
+      return;
+    }
 
     if (!isLoggedIn()) {
       navigate("/login");
@@ -54,6 +59,11 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
 
   const handleAddToCart = (e) => {
     e.stopPropagation();
+
+    if (actionsDisabled) {
+      showNotification("Admin and stock manager accounts cannot add books to cart.", "warning");
+      return;
+    }
 
     if (!isLoggedIn()) {
       navigate("/login");
@@ -80,6 +90,11 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
 
   const handleBuyNow = (e) => {
     e.stopPropagation();
+
+    if (actionsDisabled) {
+      showNotification("Admin and stock manager accounts cannot buy books.", "warning");
+      return;
+    }
 
     if (!isLoggedIn()) {
       navigate("/login");
@@ -210,6 +225,7 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
               size="sm"
               onClick={handleAddToWishlist}
               className="book-action-btn"
+              disabled={actionsDisabled}
             >
               <FontAwesomeIcon
                 icon={isInWishlist(book.id) ? faHeart : faHeartRegular}
@@ -226,6 +242,7 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
                   size="sm"
                   onClick={handleAddToCart}
                   className="book-action-btn"
+                  disabled={actionsDisabled}
                 >
                   <FontAwesomeIcon icon={faShoppingCart} className="me-1" />
                 </Button>
@@ -237,6 +254,7 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
                   size="sm"
                   onClick={handleBuyNow}
                   className="book-action-btn"
+                  disabled={actionsDisabled}
                 >
                   <FontAwesomeIcon icon={faTruck} className="me-1" />
                 </Button>

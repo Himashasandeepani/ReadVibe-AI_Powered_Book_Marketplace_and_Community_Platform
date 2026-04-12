@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Container, Row, Col, Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser } from "../utils/auth";
+import { getCurrentUser, isPrivilegedUser } from "../utils/auth";
 import { getAllBooks, showNotification } from "../utils/helpers";
 import { createOrderApi } from "../utils/orderApi";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -139,6 +139,15 @@ const DeliveryDetails = () => {
     if (savedCart.length === 0) {
       showNotification("Your cart is empty", "warning");
       navigate("/cart");
+      return;
+    }
+
+    if (isPrivilegedUser()) {
+      showNotification(
+        "Admin and stock manager accounts cannot use delivery checkout.",
+        "warning",
+      );
+      navigate("/");
       return;
     }
   }, [currentUser, navigate]);

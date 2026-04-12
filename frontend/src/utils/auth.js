@@ -52,6 +52,11 @@ export const isRegularUser = () => {
   return user && user.role === 'user';
 };
 
+export const isPrivilegedUser = () => {
+  const user = getCurrentUser();
+  return user && (user.role === 'admin' || user.role === 'stock');
+};
+
 
 
 export const getUserRole = () => {

@@ -24,6 +24,7 @@ import {
   getHomeFeaturedCommunityPostIds,
   resolveHomeFeaturedCommunityPosts,
 } from "../../utils/homeFeaturedCommunityPosts";
+import { isPrivilegedUser } from "../../utils/auth";
 
 const CommunitySection = ({ currentUser }) => {
   const [communityPosts, setCommunityPosts] = useState([]);
@@ -32,6 +33,7 @@ const CommunitySection = ({ currentUser }) => {
   const [expandedComments, setExpandedComments] = useState({});
 
   const resolveCurrentUser = () => currentUser || getCurrentUser();
+  const actionsDisabled = isPrivilegedUser();
 
   const mapCommentToUi = (comment) => ({
     user: comment.userFullName || comment.username || comment.user || "User",
@@ -110,6 +112,11 @@ const CommunitySection = ({ currentUser }) => {
       return;
     }
 
+    if (actionsDisabled) {
+      alert("Admin and stock manager accounts cannot like posts.");
+      return;
+    }
+
     try {
       const result = await toggleCommunityPostLikeApi({
         userId: user.id,
@@ -138,6 +145,11 @@ const CommunitySection = ({ currentUser }) => {
     const user = resolveCurrentUser();
     if (!user) {
       alert("Please login to comment on posts");
+      return;
+    }
+
+    if (actionsDisabled) {
+      alert("Admin and stock manager accounts cannot comment on posts.");
       return;
     }
 
@@ -179,6 +191,11 @@ const CommunitySection = ({ currentUser }) => {
   };
 
   const handleShare = async (post) => {
+    if (actionsDisabled) {
+      alert("Admin and stock manager accounts cannot share posts.");
+      return;
+    }
+
     const shareText = `Check out this book discussion on ReadVibe: "${post.content.substring(0, 100)}..."`;
     const shareUrl = window.location.href;
 
@@ -222,8 +239,8 @@ const CommunitySection = ({ currentUser }) => {
           variant="outline-secondary"
           size="sm"
           onClick={() => handleLike(post.id)}
-          disabled={!resolveCurrentUser()}
-          title={!resolveCurrentUser() ? "Login to like" : "Like this post"}
+          disabled={!resolveCurrentUser() || actionsDisabled}
+          title={actionsDisabled ? "Not available for admin or stock manager accounts" : !resolveCurrentUser() ? "Login to like" : "Like this post"}
         >
           <FontAwesomeIcon icon={faHeart} className="me-1" />
           {post.likes}
@@ -232,12 +249,13 @@ const CommunitySection = ({ currentUser }) => {
           variant="outline-secondary"
           size="sm"
           onClick={() => toggleComments(post.id)}
-          title={expandedComments[post.id] ? "Hide comments" : "Show comments"}
+          disabled={actionsDisabled}
+          title={actionsDisabled ? "Not available for admin or stock manager accounts" : expandedComments[post.id] ? "Hide comments" : "Show comments"}
         >
           <FontAwesomeIcon icon={faComment} className="me-1" />
           {post.comments}
         </Button>
-        <Button variant="outline-secondary" size="sm" onClick={() => handleShare(post)} title="Share this post">
+        <Button variant="outline-secondary" size="sm" onClick={() => handleShare(post)} title={actionsDisabled ? "Not available for admin or stock manager accounts" : "Share this post"} disabled={actionsDisabled}>
           <FontAwesomeIcon icon={faShareAlt} className="me-1" />
           Share
         </Button>
@@ -282,13 +300,14 @@ const CommunitySection = ({ currentUser }) => {
                     }))
                   }
                   size="sm"
+                  disabled={actionsDisabled}
                 />
                 <Button
                   variant="primary"
                   size="sm"
                   className="mt-2"
                   onClick={() => handleAddComment(post.id)}
-                  disabled={!(commentInputs[post.id] || "").trim()}
+                  disabled={actionsDisabled || !(commentInputs[post.id] || "").trim()}
                 >
                   <FontAwesomeIcon icon={faPaperPlane} className="me-2" />
                   Post Comment

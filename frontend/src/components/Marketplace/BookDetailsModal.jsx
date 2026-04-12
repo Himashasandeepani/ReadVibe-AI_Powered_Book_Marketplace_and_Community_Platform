@@ -25,6 +25,7 @@ const BookDetailsModal = ({
   onHide,
   book,
   isLoggedIn,
+  actionsDisabled = false,
   isInWishlist,
   onAddToWishlist,
   onAddToCart,
@@ -174,6 +175,7 @@ const BookDetailsModal = ({
               variant={isInWishlist(book.id) ? "danger" : "outline-danger"}
               onClick={() => onAddToWishlist(book.id)}
               className="book-action-btn"
+              disabled={actionsDisabled}
             >
               <FontAwesomeIcon
                 icon={isInWishlist(book.id) ? faHeart : faHeartRegular}
@@ -187,6 +189,7 @@ const BookDetailsModal = ({
               variant="outline-primary"
               onClick={() => onAddToCart(book.id)}
               className="book-action-btn"
+              disabled={actionsDisabled}
             >
               <FontAwesomeIcon icon={faShoppingCart} className="me-2" />
               Add to Cart
@@ -198,6 +201,7 @@ const BookDetailsModal = ({
                 onHide();
               }}
               className="book-action-btn"
+              disabled={actionsDisabled}
             >
               <FontAwesomeIcon icon={faTruck} className="me-2" />
               Buy Now

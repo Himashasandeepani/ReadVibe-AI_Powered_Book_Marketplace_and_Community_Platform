@@ -18,6 +18,7 @@ import EditItemModal from "../components/Wishlist/EditItemModal";
 import { sampleBooks, applyFilter, sortWishlist } from "../components/Wishlist/utils.jsx";
 
 import { showNotification, getAllBooks, getCurrentUser } from "../utils/helpers";
+import { isPrivilegedUser } from "../utils/auth";
 import { addItem, selectCartItems, setCart } from "../store/slices/cartSlice";
 import {
   fetchWishlistApi,
@@ -192,6 +193,11 @@ const Wishlist = () => {
       return false;
     }
 
+    if (isPrivilegedUser()) {
+      showNotification("Admin and stock manager accounts cannot use the wishlist.", "warning");
+      return false;
+    }
+
     const existingItem = wishlist.find((item) => item.id === book.id);
     if (existingItem) {
       showNotification("This book is already in your wishlist", "info");
@@ -231,6 +237,11 @@ const Wishlist = () => {
     if (!user) {
       showNotification("Please login to add items to wishlist", "warning");
       navigate("/login");
+      return;
+    }
+
+    if (isPrivilegedUser()) {
+      showNotification("Admin and stock manager accounts cannot use the wishlist.", "warning");
       return;
     }
 
@@ -320,6 +331,11 @@ const Wishlist = () => {
       return;
     }
 
+    if (isPrivilegedUser()) {
+      showNotification("Admin and stock manager accounts cannot add books to cart.", "warning");
+      return;
+    }
+
     const book =
       allBooks.find((b) => b.id === bookId) ||
       wishlist.find((b) => b.id === bookId) ||
@@ -357,6 +373,11 @@ const Wishlist = () => {
 
   // Add all available to cart
   const handleAddAllToCart = () => {
+    if (isPrivilegedUser()) {
+      showNotification("Admin and stock manager accounts cannot add books to cart.", "warning");
+      return;
+    }
+
     const availableItems = wishlist.filter((item) => item.inStock);
 
     if (availableItems.length === 0) {
@@ -410,7 +431,7 @@ const Wishlist = () => {
 
   // Share wishlist
   const handleShareWishlist = (method) => {
-    if (!user) return;
+    if (!user || isPrivilegedUser()) return;
 
     switch (method) {
       case "link": {
@@ -503,6 +524,7 @@ const Wishlist = () => {
                         onEdit={handleEditItem}
                         onAddToCart={handleAddToCart}
                         onEditItem={handleEditItem}
+                        actionsDisabled={isPrivilegedUser()}
                       />
                     ))}
                   </Row>

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Row, Col } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -8,8 +8,12 @@ import {
   faShoppingCart,
   faStar,
 } from "@fortawesome/free-solid-svg-icons";
+import { isPrivilegedUser } from "../../utils/auth";
 
 const AISection = () => {
+  const navigate = useNavigate();
+  const actionsDisabled = isPrivilegedUser();
+
   const howItWorksSteps = [
     {
       icon: faShoppingCart,
@@ -45,10 +49,23 @@ const AISection = () => {
               to understand your preferences and suggest books you'll love.
             </p>
             <div>
-              <Link to="/Marketplace" className="btn btn-primary me-2">
+              <button
+                type="button"
+                className="btn btn-primary me-2"
+                disabled={actionsDisabled}
+                title={actionsDisabled ? "Not available for admin or stock manager accounts" : "Get your recommendations"}
+                onClick={() => {
+                  if (actionsDisabled) {
+                    alert("Admin and stock manager accounts cannot use recommendations.");
+                    return;
+                  }
+
+                  navigate("/Marketplace");
+                }}
+              >
                 <FontAwesomeIcon icon={faArrowRight} className="me-2" />
                 Get Your Recommendations
-              </Link>
+              </button>
             </div>
           </Col>
           <Col md={4} className="text-center">
