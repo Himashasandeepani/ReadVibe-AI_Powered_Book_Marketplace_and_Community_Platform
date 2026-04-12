@@ -267,6 +267,10 @@ export const validateNewUser = (user, existingUsers) => {
   if (!user.email) errors.push("Email is required");
   if (!user.password) errors.push("Password is required");
 
+  if (user.role === "admin") {
+    errors.push("You cannot add new admin users");
+  }
+
   if (user.password !== user.confirmPassword) {
     errors.push("Passwords do not match");
   }
@@ -287,6 +291,10 @@ export const validateEditUser = (user, editingUser, existingUsers) => {
 
   if (!user.username) errors.push("Username is required");
   if (!user.email) errors.push("Email is required");
+
+  if (editingUser?.role !== "admin" && user.role === "admin") {
+    errors.push("You cannot promote users to admin");
+  }
 
   const existingUser = existingUsers.find(
     (u) =>

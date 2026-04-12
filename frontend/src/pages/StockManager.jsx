@@ -14,6 +14,7 @@ import ReportsTab from "../components/StockManager/Tabs/ReportsTab";
 import PublishersTab from "../components/StockManager/Tabs/PublishersTab";
 import BookRequestsTab from "../components/StockManager/Tabs/BookRequestsTab";
 import PopularBooksTab from "../components/StockManager/Tabs/PopularBooksTab";
+import SupportMessagesTab from "../components/StockManager/Tabs/SupportMessagesTab";
 import AddBookModal, {
   EditBookModal,
 } from "../components/StockManager/Modals/AddBookModal";
@@ -48,6 +49,12 @@ import {
   updateOrderStatusApi,
   updateOrderTrackingApi,
 } from "../components/StockManager/utils";
+import {
+  addSupportReply,
+  getSupportMessages,
+  getSupportMessagesUpdatedEventName,
+  getUnreadSupportMessageCount,
+} from "../utils/supportMessages";
 
 const StockManager = () => {
   const navigate = useNavigate();
@@ -154,6 +161,8 @@ const StockManager = () => {
   const [bookRequests, setBookRequests] = useState(() => {
     return [];
   });
+  const [supportMessages, setSupportMessages] = useState(() => getSupportMessages());
+  const [replyDrafts, setReplyDrafts] = useState({});
 
   const computeStockStatus = useCallback((stock, minStock) => {
     const safeStock = Number.isFinite(stock) ? stock : 0;
@@ -368,6 +377,17 @@ const StockManager = () => {
   }, [loadBookRequestsFromApi]);
 
   useEffect(() => {
+    const handleSupportMessagesUpdated = () => {
+      setSupportMessages(getSupportMessages());
+    };
+
+    window.addEventListener(getSupportMessagesUpdatedEventName(), handleSupportMessagesUpdated);
+    return () => {
+      window.removeEventListener(getSupportMessagesUpdatedEventName(), handleSupportMessagesUpdated);
+    };
+  }, []);
+
+  useEffect(() => {
     if (typeof window === "undefined") {
       return undefined;
     }
@@ -408,6 +428,32 @@ const StockManager = () => {
 
   const handleTabChange = (tab) => {
     navigate(`${location.pathname}?tab=${tab}`);
+  };
+
+  const handleReplyDraftChange = (messageId, value) => {
+    setReplyDrafts((prev) => ({
+      ...prev,
+      [messageId]: value,
+    }));
+  };
+
+  const handleReplyMessage = (messageId) => {
+    const replyText = replyDrafts[messageId] || "";
+    const reply = addSupportReply(messageId, replyText, {
+      name: currentUser?.name || currentUser?.fullName || "Stock Manager",
+      role: currentUser?.role || "stock",
+    });
+
+    if (!reply) {
+      showNotification("Please write a reply before sending.", "info");
+      return;
+    }
+
+    setReplyDrafts((prev) => ({
+      ...prev,
+      [messageId]: "",
+    }));
+    showNotification("Reply sent to the customer.", "success");
   };
 
   const resetPublisherForm = () => {
@@ -1176,6 +1222,15 @@ const StockManager = () => {
             onChangeTab={handleTabChange}
           />
         );
+      case "messages":
+        return (
+          <SupportMessagesTab
+            messages={supportMessages}
+            replyDrafts={replyDrafts}
+            onReplyDraftChange={handleReplyDraftChange}
+            onReplyMessage={handleReplyMessage}
+          />
+        );
       default:
         return (
           <DashboardTab
@@ -1229,6 +1284,7 @@ const StockManager = () => {
             inventoryStats={inventoryStats}
             orderStats={orderStats}
             requestStats={requestStats}
+            supportMessageCount={getUnreadSupportMessageCount()}
           />
 
           <div className="col-lg-10">

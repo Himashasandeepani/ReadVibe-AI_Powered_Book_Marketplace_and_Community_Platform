@@ -7,6 +7,7 @@ import {
   faHistory,
   faStar,
   faBook,
+  faComments,
 } from "@fortawesome/free-solid-svg-icons";
 
 const UserInfoCard = ({
@@ -66,6 +67,22 @@ const UserInfoCard = ({
           >
             <FontAwesomeIcon icon={faBook} className="me-2" />
             Book Requests
+          </Button>
+          <Button
+            variant={activeSection === "messages" ? "primary" : "outline-dark"}
+            className="w-100 mt-2"
+            onClick={() => onChangeSection("messages")}
+          >
+            <FontAwesomeIcon icon={faComments} className="me-2" />
+            Support Messages
+          </Button>
+          <Button
+            variant={activeSection === "live-chat" ? "primary" : "outline-primary"}
+            className="w-100 mt-2"
+            onClick={() => onChangeSection("live-chat")}
+          >
+            <FontAwesomeIcon icon={faComments} className="me-2" />
+            Live Chat
           </Button>
         </div>
       </Card.Body>

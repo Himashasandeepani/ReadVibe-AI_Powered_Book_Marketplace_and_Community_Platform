@@ -10,6 +10,7 @@ import { addItem } from "../store/slices/cartSlice";
 import { getOrderApi, getOrdersApi } from "../utils/orderApi";
 import createBookCoverPlaceholder from "../utils/imagePlaceholders";
 import { getOrderPaymentConfirmationKey } from "../components/Checkout/utils";
+import { createSupportMessage } from "../utils/supportMessages";
 
 // Import Components
 import ProgressSteps from "../components/common/ProgressSteps";
@@ -24,7 +25,6 @@ import SupportOptions from "../components/OrderConfirmation/SupportOptions";
 import RecommendedBooks from "../components/OrderConfirmation/RecommendedBooks";
 import TrackOrderModal from "../components/OrderConfirmation/TrackOrderModal";
 import ContactSupportModal from "../components/OrderConfirmation/ContactSupportModal";
-import LiveChatModal from "../components/OrderConfirmation/LiveChatModal";
 
 // Import Utilities
 import {
@@ -32,7 +32,6 @@ import {
   getRecommendedBooks,
   calculateEstimatedDates,
   downloadInvoice,
-  addSupportRequest,
   getTrackingUpdates,
   shippingMethods,
 } from "../components/OrderConfirmation/utils";
@@ -49,7 +48,6 @@ const OrderConfirmation = () => {
   // Modal states
   const [showTrackModal, setShowTrackModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
-  const [showLiveChat, setShowLiveChat] = useState(false);
 
   // Sample books data
   const books = useMemo(
@@ -268,8 +266,8 @@ const OrderConfirmation = () => {
     const user = getCurrentUser();
     if (!user || !order) return;
 
-    addSupportRequest(order, user, message);
-    alert("Your support request has been submitted. We will contact you soon.");
+    createSupportMessage({ order, user, message });
+    showNotification("Your support request has been sent.", "success");
     setShowSupportModal(false);
   };
 
@@ -386,7 +384,6 @@ const OrderConfirmation = () => {
                   <SupportOptions
                     onViewOrderStatus={() => setShowTrackModal(true)}
                     onContactSupport={() => setShowSupportModal(true)}
-                    onLiveChat={() => setShowLiveChat(true)}
                   />
                 </Col>
               </Row>
@@ -419,10 +416,6 @@ const OrderConfirmation = () => {
         onSubmit={handleSupportRequest}
       />
 
-      <LiveChatModal
-        show={showLiveChat}
-        onHide={() => setShowLiveChat(false)}
-      />
     </div>
   );
 };

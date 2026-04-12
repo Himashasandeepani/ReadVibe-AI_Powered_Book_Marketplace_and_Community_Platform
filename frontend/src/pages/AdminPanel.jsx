@@ -16,6 +16,7 @@ import SystemTab from "../components/Admin/SystemTab";
 import StatusTab from "../components/Admin/StatusTab";
 import UserTable from "../components/Admin/UserTable";
 import PostsTable from "../components/Admin/PostsTable";
+import LiveChatTab from "../components/Admin/LiveChatTab";
 import AddUserModal from "../components/Admin/AddUserModal";
 import EditUserModal from "../components/Admin/EditUserModal";
 import PostModal from "../components/Admin/PostModal";
@@ -32,6 +33,12 @@ import {
   updateAdminUserApi,
   deleteAdminUserApi,
 } from "../components/Admin/utils";
+import {
+  getLiveChatThreads,
+  getLiveChatUpdatedEventName,
+  sendLiveChatMessage,
+  getUnreadLiveChatThreadCount,
+} from "../utils/liveChat";
 
 const DEFAULT_SYSTEM_SETTINGS = {
   platformName: "ReadVibe",
@@ -97,6 +104,7 @@ const AdminPanel = () => {
     const { statuses: loadedStatuses = [] } = loadData();
     return [...loadedStatuses];
   });
+  const [liveChatThreads, setLiveChatThreads] = useState(() => getLiveChatThreads());
 
   // Modal states
   const [showAddUserModal, setShowAddUserModal] = useState(false);
@@ -169,6 +177,17 @@ const AdminPanel = () => {
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  useEffect(() => {
+    const handleLiveChatUpdate = () => {
+      setLiveChatThreads(getLiveChatThreads());
+    };
+
+    window.addEventListener(getLiveChatUpdatedEventName(), handleLiveChatUpdate);
+    return () => {
+      window.removeEventListener(getLiveChatUpdatedEventName(), handleLiveChatUpdate);
+    };
   }, []);
 
   const handleTabChange = (tab) => {
@@ -414,6 +433,29 @@ const AdminPanel = () => {
             onSaveSettings={handleSaveSettings}
           />
         );
+      case "live-chat":
+        return (
+          <LiveChatTab
+            threads={liveChatThreads}
+            onSendMessage={(thread, message, currentUser) => {
+              const threadOrder = {
+                id: thread.orderId,
+                orderNumber: thread.orderNumber,
+              };
+              sendLiveChatMessage({
+                order: threadOrder,
+                user: {
+                  id: thread.userId,
+                  name: thread.userName,
+                  email: thread.userEmail,
+                },
+                senderRole: "admin",
+                senderName: currentUser?.name || currentUser?.fullName || currentUser?.username || "Admin",
+                message,
+              });
+            }}
+          />
+        );
       default:
         return <DashboardTab users={users} posts={posts} />;
     }
@@ -442,7 +484,11 @@ const AdminPanel = () => {
         <div className="row">
           {/* Sidebar */}
           <div className="col-lg-2">
-            <AdminSidebar activeTab={activeTab} onTabChange={handleTabChange} />
+            <AdminSidebar
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              liveChatCount={getUnreadLiveChatThreadCount()}
+            />
           </div>
 
           {/* Main Content */}

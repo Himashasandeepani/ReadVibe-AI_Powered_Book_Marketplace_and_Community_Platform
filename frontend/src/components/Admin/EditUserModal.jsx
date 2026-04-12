@@ -62,17 +62,25 @@ const EditUserModalContent = ({ user, onClose, onSubmit }) => {
                 </div>
                 <div className="mb-3">
                   <label className="form-label">Role *</label>
-                  <select
-                    className="form-select"
-                    name="role"
-                    value={formData.role}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                    <option value="stock">Stock Manager</option>
-                  </select>
+                  {user.role === "admin" ? (
+                    <input
+                      type="text"
+                      className="form-control"
+                      value="Admin"
+                      readOnly
+                    />
+                  ) : (
+                    <select
+                      className="form-select"
+                      name="role"
+                      value={formData.role}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="user">User</option>
+                      <option value="stock">Stock Manager</option>
+                    </select>
+                  )}
                 </div>
                 <div className="mb-3">
                   <label className="form-label">Status *</label>

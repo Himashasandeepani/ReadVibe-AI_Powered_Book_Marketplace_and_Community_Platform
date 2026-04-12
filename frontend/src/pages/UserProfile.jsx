@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Container, Row, Col } from "react-bootstrap";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser } from "@fortawesome/free-solid-svg-icons";
 
@@ -17,6 +17,8 @@ import BookRequests from "../components/UserProfile/BookRequests";
 import EditProfileModal from "../components/UserProfile/EditProfileModal";
 import RequestBookModal from "../components/UserProfile/RequestBookModal";
 import AddReviewModal from "../components/UserProfile/AddReviewModal";
+import SupportMessagesSection from "../components/UserProfile/SupportMessagesSection";
+import LiveChatSection from "../components/UserProfile/LiveChatSection";
 
 // Import Utilities
 import {
@@ -30,6 +32,15 @@ import {
   books,
   showNotification,
 } from "../components/UserProfile/utils";
+import {
+  getSupportMessagesForUser,
+  getSupportMessagesUpdatedEventName,
+} from "../utils/supportMessages";
+import {
+  getLiveChatThreadsForUser,
+  getLiveChatUpdatedEventName,
+  sendLiveChatMessage,
+} from "../utils/liveChat";
 
 import "../styles/pages/UserProfile.css";
 
@@ -51,11 +62,14 @@ const EMPTY_USER_DATA = {
 
 const UserProfile = () => {
   const seededUser = typeof window === "undefined" ? null : getCurrentUser();
+  const [searchParams] = useSearchParams();
   const [user, setUser] = useState(seededUser);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [activeSection, setActiveSection] = useState("overview");
+  const [activeSection, setActiveSection] = useState(
+    searchParams.get("section") || "overview",
+  );
   const [loading, setLoading] = useState(true);
 
   // User data
@@ -64,6 +78,8 @@ const UserProfile = () => {
   const [orders, setOrders] = useState([]);
   const [myReviews, setMyReviews] = useState([]);
   const [bookRequests, setBookRequests] = useState([]);
+  const [supportMessages, setSupportMessages] = useState([]);
+  const [liveChatThreads, setLiveChatThreads] = useState([]);
 
   // Modal data
   const [selectedBook, setSelectedBook] = useState(null);
@@ -91,6 +107,24 @@ const UserProfile = () => {
     setLoading(false);
   };
 
+  const refreshSupportMessages = (currentUser) => {
+    if (!currentUser) {
+      setSupportMessages([]);
+      return;
+    }
+
+    setSupportMessages(getSupportMessagesForUser(currentUser.id));
+  };
+
+  const refreshLiveChatThreads = (currentUser) => {
+    if (!currentUser) {
+      setLiveChatThreads([]);
+      return;
+    }
+
+    setLiveChatThreads(getLiveChatThreadsForUser(currentUser.id));
+  };
+
   useEffect(() => {
     if (!user) {
       navigate("/login");
@@ -98,6 +132,8 @@ const UserProfile = () => {
     }
 
     void initializeUserData(user);
+    refreshSupportMessages(user);
+    refreshLiveChatThreads(user);
 
     const handleStorageChange = (event) => {
       if (event.key === "currentUser") {
@@ -114,6 +150,8 @@ const UserProfile = () => {
       if (currentUser) {
         setUser(currentUser);
         void initializeUserData(currentUser);
+        refreshSupportMessages(currentUser);
+        refreshLiveChatThreads(currentUser);
       }
     };
 
@@ -122,6 +160,8 @@ const UserProfile = () => {
     window.addEventListener("wishlist-updated", handleRefresh);
     window.addEventListener("cart-updated", handleRefresh);
     window.addEventListener("book-requests-updated", handleRefresh);
+    window.addEventListener(getSupportMessagesUpdatedEventName(), handleRefresh);
+    window.addEventListener(getLiveChatUpdatedEventName(), handleRefresh);
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
@@ -129,8 +169,17 @@ const UserProfile = () => {
       window.removeEventListener("wishlist-updated", handleRefresh);
       window.removeEventListener("cart-updated", handleRefresh);
       window.removeEventListener("book-requests-updated", handleRefresh);
+      window.removeEventListener(getSupportMessagesUpdatedEventName(), handleRefresh);
+      window.removeEventListener(getLiveChatUpdatedEventName(), handleRefresh);
     };
   }, [user, navigate]);
+
+  useEffect(() => {
+    const section = searchParams.get("section");
+    if (section) {
+      setActiveSection(section);
+    }
+  }, [searchParams]);
 
   const handleUpdateProfile = async (updatedData) => {
     const updatedUser = await updateUserProfile(user, updatedData);
@@ -277,6 +326,8 @@ const UserProfile = () => {
               onViewOrders={() => setActiveSection("orders")}
               onViewReviews={() => setActiveSection("reviews")}
               onRequestBook={() => setShowRequestModal(true)}
+              onViewMessages={() => setActiveSection("messages")}
+              onViewLiveChat={() => setActiveSection("live-chat")}
             />
           </>
         );
@@ -307,6 +358,36 @@ const UserProfile = () => {
             requests={bookRequests}
             onBack={() => setActiveSection("overview")}
             onNewRequest={() => setShowRequestModal(true)}
+          />
+        );
+
+      case "messages":
+        return (
+          <SupportMessagesSection
+            messages={supportMessages}
+            onBack={() => setActiveSection("overview")}
+          />
+        );
+
+      case "live-chat":
+        return (
+          <LiveChatSection
+            threads={liveChatThreads}
+            onBack={() => setActiveSection("overview")}
+            onSendMessage={(thread, message) => {
+              const order = {
+                id: thread.orderId,
+                orderNumber: thread.orderNumber,
+              };
+              sendLiveChatMessage({
+                order,
+                user,
+                senderRole: "user",
+                senderName: user.name || user.fullName || user.username || "User",
+                message,
+              });
+              return true;
+            }}
           />
         );
 
