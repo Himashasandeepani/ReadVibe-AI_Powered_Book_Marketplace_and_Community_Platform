@@ -147,9 +147,7 @@ const StockManager = () => {
   });
 
   const [publishers, setPublishers] = useState(() => {
-    if (typeof window === "undefined") return initialPublishers();
-    const stored = JSON.parse(window.localStorage.getItem("publishers"));
-    return stored || initialPublishers();
+    return [];
   });
 
   const [bookRequests, setBookRequests] = useState(() => {
@@ -300,14 +298,14 @@ const StockManager = () => {
     const loadPublishersFromApi = async () => {
       try {
         const apiPublishers = await fetchPublishersFromApi();
-        if (Array.isArray(apiPublishers) && apiPublishers.length) {
-          const normalized = apiPublishers.map((publisher) => ({
-            ...publisher,
-            status: publisher.status || "Active",
-            booksSupplied: Number(publisher.booksSupplied || 0),
-          }));
-          persistPublishers(normalized);
-        }
+        const normalized = Array.isArray(apiPublishers)
+          ? apiPublishers.map((publisher) => ({
+              ...publisher,
+              status: publisher.status || "Active",
+              booksSupplied: Number(publisher.booksSupplied || 0),
+            }))
+          : [];
+        persistPublishers(normalized);
       } catch (error) {
         console.error("Failed to load publishers from API", error);
       }
@@ -321,11 +319,6 @@ const StockManager = () => {
 
     const storedBooks = JSON.parse(window.localStorage.getItem("stockBooks"));
     if (storedBooks) setStockBooks(storedBooks);
-
-    const storedPublishers = JSON.parse(
-      window.localStorage.getItem("publishers"),
-    );
-    if (storedPublishers) setPublishers(storedPublishers);
 
     const storedOrders = JSON.parse(window.localStorage.getItem("stockOrders"));
     if (storedOrders) setStockOrders(storedOrders);
@@ -341,7 +334,6 @@ const StockManager = () => {
 
       if (
         e.key === "stockBooks" ||
-        e.key === "publishers" ||
         e.key === "stockOrders" ||
         e.key === "authors"
       ) {

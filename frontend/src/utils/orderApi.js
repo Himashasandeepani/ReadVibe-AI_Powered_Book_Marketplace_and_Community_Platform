@@ -6,9 +6,14 @@ const normalizeId = (value) => {
 };
 
 const handleApi = async (path, options = {}) => {
+  const { headers = {}, ...restOptions } = options;
+
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options,
+    ...restOptions,
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+    },
   });
 
   const data = await res.json().catch(() => ({}));
