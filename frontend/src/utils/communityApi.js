@@ -4,6 +4,11 @@ const emitBookRequestsUpdated = () => {
   window.dispatchEvent(new CustomEvent("book-requests-updated"));
 };
 
+export const emitCommunityPostsUpdated = () => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("community-posts-updated"));
+};
+
 const handleApi = async (path, options = {}) => {
   const { headers = {}, ...restOptions } = options;
 

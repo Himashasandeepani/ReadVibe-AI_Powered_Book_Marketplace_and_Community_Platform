@@ -14,10 +14,12 @@ import CreatePostModal from "../components/Community/CreatePostModal";
 import RequestBookModal from "../components/Community/RequestBookModal";
 import {
   fetchCommunityPostsApi,
+  fetchCommunityPostWithCommentsApi,
   createCommunityPostApi,
   toggleCommunityPostLikeApi,
   addCommunityCommentApi,
   createBookRequestApi,
+  emitCommunityPostsUpdated,
 } from "../utils/communityApi";
 
 const createDefaultCommunityPosts = () => [
@@ -127,7 +129,7 @@ const mapApiCommentToUi = (comment) => {
   if (!comment) return null;
 
   const username = comment.username || (comment.userId ? `user_${comment.userId}` : "user");
-  const name = comment.userFullName || humanizeUsername(username);
+  const name = comment.userFullName || comment.userDisplay?.name || humanizeUsername(username);
   const avatar = name.substring(0, 2).toUpperCase();
 
   return {
@@ -191,13 +193,30 @@ const Community = () => {
     const loadPosts = async () => {
       try {
         const posts = await fetchCommunityPostsApi();
-        const mapped = posts
-          .map(mapApiPostToUi)
-          .filter((p) => p !== null);
-        setCommunityPosts(mapped);
+        const mapped = await Promise.all(
+          posts.map(async (post) => {
+            const basePost = mapApiPostToUi(post);
+            if (!basePost) return null;
+
+            try {
+              const details = await fetchCommunityPostWithCommentsApi(post.id);
+              const comments = Array.isArray(details.comments) ? details.comments : [];
+
+              return {
+                ...basePost,
+                comments: Number(details.post?.commentsCount) || comments.length || basePost.comments,
+                commentsList: comments.map(mapApiCommentToUi),
+              };
+            } catch {
+              return basePost;
+            }
+          }),
+        );
+        const nextPosts = mapped.filter((post) => post !== null);
+        setCommunityPosts(nextPosts);
 
         try {
-          const adminPosts = mapped.map((p) => {
+          const adminPosts = nextPosts.map((p) => {
             const { userDisplay, commentsList, likedBy, ...rest } = p;
             return rest;
           });
@@ -214,7 +233,16 @@ const Community = () => {
       }
     };
 
+    const handleCommunityPostsUpdated = () => {
+      loadPosts();
+    };
+
     loadPosts();
+    window.addEventListener("community-posts-updated", handleCommunityPostsUpdated);
+
+    return () => {
+      window.removeEventListener("community-posts-updated", handleCommunityPostsUpdated);
+    };
   }, []);
 
   // Safe function to get user avatar
@@ -382,6 +410,7 @@ const Community = () => {
       alert(
         "Post created successfully! It will now appear in the Admin Panel for review.",
       );
+      emitCommunityPostsUpdated();
     } catch (error) {
       console.error("Failed to create post:", error);
       alert(error.message || "Failed to create post. Please try again.");
@@ -434,6 +463,7 @@ const Community = () => {
           return post;
         }),
       );
+      emitCommunityPostsUpdated();
     } catch (error) {
       console.error("Failed to toggle like:", error);
       alert(error.message || "Failed to update like. Please try again.");
@@ -507,6 +537,7 @@ const Community = () => {
       );
 
       setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
+      emitCommunityPostsUpdated();
     } catch (error) {
       console.error("Failed to add comment:", error);
       alert(error.message || "Failed to add comment. Please try again.");

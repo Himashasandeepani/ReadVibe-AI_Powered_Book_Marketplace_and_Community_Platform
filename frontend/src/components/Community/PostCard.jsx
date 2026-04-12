@@ -74,7 +74,7 @@ const PostCard = ({
         <button
           className="btn btn-sm btn-outline-secondary me-2 comment-btn"
           onClick={() => onToggleComments(post.id)}
-          title={!currentUser ? "Login to comment" : ""}
+          title={expandedComments[post.id] ? "Hide comments" : "Show comments"}
         >
           <FontAwesomeIcon icon={faComment} /> <span>{post.comments || 0}</span>
         </button>
@@ -86,33 +86,30 @@ const PostCard = ({
         </button>
       </div>
 
-      {/* Comments Section */}
       {expandedComments[post.id] && (
         <div className="mt-3">
-          <div className="comments-section" id={`commentsList${post.id}`}>
+          <div className="comments-section mb-3" id={`commentsList${post.id}`}>
+            <h6 className="mb-2">
+              <FontAwesomeIcon icon={faComment} className="me-2" />
+              Comments ({post.comments || 0})
+            </h6>
+
             {!post.commentsList || post.commentsList.length === 0 ? (
               <div className="text-center py-3">
                 <p className="text-muted mb-0">
-                  No comments yet.{" "}
-                  {!currentUser
-                    ? "Login to be the first to comment!"
-                    : "Be the first to comment!"}
+                  No comments yet. {currentUser ? "Be the first to comment!" : "Login to be the first to comment!"}
                 </p>
               </div>
             ) : (
               post.commentsList.map((comment, index) => (
                 <div className="comment-item" key={index}>
                   <div className="d-flex">
-                    <div className="comment-avatar">
-                      {getUserAvatar(comment)}
-                    </div>
+                    <div className="comment-avatar">{getUserAvatar(comment)}</div>
                     <div>
                       <h6 className="mb-0" style={{ fontSize: "0.95rem" }}>
                         {getUserName(comment)}
                       </h6>
-                      <small className="text-muted">
-                        {formatTimestamp(comment.timestamp)}
-                      </small>
+                      <small className="text-muted">{formatTimestamp(comment.timestamp)}</small>
                       <p className="mb-0 mt-1">{comment.content}</p>
                     </div>
                   </div>
@@ -120,6 +117,7 @@ const PostCard = ({
               ))
             )}
           </div>
+
           <div className="comment-input-group input-group">
             <input
               type="text"

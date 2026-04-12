@@ -5,10 +5,6 @@ import BookCard from "../Home/BookCard";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFire, faBookmark, faCogs } from "@fortawesome/free-solid-svg-icons";
 import { fetchBooksFromApi } from "../StockManager/utils";
-import {
-  getHomeFeaturedBookIds,
-  resolveHomeFeaturedBooks,
-} from "../../utils/homeFeaturedBooks";
 
 const PopularBooksSection = ({ currentUser, onViewDetails }) => {
   const [featuredBooks, setFeaturedBooks] = useState([]);
@@ -43,8 +39,13 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
       try {
         const storedBooks = await fetchBooksFromApi();
 
-        const selectedIds = getHomeFeaturedBookIds();
-        const featured = resolveHomeFeaturedBooks(storedBooks, selectedIds);
+        const featured = [...storedBooks]
+          .sort(
+            (left, right) =>
+              (Number(right.salesThisMonth) || 0) - (Number(left.salesThisMonth) || 0) ||
+              (Number(right.totalSales) || 0) - (Number(left.totalSales) || 0),
+          )
+          .slice(0, 2);
 
         const formattedBooks = featured.map((book) => ({
           id: book.id,
@@ -91,12 +92,6 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
           Popular This Week
           <div className="section-title-decoration"></div>
         </h2>
-        {getHomeFeaturedBookIds().length > 0 && (
-          <Badge bg="warning" className="fs-6">
-            <FontAwesomeIcon icon={faFire} className="me-1" />
-            Selected by Admin
-          </Badge>
-        )}
       </div>
 
       <Row id="featuredBooks">
