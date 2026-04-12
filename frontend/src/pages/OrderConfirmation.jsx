@@ -151,7 +151,8 @@ const OrderConfirmation = () => {
       items:
         fetchedOrder.items?.map((item) => ({
           id: item.bookId,
-          title: item.title,
+          title: item.title || item.bookTitle || item.bookName || item.productName || "Book",
+          author: item.author || item.bookAuthor || item.productAuthor || "",
           quantity: item.quantity,
           price: item.unitPrice,
           image: item.image,

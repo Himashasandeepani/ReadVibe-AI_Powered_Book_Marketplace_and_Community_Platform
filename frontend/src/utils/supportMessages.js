@@ -15,6 +15,22 @@ const emitSupportMessagesUpdated = () => {
   window.dispatchEvent(new CustomEvent(SUPPORT_MESSAGES_UPDATED_EVENT));
 };
 
+export const getSupportMessageStatusLabel = (status) => {
+  const normalizedStatus = String(status || "").trim().toLowerCase();
+
+  if (normalizedStatus === "open") return "Processing";
+  if (normalizedStatus === "replied") return "Replied";
+  return status || "Open";
+};
+
+export const getSupportMessageStatusVariant = (status) => {
+  const normalizedStatus = String(status || "").trim().toLowerCase();
+
+  if (normalizedStatus === "open") return "warning text-dark";
+  if (normalizedStatus === "replied") return "success";
+  return "secondary";
+};
+
 export const getSupportMessages = () => {
   if (typeof window === "undefined") return [];
   const stored = safeParse(localStorage.getItem(SUPPORT_MESSAGES_STORAGE_KEY), []);

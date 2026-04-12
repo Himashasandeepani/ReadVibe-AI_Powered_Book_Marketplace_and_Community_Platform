@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Card } from "react-bootstrap";
+import { Button, Card, Badge } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faComments,
@@ -13,6 +13,17 @@ const formatDateTime = (value) =>
   });
 
 const SupportMessagesSection = ({ messages, onBack }) => {
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "Open":
+        return "warning";
+      case "Replied":
+        return "success";
+      default:
+        return "info";
+    }
+  };
+
   return (
     <Card className="dashboard-card mb-4">
       <Card.Body>
@@ -52,11 +63,12 @@ const SupportMessagesSection = ({ messages, onBack }) => {
                       Order #{message.orderNumber} - {formatDateTime(message.createdAt)}
                     </div>
                   </div>
-                  <span
-                    className={`badge ${message.status === "Open" ? "bg-warning text-dark" : "bg-success"}`}
+                  <Badge
+                    bg={getStatusBadge(message.status)}
+                    className="support-message-status-badge"
                   >
                     {message.status}
-                  </span>
+                  </Badge>
                 </div>
 
                 <div className="bg-light rounded-3 p-3 mb-3">

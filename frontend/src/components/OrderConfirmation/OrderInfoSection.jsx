@@ -7,6 +7,9 @@ import { formatDate, getOrderDisplayDate, getOrderPaymentInfo } from "./utils";
 const OrderInfoSection = ({ order }) => {
   const orderDate = getOrderDisplayDate(order);
   const paymentInfo = getOrderPaymentInfo(order);
+  const bookNames = Array.isArray(order.items)
+    ? order.items.map((item) => item.title).filter(Boolean)
+    : [];
 
   return (
     <div className="order-info-section mb-4">
@@ -32,6 +35,12 @@ const OrderInfoSection = ({ order }) => {
         <Col md={8} className="order-info-item mb-3">
           <span className="label">Transaction ID:</span>
           <span className="value">{paymentInfo.transactionId}</span>
+        </Col>
+        <Col md={12} className="order-info-item mb-0">
+          <span className="label">Books:</span>
+          <span className="value">
+            {bookNames.length > 0 ? bookNames.join(", ") : "No book names available"}
+          </span>
         </Col>
       </Row>
     </div>
