@@ -4,6 +4,7 @@ import { Container, Row, Col, Badge } from "react-bootstrap";
 import BookCard from "../Home/BookCard";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFire, faBookmark, faCogs } from "@fortawesome/free-solid-svg-icons";
+import { fetchBooksFromApi } from "../StockManager/utils";
 
 const PopularBooksSection = ({ currentUser, onViewDetails }) => {
   const [featuredBooks, setFeaturedBooks] = useState([]);
@@ -31,20 +32,18 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
           ? book.images[0]
           : "");
 
-      // Prefer stored image (data URL or uploaded path); fallback to static map
       return localImage || getBookImage(book.title);
     };
 
-    const loadFeaturedBooks = () => {
+    const loadFeaturedBooks = async () => {
       try {
-        const storedBooks =
-          JSON.parse(localStorage.getItem("stockBooks")) || [];
+        const storedBooks = await fetchBooksFromApi();
 
         let featured = storedBooks.filter((book) => book.featured === true);
 
         if (featured.length < 4) {
           featured = [...storedBooks]
-            .sort((a, b) => b.salesThisMonth - a.salesThisMonth)
+            .sort((a, b) => (Number(b.salesThisMonth) || 0) - (Number(a.salesThisMonth) || 0))
             .slice(0, 4);
         }
 
@@ -55,11 +54,11 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
           category: book.category,
           price: book.price,
           image: resolveBookImage(book),
-          rating: Math.min(5, 4 + book.salesThisMonth / 20),
-          reviews: book.totalSales || Math.floor(Math.random() * 50) + 10,
-          inStock: book.stock > 0,
-          stock: book.stock,
-          salesThisMonth: book.salesThisMonth,
+          rating: Math.min(5, 4 + (Number(book.salesThisMonth) || 0) / 20),
+          reviews: book.totalSales || 0,
+          inStock: (Number(book.stock) || 0) > 0,
+          stock: Number(book.stock) || 0,
+          salesThisMonth: Number(book.salesThisMonth) || 0,
           publisher: book.publisher,
           publishedDate: book.publicationYear?.toString(),
           isbn: book.isbn,
@@ -73,10 +72,10 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
       }
     };
 
-    loadFeaturedBooks();
+    void loadFeaturedBooks();
 
     const handleStorageUpdate = () => {
-      loadFeaturedBooks();
+      void loadFeaturedBooks();
     };
 
     window.addEventListener("storage", handleStorageUpdate);

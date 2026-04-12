@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Container, Row, Col, Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser } from "../utils/auth";
-import { books, showNotification } from "../utils/helpers";
+import { getAllBooks, showNotification } from "../utils/helpers";
 import { createOrderApi } from "../utils/orderApi";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTruck } from "@fortawesome/free-solid-svg-icons";
@@ -85,8 +85,10 @@ const buildInitialFormData = (user) => {
 
 const getCheckoutCartItems = () => {
   const savedCart = safeParseJSON(sessionStorage.getItem("checkoutCart")) || [];
+  const catalogBooks = getAllBooks();
+
   return savedCart.map((item) => {
-    const book = books.find((b) => b.id === item.id) || {};
+    const book = catalogBooks.find((b) => b.id === item.id) || {};
     return {
       ...item,
       title: book.title || "Unknown Book",

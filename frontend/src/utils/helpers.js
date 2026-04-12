@@ -16,55 +16,7 @@ const normalizeUser = (user) => {
   };
 };
 
-// Books data
-export const books = [
-  {
-    id: 1,
-    title: "The Midnight Library",
-    author: "Matt Haig",
-    price: 6000.00,
-    category: "Fiction",
-    rating: 4.3,
-    reviews: 128,
-    inStock: true,
-    image: "/assets/The_Midnight_Library.jpeg"
-  },
-  {
-    id: 2,
-    title: "Project Hail Mary",
-    author: "Andy Weir",
-    price: 6500.00,
-    category: "Science Fiction",
-    rating: 4.8,
-    reviews: 95,
-    inStock: true,
-    image: "/assets/project_hail_mary.jpg"
-  },
-  {
-    id: 3,
-    title: "Dune",
-    author: "Frank Herbert",
-    price: 5400.00,
-    category: "Science Fiction",
-    rating: 4.0,
-    reviews: 210,
-    inStock: true,
-    image: "/assets/dune.jpg"
-  },
-  {
-    id: 4,
-    title: "The Hobbit",
-    author: "J.R.R. Tolkien",
-    price: 3500.00,
-    category: "Fantasy",
-    rating: 4.9,
-    reviews: 305,
-    inStock: false,
-    image: "/assets/the_hobbit.jpg"
-  }
-];
-
-// Return inventory books from localStorage; fallback to seed list
+// Return inventory books from localStorage
 export const getAllBooks = () => {
   try {
     const stored = JSON.parse(localStorage.getItem("stockBooks")) || [];
@@ -81,12 +33,12 @@ export const getAllBooks = () => {
       price: Number(book.price) || 0,
     }));
 
-    if (mapped.length) return mapped;
+    return mapped;
   } catch (error) {
     console.error("Error reading stockBooks:", error);
   }
 
-  return books;
+  return [];
 };
 
 // Cart functions
@@ -100,7 +52,7 @@ export const updateCart = (cart) => {
 
 export const addToCart = (bookId, quantity = 1) => {
   const cart = getCart()
-  const book = books.find(b => b.id === bookId)
+  const book = getAllBooks().find(b => b.id === bookId)
 
   if (!book) return
 
@@ -154,28 +106,20 @@ export const searchBooks = (query, booksArray = getAllBooks()) => {
 };
 
 // Add or sync wishlist entry via backend API
-export const addToWishlist = (bookId, userId) => {
+export const addToWishlist = async (bookId, userId) => {
   const normalizedUserId = Number(userId);
   const normalizedBookId = Number(bookId);
 
-  if (!normalizedUserId || !normalizedBookId) return false;
+  if (!normalizedUserId || !normalizedBookId) {
+    throw new Error("userId and bookId are required");
+  }
 
-  // Fire-and-forget call to persist in DB; UI uses Wishlist APIs for display
-  (async () => {
-    try {
-      await addWishlistItemApi({
-        userId: normalizedUserId,
-        bookId: normalizedBookId,
-        priority: 3,
-        notes: "",
-      });
-      window.dispatchEvent(new CustomEvent("wishlist-updated"));
-    } catch (err) {
-      console.error("Failed to add to wishlist via API", err);
-    }
-  })();
-
-  return true;
+  return addWishlistItemApi({
+    userId: normalizedUserId,
+    bookId: normalizedBookId,
+    priority: 3,
+    notes: "",
+  });
 };
 
 

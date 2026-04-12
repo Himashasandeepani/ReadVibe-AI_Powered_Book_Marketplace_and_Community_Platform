@@ -28,6 +28,7 @@ import {
   generateStarRating,
   addToWishlist,
   showNotification,
+  getUserWishlist,
 } from "../../utils/helpers";
 import { addItem, setCart } from "../../store/slices/cartSlice";
 
@@ -42,21 +43,23 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
 
   const isInWishlist = (bookId) => {
     if (!currentUser) return false;
-    const wishlist =
-      JSON.parse(localStorage.getItem(`wishlist_${currentUser.id}`)) || [];
+    const wishlist = getUserWishlist();
     return wishlist.some((item) => item.id === bookId);
   };
 
-  const handleAddToWishlist = () => {
+  const handleAddToWishlist = async () => {
     if (!isLoggedIn()) {
       onHide();
       navigate("/login");
       return;
     }
 
-    addToWishlist(book.id, currentUser.id);
-    window.dispatchEvent(new CustomEvent("wishlist-updated"));
-    showNotification("Book added to wishlist!", "success");
+    try {
+      await addToWishlist(book.id, currentUser.id);
+      showNotification("Book added to wishlist!", "success");
+    } catch (error) {
+      showNotification(error.message || "Failed to add to wishlist", "danger");
+    }
   };
 
   const handleAddToCart = () => {

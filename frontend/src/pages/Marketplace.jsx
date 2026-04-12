@@ -25,17 +25,18 @@ import {
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 import {
-  getAllBooks,
   formatPrice,
   generateStarRating,
   searchBooks,
   filterBooks,
   showNotification,
+  getUserWishlist,
   addToWishlist,
 } from "../utils/helpers";
+import { getCurrentUser as getNormalizedCurrentUser } from "../utils/auth";
 import { setCart } from "../store/slices/cartSlice";
 import { addCartItemApi, fetchCartApi } from "../utils/cartApi";
-import { fetchBookByIdApi } from "../components/StockManager/utils";
+import { fetchBooksFromApi, fetchBookByIdApi } from "../components/StockManager/utils";
 import "../styles/pages/Marketplace.css";
 
 // Components
@@ -49,15 +50,9 @@ import GuestNotice from "../components/Marketplace/GuestNotice";
 import SearchBar from "../components/Marketplace/SearchBar";
 import EmptyState from "../components/Marketplace/EmptyState";
 
-const getStoredUser = () => {
-  const storedUser = localStorage.getItem("currentUser");
-  return storedUser ? JSON.parse(storedUser) : null;
-};
+const getStoredUser = () => getNormalizedCurrentUser();
 
-const getStoredWishlist = (targetUser) => {
-  if (!targetUser) return [];
-  return JSON.parse(localStorage.getItem(`wishlist_${targetUser.id}`)) || [];
-};
+const getStoredWishlist = () => getUserWishlist();
 
 const DEFAULT_FILTERS = {
   category: "all",
@@ -91,23 +86,15 @@ const Marketplace = () => {
     [resolveBookImage],
   );
 
-  const loadBooks = useCallback(() => {
-    const source = getAllBooks();
-    return normalizeBooks(source);
-  }, [normalizeBooks]);
-  const [allBooks, setAllBooks] = useState(() => loadBooks());
+  const [allBooks, setAllBooks] = useState([]);
   const [filters, setFilters] = useState(() => ({ ...DEFAULT_FILTERS }));
-  const [filteredBooks, setFilteredBooks] = useState(() =>
-    filterBooks(DEFAULT_FILTERS, loadBooks()),
-  );
+  const [filteredBooks, setFilteredBooks] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [booksPerPage] = useState(12);
   const [isFilterCollapsed, setIsFilterCollapsed] = useState(false);
   const [user, setUser] = useState(() => getStoredUser());
-  const [userWishlist, setUserWishlist] = useState(() =>
-    getStoredWishlist(getStoredUser()),
-  );
+  const [userWishlist, setUserWishlist] = useState(() => getStoredWishlist());
   const [showBookModal, setShowBookModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
   const navigate = useNavigate();
@@ -119,25 +106,41 @@ const Marketplace = () => {
   }, [allBooks, filters]);
 
   useEffect(() => {
+    const loadBooks = async () => {
+      try {
+        const apiBooks = await fetchBooksFromApi();
+        const normalized = normalizeBooks(apiBooks);
+        setAllBooks(normalized);
+        setFilteredBooks(filterBooks(DEFAULT_FILTERS, normalized));
+      } catch (error) {
+        console.error("Failed to load books from API", error);
+        setAllBooks([]);
+        setFilteredBooks([]);
+      }
+    };
+
+    void loadBooks();
+
     const handleStorageChange = () => {
       const storedUser = getStoredUser();
       setUser(storedUser);
-      setUserWishlist(getStoredWishlist(storedUser));
-
-      const updatedBooks = loadBooks();
-      setAllBooks(updatedBooks);
-
-      if (searchQuery.length >= 2) {
-        setFilteredBooks(searchBooks(searchQuery, updatedBooks));
-      } else {
-        setFilteredBooks(filterBooks(filters, updatedBooks));
-      }
+      setUserWishlist(getStoredWishlist());
       setCurrentPage(1);
     };
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, [filters, loadBooks, searchQuery]);
+  }, [normalizeBooks]);
+
+  useEffect(() => {
+    if (searchQuery.length >= 2) {
+      setFilteredBooks(searchBooks(searchQuery, allBooks));
+      setCurrentPage(1);
+      return;
+    }
+
+    setFilteredBooks(filterBooks(filters, allBooks));
+  }, [allBooks, filters, searchQuery]);
 
   useEffect(() => {
     const syncCart = async () => {
@@ -302,18 +305,18 @@ const Marketplace = () => {
     navigate("/delivery-details");
   };
 
-  const handleAddToWishlist = (bookId, e = null) => {
+  const handleAddToWishlist = async (bookId, e = null) => {
     if (e) e.stopPropagation();
 
     if (!requireLogin("add items to wishlist")) return;
 
-    addToWishlist(bookId, user.id);
-    const updatedWishlist =
-      JSON.parse(localStorage.getItem(`wishlist_${user.id}`)) || [];
-    setUserWishlist(updatedWishlist);
-
-    window.dispatchEvent(new CustomEvent("wishlist-updated"));
-    showNotification("Book added to wishlist!", "success");
+    try {
+      const items = await addToWishlist(bookId, user.id);
+      setUserWishlist(items);
+      showNotification("Book added to wishlist!", "success");
+    } catch (error) {
+      showNotification(error.message || "Failed to add to wishlist", "danger");
+    }
   };
 
   const isInWishlist = (bookId) => {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Container } from "react-bootstrap";
+import { getCurrentUser as getNormalizedCurrentUser } from "../utils/auth";
 import GuestNotice from "../components/Home/GuestNotice";
 import HeroSection from "../components/Home/HeroSection";
 import FeaturesSection from "../components/Home/FeaturesSection";
@@ -11,16 +12,7 @@ import BookDetailsModal from "../components/Home/BookDetailsModal";
 import "../styles/pages/Home.css";
 
 const getStoredCurrentUser = () => {
-  const storedUser = localStorage.getItem("currentUser");
-  if (!storedUser) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(storedUser);
-  } catch {
-    return null;
-  }
+  return getNormalizedCurrentUser();
 };
 
 const Home = () => {

@@ -17,6 +17,7 @@ import {
   Badge,
 } from "react-bootstrap";
 import { getCurrentUser, logout } from "../../utils/auth";
+import { getWishlistCount } from "../../utils/helpers";
 import { useDispatch, useSelector } from "react-redux";
 import { logoutSuccess } from "../../store/slices/authSlice";
 import {
@@ -25,11 +26,7 @@ import {
 } from "../../store/slices/cartSlice";
 
 const getInitialWishlistCount = () => {
-  const currentUser = getCurrentUser();
-  if (!currentUser) return 0;
-  const wishlist =
-    JSON.parse(localStorage.getItem(`wishlist_${currentUser.id}`)) || [];
-  return wishlist.length;
+  return getWishlistCount();
 };
 
 const Header = () => {
@@ -47,28 +44,22 @@ const Header = () => {
     user?.role === "stock" || user?.role === "stock-manager";
   const isRegularUser = !!user && !isAdminUser && !isStockManagerUser;
 
-  const updateWishlistCount = (currentUser) => {
-    if (currentUser) {
-      const wishlist =
-        JSON.parse(localStorage.getItem(`wishlist_${currentUser.id}`)) || [];
-      setWishlistCount(wishlist.length);
-    } else {
-      setWishlistCount(0);
-    }
+  const updateWishlistCount = () => {
+    setWishlistCount(getWishlistCount());
   };
 
   useEffect(() => {
     const handleStorageChange = () => {
       const updatedUser = getCurrentUser();
       setUser(updatedUser);
-      updateWishlistCount(updatedUser);
+      updateWishlistCount();
       dispatch(syncCartFromStorage());
     };
 
     const handleWishlistUpdate = () => {
       const updatedUser = getCurrentUser();
       setUser(updatedUser);
-      updateWishlistCount(updatedUser);
+      updateWishlistCount();
     };
 
     const handleCartUpdate = () => {
