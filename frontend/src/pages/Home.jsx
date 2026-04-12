@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Container } from "react-bootstrap";
 import { getCurrentUser as getNormalizedCurrentUser } from "../utils/auth";
+import { getBookReviewsForBook } from "../components/UserProfile/utils";
 import GuestNotice from "../components/Home/GuestNotice";
 import HeroSection from "../components/Home/HeroSection";
 import FeaturesSection from "../components/Home/FeaturesSection";
@@ -35,10 +36,43 @@ const Home = () => {
     return currentUser !== null;
   };
 
+  const mergeBookReviews = (book) => {
+    if (!book) return book;
+
+    const cachedReviews = getBookReviewsForBook(book.id);
+    if (cachedReviews.length === 0) return book;
+
+    const nextReviewsList = [
+      ...(Array.isArray(book.reviewsList) ? book.reviewsList : []),
+      ...cachedReviews,
+    ].filter((review, index, allReviews) => {
+      const key = `${review.id || review.userName || review.user || index}-${review.text || review.comment || ""}`;
+      return allReviews.findIndex((item, reviewIndex) => {
+        const itemKey = `${item.id || item.userName || item.user || reviewIndex}-${item.text || item.comment || ""}`;
+        return itemKey === key;
+      }) === index;
+    });
+
+    return {
+      ...book,
+      reviews: Math.max(Number(book.reviews) || 0, nextReviewsList.length),
+      reviewsList: nextReviewsList,
+    };
+  };
+
   const handleViewDetails = (book) => {
-    setSelectedBook(book);
+    setSelectedBook(mergeBookReviews(book));
     setShowBookModal(true);
   };
+
+  useEffect(() => {
+    const handleBookReviewsUpdated = () => {
+      setSelectedBook((current) => mergeBookReviews(current));
+    };
+
+    window.addEventListener("book-reviews-updated", handleBookReviewsUpdated);
+    return () => window.removeEventListener("book-reviews-updated", handleBookReviewsUpdated);
+  }, []);
 
   const handleCloseModal = () => {
     setShowBookModal(false);

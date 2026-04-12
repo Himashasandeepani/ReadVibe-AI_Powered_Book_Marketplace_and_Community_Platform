@@ -141,7 +141,7 @@ const BookDetailsModal = ({
                 reviewItems.map((review, index) => (
                   <div key={index} className="mb-3 p-3 border rounded">
                     <div className="d-flex align-items-center mb-2">
-                      <span className="fw-bold me-2">
+                      <span className="fw-bold me-2" style={{ fontSize: "0.95rem" }}>
                         <FontAwesomeIcon icon={faUser} className="me-1" />
                         {review.userName || review.user || "Reader"}
                       </span>
@@ -150,11 +150,13 @@ const BookDetailsModal = ({
                       </span>
                     </div>
                     {review.title ? <div className="fw-semibold mb-1">{review.title}</div> : null}
-                    <p className="mb-0">{review.text || review.comment}</p>
+                    <p className="mb-0" style={{ fontSize: "0.92rem" }}>
+                      {review.text || review.comment}
+                    </p>
                   </div>
                 ))
               ) : (
-                <p>No reviews yet. Be the first to review this book! </p>
+                <p style={{ fontSize: "0.92rem" }}>No reviews yet. Be the first to review this book! </p>
               )}
             </div>
           </Col>

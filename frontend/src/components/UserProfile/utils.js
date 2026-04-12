@@ -3,6 +3,8 @@ import { getCurrentUser, setCurrentUser } from "../../utils/auth";
 import { createBookRequestApi } from "../../utils/communityApi";
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const BOOK_REVIEWS_STORAGE_KEY = "bookReviews";
+const BOOK_REVIEWS_UPDATED_EVENT = "book-reviews-updated";
 
 const handleApi = async (path, options = {}) => {
   const { headers = {}, ...restOptions } = options;
@@ -80,6 +82,104 @@ const normalizeBookRequest = (request) => ({
   adminNotes: request?.adminNotes || request?.stock_managerNotes || "",
 });
 
+const getBookReviewDisplayName = (user) => user?.fullName || user?.name || user?.username || "Reader";
+
+const emitBookReviewsUpdated = () => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(BOOK_REVIEWS_UPDATED_EVENT));
+};
+
+export const getStoredBookReviews = () => {
+  try {
+    const storedReviews = JSON.parse(localStorage.getItem(BOOK_REVIEWS_STORAGE_KEY));
+    return Array.isArray(storedReviews) ? storedReviews : [];
+  } catch {
+    return [];
+  }
+};
+
+export const getBookReviewsForBook = (bookId) => {
+  const normalizedBookId = String(bookId ?? "");
+  return getStoredBookReviews().filter((review) => String(review.bookId) === normalizedBookId);
+};
+
+export const updateBookReviewCache = (review, book, user) => {
+  if (!review) return;
+
+  try {
+    const storedReviews = getStoredBookReviews();
+    const normalizedReview = {
+      id: review.id ?? `review-${Date.now()}`,
+      bookId: String(review.bookId ?? book?.id ?? ""),
+      bookTitle: book?.title || review.bookTitle || "",
+      bookAuthor: book?.author || review.bookAuthor || "",
+      bookImage: book?.image || review.bookImage || "",
+      rating: review.rating ?? 0,
+      title: review.title || "",
+      text: review.text || review.comment || "",
+      recommend: Boolean(review.recommend),
+      date: review.date || review.createdAt || new Date().toISOString(),
+      userName: review.userName || getBookReviewDisplayName(user),
+    };
+
+    const nextReviews = [
+      normalizedReview,
+      ...storedReviews.filter((item) => String(item.id) !== String(normalizedReview.id)),
+    ];
+
+    localStorage.setItem(BOOK_REVIEWS_STORAGE_KEY, JSON.stringify(nextReviews));
+    emitBookReviewsUpdated();
+  } catch (error) {
+    console.error("Failed to update book review cache", error);
+  }
+};
+
+const normalizeIdentityValue = (value) => {
+  if (value === null || value === undefined) return "";
+  return String(value).trim().toLowerCase();
+};
+
+const getUserCommunityPostCount = (user) => {
+  if (!user?.id && !user?.username && !user?.name && !user?.fullName) {
+    return 0;
+  }
+
+  try {
+    const storedPosts = JSON.parse(localStorage.getItem("communityPosts")) || [];
+    const adminPosts = JSON.parse(localStorage.getItem("adminCommunityPosts")) || [];
+    const posts = Array.isArray(storedPosts) && storedPosts.length > 0 ? storedPosts : adminPosts;
+
+    const userIdentifiers = new Set(
+      [
+        user.id,
+        user.username,
+        user.name,
+        user.fullName,
+        user.userFullName,
+      ]
+        .filter(Boolean)
+        .map(normalizeIdentityValue),
+    );
+
+    return posts.filter((post) => {
+      const postIdentifiers = [
+        post?.userId,
+        post?.username,
+        post?.user,
+        post?.userFullName,
+        post?.userDisplay?.name,
+        post?.userDisplay?.avatar,
+      ]
+        .filter(Boolean)
+        .map(normalizeIdentityValue);
+
+      return postIdentifiers.some((identifier) => userIdentifiers.has(identifier));
+    }).length;
+  } catch {
+    return 0;
+  }
+};
+
 export const loadUserData = async (user) => {
   if (!user?.id) {
     return {
@@ -105,14 +205,17 @@ export const loadUserData = async (user) => {
     orders: (data.orders || []).map(normalizeOrder),
     reviews: (data.reviews || []).map(normalizeReview),
     bookRequests: (data.bookRequests || []).map(normalizeBookRequest),
-    userStats: data.userStats || {
-      booksRead: 0,
-      reviewsWritten: 0,
-      wishlistCount: 0,
-      communityPosts: 0,
-      myBookRequests: 0,
-    },
     recentActivity: (data.recentActivity || []).map(normalizeActivity),
+    userStats: {
+      ...(data.userStats || {
+        booksRead: 0,
+        reviewsWritten: 0,
+        wishlistCount: 0,
+        communityPosts: 0,
+        myBookRequests: 0,
+      }),
+      communityPosts: getUserCommunityPostCount(user),
+    },
   };
 };
 
@@ -157,7 +260,25 @@ export const submitReview = async (user, book, reviewData, orderId = null) => {
     headers: { "x-user-id": user.id },
   });
 
-  return normalizeReview(data.review);
+  const savedReview = normalizeReview(data.review);
+  updateBookReviewCache(
+    {
+      ...savedReview,
+      title: reviewData.title || savedReview.title,
+      text: reviewData.text || savedReview.text,
+      recommend: reviewData.recommend,
+      rating: reviewData.rating ?? savedReview.rating,
+      userName: getBookReviewDisplayName(user),
+      bookId: savedReview.bookId || book?.id,
+      bookTitle: book?.title,
+      bookAuthor: book?.author,
+      bookImage: book?.image,
+    },
+    book,
+    user,
+  );
+
+  return savedReview;
 };
 
 export const deleteReview = async (reviewId, userId) => {

@@ -34,6 +34,7 @@ import {
   addToWishlist,
 } from "../utils/helpers";
 import { getCurrentUser as getNormalizedCurrentUser } from "../utils/auth";
+import { getBookReviewsForBook } from "../components/UserProfile/utils";
 import { setCart } from "../store/slices/cartSlice";
 import { addCartItemApi, fetchCartApi } from "../utils/cartApi";
 import { fetchBooksFromApi, fetchBookByIdApi } from "../components/StockManager/utils";
@@ -59,7 +60,8 @@ const DEFAULT_FILTERS = {
   minPrice: 0,
   maxPrice: 10000,
   minRating: 4.0,
-  inStock: true,
+  minReviews: 0,
+  inStock: false,
   preOrder: false,
 };
 
@@ -85,6 +87,30 @@ const Marketplace = () => {
       })),
     [resolveBookImage],
   );
+
+  const mergeBookReviews = useCallback((book) => {
+    if (!book) return book;
+
+    const cachedReviews = getBookReviewsForBook(book.id);
+    if (cachedReviews.length === 0) return book;
+
+    const nextReviewsList = [
+      ...(Array.isArray(book.reviewsList) ? book.reviewsList : []),
+      ...cachedReviews,
+    ].filter((review, index, allReviews) => {
+      const key = `${review.id || review.userName || review.user || index}-${review.text || review.comment || ""}`;
+      return allReviews.findIndex((item, reviewIndex) => {
+        const itemKey = `${item.id || item.userName || item.user || reviewIndex}-${item.text || item.comment || ""}`;
+        return itemKey === key;
+      }) === index;
+    });
+
+    return {
+      ...book,
+      reviews: Math.max(Number(book.reviews) || 0, nextReviewsList.length),
+      reviewsList: nextReviewsList,
+    };
+  }, []);
 
   const [allBooks, setAllBooks] = useState([]);
   const [filters, setFilters] = useState(() => ({ ...DEFAULT_FILTERS }));
@@ -324,7 +350,7 @@ const Marketplace = () => {
   };
 
   const handleViewDetails = (book) => {
-    setSelectedBook(book);
+    setSelectedBook(mergeBookReviews(book));
     setShowBookModal(true);
 
     const loadBookDetails = async () => {
@@ -342,6 +368,11 @@ const Marketplace = () => {
                     detailedBook.reviews ??
                     detailedBook.reviewsList?.length ??
                     current.reviews,
+                  reviewsList: mergeBookReviews({
+                    ...current,
+                    ...detailedBook,
+                    reviewsList: detailedBook.reviewsList || current.reviewsList || [],
+                  }).reviewsList,
                 }
               : current,
           );
@@ -353,6 +384,15 @@ const Marketplace = () => {
 
     void loadBookDetails();
   };
+
+  useEffect(() => {
+    const handleBookReviewsUpdated = () => {
+      setSelectedBook((current) => mergeBookReviews(current));
+    };
+
+    window.addEventListener("book-reviews-updated", handleBookReviewsUpdated);
+    return () => window.removeEventListener("book-reviews-updated", handleBookReviewsUpdated);
+  }, [mergeBookReviews]);
 
   const getCategoryIcon = (category) => {
     const icons = {

@@ -131,6 +131,8 @@ export const addToWishlist = async (bookId, userId) => {
 // Filter books function
 export const filterBooks = (filters, booksArray) => {
   let filtered = [...booksArray];
+  const minRating = Number(filters.minRating) || 0;
+  const minReviews = Number(filters.minReviews) || 0;
 
   if (filters.category && filters.category !== 'all') {
     filtered = filtered.filter(book => book.category === filters.category);
@@ -144,8 +146,12 @@ export const filterBooks = (filters, booksArray) => {
     filtered = filtered.filter(book => book.price <= filters.maxPrice);
   }
 
-  if (filters.minRating) {
-    filtered = filtered.filter(book => book.rating >= filters.minRating);
+  if (minRating > 0) {
+    filtered = filtered.filter((book) => Number(book.rating) >= minRating);
+  }
+
+  if (minReviews > 0) {
+    filtered = filtered.filter((book) => Number(book.reviews) >= minReviews);
   }
 
   if (filters.inStock) {

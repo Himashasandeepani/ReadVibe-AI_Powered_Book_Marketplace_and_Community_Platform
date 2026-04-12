@@ -8,6 +8,7 @@ const CreatePostModal = ({
   postContentRef,
   postCategory,
   setPostCategory,
+  postCategories,
   bookName,
   setBookName,
   handleCreatePost,
@@ -55,11 +56,11 @@ const CreatePostModal = ({
                     onChange={(e) => setPostCategory(e.target.value)}
                     required
                   >
-                    <option value="Discussion">Discussion</option>
-                    <option value="Book Review">Book Review</option>
-                    <option value="Recommendation">Recommendation</option>
-                    <option value="Question">Question</option>
-                    <option value="Announcement">Announcement</option>
+                    {postCategories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="col-md-6 mb-3">

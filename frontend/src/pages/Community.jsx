@@ -167,15 +167,16 @@ const Community = () => {
     reason: "",
   });
 
+  const postCategories = [
+    "Discussion",
+    "Book Review",
+    "Recommendation",
+    "Question",
+    "Announcement",
+  ];
+
   const popularTags = [
-    "#Fantasy",
-    "#SciFi",
-    "#Mystery",
-    "#Romance",
-    "#Classics",
-    "#Biography",
-    "#SelfHelp",
-    "#Thriller",
+    ...postCategories,
   ];
 
   useEffect(() => {
@@ -728,6 +729,8 @@ const Community = () => {
         postContentRef={postContentRef}
         postCategory={postCategory}
         setPostCategory={setPostCategory}
+        postCategories={postCategories}
+        popularTags={popularTags}
         bookName={bookName}
         setBookName={setBookName}
         handleCreatePost={handleCreatePost}

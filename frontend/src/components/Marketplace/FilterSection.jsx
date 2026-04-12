@@ -118,6 +118,23 @@ const FilterSection = ({
                 </Button>
               </div>
             </div>
+
+            <div className="filter-group mb-3">
+              <Form.Label className="fw-medium">Minimum Reviews</Form.Label>
+              <Form.Control
+                type="number"
+                name="minReviews"
+                value={filters.minReviews}
+                onChange={handleFilterChange}
+                min="0"
+                step="1"
+                size="sm"
+                placeholder="e.g. 20"
+              />
+              <Form.Text className="text-muted">
+                Show only books with at least this many reviews.
+              </Form.Text>
+            </div>
           </Col>
 
           <Col md={3}>
