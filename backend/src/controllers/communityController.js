@@ -46,7 +46,7 @@ export const getCommunityPost = async (req, res, next) => {
 export const createCommunityPost = async (req, res, next) => {
   try {
     const userId = ensureUserId(req);
-    const { category, content, bookId } = req.body;
+    const { category, content, bookId, bookTitle } = req.body;
     const parsedBookId = Number(bookId);
 
     const post = await createPost({
@@ -54,6 +54,7 @@ export const createCommunityPost = async (req, res, next) => {
       category: category || null,
       content,
       bookId: Number.isInteger(parsedBookId) && parsedBookId > 0 ? parsedBookId : null,
+      bookTitle: typeof bookTitle === 'string' && bookTitle.trim() ? bookTitle.trim() : null,
     });
     res.status(201).json({ post });
   } catch (err) {

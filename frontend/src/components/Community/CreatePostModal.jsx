@@ -8,8 +8,8 @@ const CreatePostModal = ({
   postContentRef,
   postCategory,
   setPostCategory,
-  selectedBook,
-  setSelectedBook,
+  bookName,
+  setBookName,
   handleCreatePost,
 }) => {
   if (!showCreatePostModal) return null;
@@ -64,27 +64,16 @@ const CreatePostModal = ({
                 </div>
                 <div className="col-md-6 mb-3">
                   <label className="form-label fw-semibold">
-                    Add a book reference (optional)
+                    Book name (optional)
                   </label>
-                  <select
-                    className="form-select"
-                    value={selectedBook}
-                    onChange={(e) => setSelectedBook(e.target.value)}
-                  >
-                    <option value="">Select a book...</option>
-                    <option value="The Midnight Library by Matt Haig">
-                      The Midnight Library by Matt Haig
-                    </option>
-                    <option value="Project Hail Mary by Andy Weir">
-                      Project Hail Mary by Andy Weir
-                    </option>
-                    <option value="Dune by Frank Herbert">
-                      Dune by Frank Herbert
-                    </option>
-                    <option value="The Hobbit by J.R.R. Tolkien">
-                      The Hobbit by J.R.R. Tolkien
-                    </option>
-                  </select>
+                  <input
+                    className="form-control"
+                    type="text"
+                    value={bookName}
+                    onChange={(e) => setBookName(e.target.value)}
+                    placeholder="Type the book name..."
+                    maxLength="120"
+                  />
                 </div>
               </div>
               <div className="alert alert-info">

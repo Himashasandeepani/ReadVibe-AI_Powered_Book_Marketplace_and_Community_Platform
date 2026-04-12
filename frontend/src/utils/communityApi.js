@@ -1,9 +1,18 @@
 const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
+const emitBookRequestsUpdated = () => {
+  window.dispatchEvent(new CustomEvent("book-requests-updated"));
+};
+
 const handleApi = async (path, options = {}) => {
+  const { headers = {}, ...restOptions } = options;
+
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options,
+    ...restOptions,
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+    },
   });
 
   const data = await res.json().catch(() => ({}));
@@ -28,7 +37,7 @@ export const fetchCommunityPostWithCommentsApi = async (postId) => {
   return { post: data.post, comments: data.comments || [] };
 };
 
-export const createCommunityPostApi = async ({ userId, content, category, bookId }) => {
+export const createCommunityPostApi = async ({ userId, content, category, bookId, bookTitle }) => {
   if (!userId) throw new Error("userId is required to create a post");
 
   const body = {
@@ -39,6 +48,10 @@ export const createCommunityPostApi = async ({ userId, content, category, bookId
 
   if (bookId) {
     body.bookId = bookId;
+  }
+
+  if (bookTitle) {
+    body.bookTitle = bookTitle;
   }
 
   const data = await handleApi(`/api/community/posts`, {
@@ -106,5 +119,22 @@ export const createBookRequestApi = async ({
     },
   });
 
+  emitBookRequestsUpdated();
+
+  return data.request;
+};
+
+export const fetchBookRequestsApi = async () => {
+  const data = await handleApi(`/api/community/requests`);
+  return data.requests || [];
+};
+
+export const updateBookRequestStatusApi = async (requestId, status) => {
+  const data = await handleApi(`/api/community/requests/${requestId}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  });
+
+  emitBookRequestsUpdated();
   return data.request;
 };

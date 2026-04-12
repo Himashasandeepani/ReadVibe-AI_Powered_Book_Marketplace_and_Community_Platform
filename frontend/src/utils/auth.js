@@ -21,7 +21,7 @@ const normalizeUser = (user) => {
 export const setCurrentUser = (user) => {
   localStorage.setItem('currentUser', JSON.stringify(normalizeUser(user)));
   // Trigger storage event for other tabs
-  window.dispatchEvent(new Event('storage'));
+  setTimeout(() => window.dispatchEvent(new Event('storage')), 0);
 };
 
 export const getCurrentUser = () => {

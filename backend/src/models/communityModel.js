@@ -9,7 +9,8 @@ const postBaseSelect = `
     p.category,
     p.content,
     p.book_id,
-    b.title AS book_title,
+    p.book_title AS post_book_title,
+    b.title AS linked_book_title,
     p.status,
     p.created_at,
     p.updated_at,
@@ -34,7 +35,7 @@ const mapPostRow = (row) => ({
   category: row.category,
   content: row.content,
   bookId: row.book_id,
-  bookTitle: row.book_title,
+  bookTitle: row.post_book_title || row.linked_book_title,
   status: row.status,
   likedByUserIds: Array.isArray(row.liked_by_user_ids)
     ? row.liked_by_user_ids.map((id) => Number(id)).filter((id) => Number.isInteger(id))
@@ -53,11 +54,14 @@ const ensureTables = async () => {
       category TEXT,
       content TEXT NOT NULL,
       book_id BIGINT REFERENCES books(id) ON DELETE SET NULL,
+      book_title TEXT,
       status TEXT DEFAULT 'active',
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     );
   `);
+
+  await query(`ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS book_title TEXT;`);
 
   await query(`
     CREATE TABLE IF NOT EXISTS community_comments (
@@ -111,25 +115,25 @@ const ensureTablesWithRetry = async (attempt = 1) => {
 void ensureTablesWithRetry();
 
 export const listPosts = async () => {
-  const { rows } = await query(`${postBaseSelect} GROUP BY p.id, u.username, u.full_name, b.title ORDER BY p.created_at DESC`);
+  const { rows } = await query(`${postBaseSelect} GROUP BY p.id, u.username, u.full_name, p.book_title, b.title ORDER BY p.created_at DESC`);
   return rows.map(mapPostRow);
 };
 
 export const getPostById = async (id) => {
   const { rows } = await query(
-    `${postBaseSelect} WHERE p.id = $1 GROUP BY p.id, u.username, u.full_name, b.title`,
+    `${postBaseSelect} WHERE p.id = $1 GROUP BY p.id, u.username, u.full_name, p.book_title, b.title`,
     [id]
   );
   if (!rows[0]) return null;
   return mapPostRow(rows[0]);
 };
 
-export const createPost = async ({ userId, category, content, bookId }) => {
+export const createPost = async ({ userId, category, content, bookId, bookTitle }) => {
   const { rows } = await query(
-    `INSERT INTO community_posts (user_id, category, content, book_id)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO community_posts (user_id, category, content, book_id, book_title)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING id`,
-    [userId, category || null, content, bookId || null]
+    [userId, category || null, content, bookId || null, bookTitle || null]
   );
   return getPostById(rows[0].id);
 };
@@ -204,8 +208,8 @@ export const listBookRequests = async () => {
   );
 
   return rows.map((row) => ({
-    id: row.id,
-    userId: row.user_id,
+    id: Number(row.id),
+    userId: row.user_id !== null && row.user_id !== undefined ? Number(row.user_id) : null,
     username: row.username,
     userFullName: row.full_name,
     userEmail: row.email,
@@ -253,8 +257,8 @@ export const createBookRequest = async ({
 
   const row = result[0];
   return {
-    id: row.id,
-    userId: row.user_id,
+    id: Number(row.id),
+    userId: row.user_id !== null && row.user_id !== undefined ? Number(row.user_id) : null,
     username: row.username,
     userFullName: row.full_name,
     userEmail: row.email,
@@ -292,8 +296,8 @@ export const updateBookRequestStatus = async (id, status) => {
 
   const row = rows[0];
   return {
-    id: row.id,
-    userId: row.user_id,
+    id: Number(row.id),
+    userId: row.user_id !== null && row.user_id !== undefined ? Number(row.user_id) : null,
     username: row.username,
     userFullName: row.full_name,
     userEmail: row.email,

@@ -45,6 +45,7 @@ router.post(
   [
     body('content').trim().notEmpty().withMessage('Content is required'),
     body('category').optional().isString(),
+    body('bookTitle').optional().isString(),
   ],
   handleValidation,
   createCommunityPost

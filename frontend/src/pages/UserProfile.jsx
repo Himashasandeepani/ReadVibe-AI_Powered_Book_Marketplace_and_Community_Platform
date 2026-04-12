@@ -121,12 +121,14 @@ const UserProfile = () => {
     window.addEventListener("focus", handleRefresh);
     window.addEventListener("wishlist-updated", handleRefresh);
     window.addEventListener("cart-updated", handleRefresh);
+    window.addEventListener("book-requests-updated", handleRefresh);
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("focus", handleRefresh);
       window.removeEventListener("wishlist-updated", handleRefresh);
       window.removeEventListener("cart-updated", handleRefresh);
+      window.removeEventListener("book-requests-updated", handleRefresh);
     };
   }, [user, navigate]);
 
@@ -139,7 +141,37 @@ const UserProfile = () => {
   };
 
   const handleSubmitBookRequest = async (requestData) => {
-    await submitBookRequest(user, requestData);
+    const createdRequest = await submitBookRequest(user, requestData);
+
+    if (createdRequest) {
+      const normalizedRequest = {
+        ...createdRequest,
+        userName: createdRequest.userFullName || createdRequest.username || user.name || "User",
+        userEmail: createdRequest.userEmail || user.email || "",
+        dateRequested: createdRequest.createdAt || new Date().toISOString(),
+        dateUpdated: createdRequest.updatedAt || createdRequest.createdAt || new Date().toISOString(),
+        status:
+          typeof createdRequest.status === "string"
+            ? createdRequest.status.charAt(0).toUpperCase() + createdRequest.status.slice(1).toLowerCase()
+            : "Pending",
+      };
+
+      setBookRequests((prev) => [normalizedRequest, ...prev]);
+      setUserStats((prev) => ({
+        ...prev,
+        myBookRequests: (prev.myBookRequests || 0) + 1,
+      }));
+      setRecentActivity((prev) => [
+        {
+          type: "book-request",
+          text: `You added a book request for "${normalizedRequest.bookTitle || requestData.title}"`,
+          time: normalizedRequest.dateRequested,
+          icon: "book",
+        },
+        ...prev,
+      ]);
+    }
+
     await initializeUserData(user);
     setShowRequestModal(false);
     showNotification("Book request submitted successfully!", "success");

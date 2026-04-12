@@ -5,9 +5,14 @@ import { createBookRequestApi } from "../../utils/communityApi";
 const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 const handleApi = async (path, options = {}) => {
+  const { headers = {}, ...restOptions } = options;
+
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options,
+    ...restOptions,
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+    },
   });
 
   const data = await res.json().catch(() => ({}));
@@ -62,6 +67,19 @@ const normalizeActivity = (activity) => ({
   time: activity?.time ? formatDate(activity.time) : "Recently",
 });
 
+const normalizeBookRequest = (request) => ({
+  ...request,
+  userName: request?.userFullName || request?.username || "User",
+  userEmail: request?.userEmail || "",
+  dateRequested: request?.createdAt || request?.dateRequested,
+  dateUpdated: request?.updatedAt || request?.dateUpdated || request?.createdAt,
+  status:
+    typeof request?.status === "string"
+      ? request.status.charAt(0).toUpperCase() + request.status.slice(1).toLowerCase()
+      : request?.status || "Pending",
+  adminNotes: request?.adminNotes || request?.stock_managerNotes || "",
+});
+
 export const loadUserData = async (user) => {
   if (!user?.id) {
     return {
@@ -86,7 +104,7 @@ export const loadUserData = async (user) => {
   return {
     orders: (data.orders || []).map(normalizeOrder),
     reviews: (data.reviews || []).map(normalizeReview),
-    bookRequests: data.bookRequests || [],
+    bookRequests: (data.bookRequests || []).map(normalizeBookRequest),
     userStats: data.userStats || {
       booksRead: 0,
       reviewsWritten: 0,

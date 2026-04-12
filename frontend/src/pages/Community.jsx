@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../styles/pages/Community.css";
@@ -151,7 +151,7 @@ const Community = () => {
   const [showRequestBookModal, setShowRequestBookModal] = useState(false);
   const [postContent, setPostContent] = useState("");
   const [postCategory, setPostCategory] = useState("Discussion");
-  const [selectedBook, setSelectedBook] = useState("");
+  const [bookName, setBookName] = useState("");
   const postContentRef = useRef(null);
   const [commentInputs, setCommentInputs] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
@@ -164,12 +164,6 @@ const Community = () => {
     category: "",
     reason: "",
   });
-
-  const topContributors = [
-    { name: "John Doe", avatar: "JD", posts: 124 },
-    { name: "Sarah Johnson", avatar: "SJ", posts: 98 },
-    { name: "Mike Brown", avatar: "MB", posts: 76 },
-  ];
 
   const popularTags = [
     "#Fantasy",
@@ -269,6 +263,32 @@ const Community = () => {
     return "User";
   };
 
+  const topContributors = useMemo(() => {
+    const contributorMap = new Map();
+
+    communityPosts.forEach((post) => {
+      const name = getUserName(post);
+      const avatar = getUserAvatar(post);
+      const key = post.userId || post.user || name;
+      const existing = contributorMap.get(key) || {
+        name,
+        avatar,
+        posts: 0,
+      };
+
+      contributorMap.set(key, {
+        ...existing,
+        name,
+        avatar,
+        posts: existing.posts + 1,
+      });
+    });
+
+    return Array.from(contributorMap.values())
+      .sort((a, b) => b.posts - a.posts || a.name.localeCompare(b.name))
+      .slice(0, 3);
+  }, [communityPosts]);
+
   // Enhanced function to check if user can create post
   const canCreatePost = () => {
     if (!currentUser) {
@@ -327,14 +347,13 @@ const Community = () => {
         userId: currentUser.id,
         content: trimmedContent,
         category: postCategory,
-        // selectedBook is a free-text reference, not a real bookId
-        bookId: selectedBook || undefined,
+        bookTitle: bookName || undefined,
       });
 
       const uiPostFromApi = mapApiPostToUi(createdPost);
       const uiPost = {
         ...uiPostFromApi,
-        bookReference: selectedBook || uiPostFromApi.bookReference,
+        bookReference: bookName || uiPostFromApi.bookReference,
       };
 
       setCommunityPosts((prev) => [uiPost, ...prev]);
@@ -354,7 +373,7 @@ const Community = () => {
 
       setPostContent("");
       setPostCategory("Discussion");
-      setSelectedBook("");
+      setBookName("");
       setShowCreatePostModal(false);
       if (postContentRef.current) {
         postContentRef.current.value = "";
@@ -678,8 +697,8 @@ const Community = () => {
         postContentRef={postContentRef}
         postCategory={postCategory}
         setPostCategory={setPostCategory}
-        selectedBook={selectedBook}
-        setSelectedBook={setSelectedBook}
+        bookName={bookName}
+        setBookName={setBookName}
         handleCreatePost={handleCreatePost}
       />
 

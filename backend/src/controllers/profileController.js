@@ -15,7 +15,7 @@ const ensureUserId = (req) => {
   return parsed;
 };
 
-const buildRecentActivity = (orders, reviews) => {
+const buildRecentActivity = (orders, reviews, requests) => {
   const activities = [];
 
   const sortedOrders = [...orders].sort(
@@ -42,6 +42,18 @@ const buildRecentActivity = (orders, reviews) => {
     });
   });
 
+  const sortedRequests = [...requests].sort(
+    (a, b) => new Date(b.createdAt || b.updatedAt) - new Date(a.createdAt || a.updatedAt)
+  );
+  sortedRequests.slice(0, 1).forEach((request) => {
+    activities.push({
+      type: 'book-request',
+      text: `You added a book request for "${request.bookTitle}"`,
+      time: request.createdAt || request.updatedAt,
+      icon: 'book',
+    });
+  });
+
   activities.sort((a, b) => new Date(b.time) - new Date(a.time));
   return activities;
 };
@@ -63,7 +75,7 @@ export const getProfileSummary = async (req, res, next) => {
       listPosts(),
     ]);
 
-    const userRequests = allRequests.filter((r) => r.userId === userId);
+    const userRequests = allRequests.filter((r) => Number(r.userId) === userId);
     const userPosts = allPosts.filter((post) => post.userId === userId);
 
     const booksRead = orders.reduce(
@@ -80,7 +92,7 @@ export const getProfileSummary = async (req, res, next) => {
       myBookRequests: userRequests.length,
     };
 
-    const recentActivity = buildRecentActivity(orders, reviews);
+    const recentActivity = buildRecentActivity(orders, reviews, userRequests);
 
     res.json({
       user,

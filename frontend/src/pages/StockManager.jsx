@@ -20,6 +20,10 @@ import AddBookModal, {
 import AddPublisherModal from "../components/StockManager/Modals/AddPublisherModal";
 import TrackingModal from "../components/StockManager/Modals/TrackingModal";
 import RequestDetailsModal from "../components/StockManager/Modals/RequestDetailsModal";
+import {
+  fetchBookRequestsApi,
+  updateBookRequestStatusApi,
+} from "../utils/communityApi";
 
 // Import Utilities
 import {
@@ -149,8 +153,7 @@ const StockManager = () => {
   });
 
   const [bookRequests, setBookRequests] = useState(() => {
-    if (typeof window === "undefined") return [];
-    return JSON.parse(window.localStorage.getItem("bookRequests")) || [];
+    return [];
   });
 
   const computeStockStatus = useCallback((stock, minStock) => {
@@ -242,6 +245,24 @@ const StockManager = () => {
     };
   }, []);
 
+  const normalizeBookRequest = useCallback((request) => {
+    if (!request) return null;
+
+    const normalizedStatus =
+      typeof request.status === "string"
+        ? request.status.charAt(0).toUpperCase() + request.status.slice(1).toLowerCase()
+        : "Pending";
+
+    return {
+      ...request,
+      userName: request.userFullName || request.username || "User",
+      userEmail: request.userEmail || "",
+      dateRequested: request.createdAt || request.dateRequested || new Date().toISOString(),
+      dateUpdated: request.updatedAt || request.dateUpdated || request.createdAt || new Date().toISOString(),
+      status: normalizedStatus,
+    };
+  }, []);
+
   useEffect(() => {
     const loadOrdersFromApi = async () => {
       try {
@@ -256,6 +277,24 @@ const StockManager = () => {
 
     loadOrdersFromApi();
   }, [normalizeOrder, persistOrders]);
+
+  const loadBookRequestsFromApi = useCallback(async () => {
+    try {
+      const apiRequests = await fetchBookRequestsApi();
+      if (Array.isArray(apiRequests)) {
+        const normalized = apiRequests.map((request) => normalizeBookRequest(request)).filter(Boolean);
+        setBookRequests(normalized);
+        localStorage.setItem("bookRequests", JSON.stringify(normalized));
+        window.dispatchEvent(new Event("storage"));
+      }
+    } catch (error) {
+      console.error("Failed to load book requests from API", error);
+    }
+  }, [normalizeBookRequest]);
+
+  useEffect(() => {
+    void loadBookRequestsFromApi();
+  }, [loadBookRequestsFromApi]);
 
   useEffect(() => {
     const loadPublishersFromApi = async () => {
@@ -279,10 +318,6 @@ const StockManager = () => {
 
   const loadAllData = useCallback(() => {
     if (typeof window === "undefined") return;
-
-    const storedRequests =
-      JSON.parse(window.localStorage.getItem("bookRequests")) || [];
-    setBookRequests(storedRequests);
 
     const storedBooks = JSON.parse(window.localStorage.getItem("stockBooks"));
     if (storedBooks) setStockBooks(storedBooks);
@@ -308,7 +343,6 @@ const StockManager = () => {
         e.key === "stockBooks" ||
         e.key === "publishers" ||
         e.key === "stockOrders" ||
-        e.key === "bookRequests" ||
         e.key === "authors"
       ) {
         loadAllData();
@@ -328,6 +362,17 @@ const StockManager = () => {
     },
     [loadAllData, setCurrentUser],
   );
+
+  useEffect(() => {
+    const handleBookRequestsUpdated = () => {
+      void loadBookRequestsFromApi();
+    };
+
+    window.addEventListener("book-requests-updated", handleBookRequestsUpdated);
+    return () => {
+      window.removeEventListener("book-requests-updated", handleBookRequestsUpdated);
+    };
+  }, [loadBookRequestsFromApi]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -925,43 +970,33 @@ const StockManager = () => {
   };
 
   const handleApproveRequest = (requestId, notes = "") => {
-    const updatedRequests = bookRequests.map((request) => {
-      if (request.id === requestId) {
-        return {
-          ...request,
-          status: "Approved",
-          stock_managerNotes: notes || request.stock_managerNotes,
-          dateUpdated: new Date().toISOString(),
-          updatedBy: currentUser.name,
-        };
+    const approve = async () => {
+      try {
+        await updateBookRequestStatusApi(requestId, "Approved");
+        await loadBookRequestsFromApi();
+        setShowRequestDetailsModal(false);
+        showNotification("Request approved successfully!", "success");
+      } catch (error) {
+        showNotification(error.message || "Failed to approve request", "danger");
       }
-      return request;
-    });
+    };
 
-    setBookRequests(updatedRequests);
-    localStorage.setItem("bookRequests", JSON.stringify(updatedRequests));
-    setShowRequestDetailsModal(false);
-    showNotification("Request approved successfully!", "success");
+    void approve();
   };
 
   const handleRejectRequest = (requestId, notes = "") => {
-    const updatedRequests = bookRequests.map((request) => {
-      if (request.id === requestId) {
-        return {
-          ...request,
-          status: "Rejected",
-          stock_managerNotes: notes || request.stock_managerNotes,
-          dateUpdated: new Date().toISOString(),
-          updatedBy: currentUser.name,
-        };
+    const reject = async () => {
+      try {
+        await updateBookRequestStatusApi(requestId, "Rejected");
+        await loadBookRequestsFromApi();
+        setShowRequestDetailsModal(false);
+        showNotification("Request rejected", "warning");
+      } catch (error) {
+        showNotification(error.message || "Failed to reject request", "danger");
       }
-      return request;
-    });
+    };
 
-    setBookRequests(updatedRequests);
-    localStorage.setItem("bookRequests", JSON.stringify(updatedRequests));
-    setShowRequestDetailsModal(false);
-    showNotification("Request rejected", "warning");
+    void reject();
   };
 
   const toggleFeaturedBook = (bookId) => {

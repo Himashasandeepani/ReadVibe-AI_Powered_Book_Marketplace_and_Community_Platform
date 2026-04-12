@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Container, Row, Col, Button, Form } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -10,107 +10,83 @@ import {
   faShareAlt,
   faPaperPlane,
   faUsers,
+  faInbox,
 } from "@fortawesome/free-solid-svg-icons";
+import {
+  fetchCommunityPostsApi,
+  fetchCommunityPostWithCommentsApi,
+} from "../../utils/communityApi";
 
 const CommunitySection = ({ currentUser }) => {
-  const [communityPosts, setCommunityPosts] = useState([
-    {
-      id: 1,
-      user: "John Doe",
-      initials: "JD",
-      time: "2 hours ago",
-      content: `"Just finished 'Project Hail Mary' and it's absolutely mind-blowing! The character development is incredible."`,
-      likes: 24,
-      comments: 8,
-      likedByUser: false,
-      commentsList: [
-        {
-          user: "Emily R.",
-          comment: `"I loved this book too! The ending was perfect."`,
-        },
-        {
-          user: "Mike T.",
-          comment: `"One of the best sci-fi books I've read this year!"`,
-        },
-      ],
-    },
-    {
-      id: 2,
-      user: "Sarah Johnson",
-      initials: "SJ",
-      time: "5 hours ago",
-      content: `"Looking for fantasy recommendations similar to Brandon Sanderson's works. Any suggestions?"`,
-      likes: 45,
-      comments: 12,
-      likedByUser: false,
-      commentsList: [
-        {
-          user: "David L.",
-          comment: `"Check out Robert Jordan's Wheel of Time series!"`,
-        },
-        {
-          user: "Anna K.",
-          comment: `"Patrick Rothfuss' books are amazing if you haven't read them."`,
-        },
-      ],
-    },
-  ]);
+  const [communityPosts, setCommunityPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [commentText, setCommentText] = useState("");
-  const [commentText2, setCommentText2] = useState("");
+  useEffect(() => {
+    const loadPosts = async () => {
+      setLoading(true);
+      try {
+        const posts = await fetchCommunityPostsApi();
+        const previewPosts = await Promise.all(
+          posts.slice(0, 2).map(async (post) => {
+            const details = await fetchCommunityPostWithCommentsApi(post.id);
+            const comments = Array.isArray(details.comments) ? details.comments : [];
+            const name = post.userFullName || post.username || "User";
+            const initials = name
+              .split(" ")
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((part) => part[0]?.toUpperCase() || "U")
+              .join("");
 
-  const handleLike = (postId) => {
+            return {
+              id: post.id,
+              user: name,
+              initials: initials || "US",
+              time: post.createdAt
+                ? new Date(post.createdAt).toLocaleString()
+                : "Recently",
+              content: post.content,
+              likes: Number(post.likesCount) || 0,
+              comments: Number(post.commentsCount) || comments.length || 0,
+              commentsList: comments.map((comment) => ({
+                user: comment.userFullName || comment.username || "User",
+                comment: comment.content,
+              })),
+            };
+          }),
+        );
+
+        setCommunityPosts(previewPosts);
+      } catch (error) {
+        console.error("Failed to load community posts for home preview", error);
+        setCommunityPosts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadPosts();
+  }, []);
+
+  const handleLike = () => {
     if (!currentUser) {
       alert("Please login to like posts");
       return;
     }
 
-    setCommunityPosts((prevPosts) =>
-      prevPosts.map((post) =>
-        post.id === postId
-          ? {
-              ...post,
-              likedByUser: !post.likedByUser,
-              likes: post.likedByUser ? post.likes - 1 : post.likes + 1,
-            }
-          : post,
-      ),
-    );
+    alert("Open the community page to like posts.");
   };
 
-  const handleAddComment = (postId, comment) => {
-    if (!comment.trim()) return;
-
-    const newComment = {
-      user: currentUser?.username || "You",
-      comment: comment,
-    };
-
-    setCommunityPosts((prevPosts) =>
-      prevPosts.map((post) =>
-        post.id === postId
-          ? {
-              ...post,
-              comments: post.comments + 1,
-              commentsList: [...post.commentsList, newComment],
-            }
-          : post,
-      ),
-    );
-
-    if (postId === 1) {
-      setCommentText("");
-    } else {
-      setCommentText2("");
+  const handleAddComment = () => {
+    if (!currentUser) {
+      alert("Please login to comment on posts");
+      return;
     }
 
-    alert("Comment added!");
+    alert("Open the community page to comment on posts.");
   };
 
-  const isLiked = (postId) => {
-    const post = communityPosts.find((p) => p.id === postId);
-    return post?.likedByUser || false;
-  };
+  const isLiked = () => false;
 
   const renderCommunityPost = (
     post,
@@ -216,25 +192,33 @@ const CommunitySection = ({ currentUser }) => {
         <div className="section-title-line"></div>
       </h2>
 
-      <Row>
-        <Col md={6}>
-          {renderCommunityPost(
-            communityPosts[0],
-            commentText,
-            setCommentText,
-            handleAddComment,
-          )}
-        </Col>
-
-        <Col md={6}>
-          {renderCommunityPost(
-            communityPosts[1],
-            commentText2,
-            setCommentText2,
-            handleAddComment,
-          )}
-        </Col>
-      </Row>
+      {loading ? (
+        <Row>
+          <Col xs={12} className="text-center py-5">
+            <p className="text-muted mb-0">Loading community posts...</p>
+          </Col>
+        </Row>
+      ) : communityPosts.length > 0 ? (
+        <Row>
+          {communityPosts.map((post) => (
+            <Col md={6} key={post.id}>
+              {renderCommunityPost(post, "", () => {}, handleAddComment)}
+            </Col>
+          ))}
+        </Row>
+      ) : (
+        <Row>
+          <Col xs={12}>
+            <div className="community-card text-center py-5">
+              <FontAwesomeIcon icon={faInbox} className="fa-3x text-muted mb-3" />
+              <h5 className="mb-2">No community posts yet</h5>
+              <p className="text-muted mb-0">
+                Be the first to start a discussion in the community.
+              </p>
+            </div>
+          </Col>
+        </Row>
+      )}
 
       <div className="text-center mt-4">
         <Link
