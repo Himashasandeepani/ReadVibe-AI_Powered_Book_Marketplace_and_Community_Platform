@@ -6,6 +6,7 @@ import {
   getOrderHandler,
   getOrdersHandler,
   updateOrderStatusHandler,
+  updateOrderTrackingHandler,
 } from '../controllers/orderController.js';
 
 const router = express.Router();
@@ -77,6 +78,22 @@ router.put(
   ],
   handleValidation,
   updateOrderStatusHandler
+);
+
+// @route   PUT /api/orders/:id/tracking
+// @desc    Update order tracking details
+router.put(
+  '/:id/tracking',
+  [
+    param('id').isInt().withMessage('Order id must be an integer'),
+    body('status').trim().notEmpty().withMessage('status is required'),
+    body('note').optional().isString(),
+    body('location').optional().isString(),
+    body('courier').optional().isString(),
+    body('trackingNumber').optional().isString(),
+  ],
+  handleValidation,
+  updateOrderTrackingHandler
 );
 
 export default router;

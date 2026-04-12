@@ -19,6 +19,11 @@ const ensureTables = async () => {
   `);
 
   await query(`
+    ALTER TABLE orders
+    ADD COLUMN IF NOT EXISTS tracking_updates JSONB NOT NULL DEFAULT '[]'::jsonb;
+  `);
+
+  await query(`
     CREATE TABLE IF NOT EXISTS order_items (
       id BIGSERIAL PRIMARY KEY,
       order_id BIGINT REFERENCES orders(id) ON DELETE CASCADE,
@@ -49,7 +54,7 @@ void ensureTablesWithRetry();
 
 const mapOrder = (row) => ({
   id: row.id,
-  userId: row.user_id,
+  userId: Number(row.user_id) || row.user_id,
   customer: row.customer_name || null,
   customerEmail: row.customer_email || null,
   status: row.status,
@@ -64,6 +69,24 @@ const mapOrder = (row) => ({
   updatedAt: row.updated_at,
   orderDate: row.created_at,
 });
+
+const mapOrderWithTracking = (row) => {
+  const trackingUpdates = Array.isArray(row.tracking_updates)
+    ? row.tracking_updates
+    : [];
+  const latestTrackingUpdate = trackingUpdates[trackingUpdates.length - 1] || null;
+
+  return {
+    ...mapOrder(row),
+    trackingUpdates,
+    trackingNumber: latestTrackingUpdate?.trackingNumber || null,
+    courier: latestTrackingUpdate?.courier || null,
+    trackingLocation: latestTrackingUpdate?.location || null,
+    trackingNote: latestTrackingUpdate?.note || null,
+    trackingStatus: latestTrackingUpdate?.status || null,
+    trackingUpdatedAt: latestTrackingUpdate?.timestamp || null,
+  };
+};
 
 const mapItem = (row) => ({
   id: row.id,
@@ -98,7 +121,7 @@ export const getOrderById = async (orderId) => {
     [orderId]
   );
   if (!rows[0]) return null;
-  const order = mapOrder(rows[0]);
+  const order = mapOrderWithTracking(rows[0]);
   const items = await getOrderItems(orderId);
   return { ...order, items, itemCount: items.length };
 };
@@ -114,7 +137,7 @@ export const getOrdersForUser = async (userId) => {
   );
   const orders = [];
   for (const row of rows) {
-    const order = mapOrder(row);
+    const order = mapOrderWithTracking(row);
     const items = await getOrderItems(row.id);
     orders.push({ ...order, items, itemCount: items.length });
   }
@@ -130,7 +153,7 @@ export const getAllOrders = async () => {
   );
   const orders = [];
   for (const row of rows) {
-    const order = mapOrder(row);
+    const order = mapOrderWithTracking(row);
     const items = await getOrderItems(row.id);
     orders.push({
       ...order,
@@ -148,6 +171,36 @@ export const updateOrderStatus = async (orderId, status) => {
      WHERE id = $2
      RETURNING id`,
     [status, orderId]
+  );
+
+  if (!rows[0]) return null;
+  return getOrderById(orderId);
+};
+
+export const updateOrderTracking = async (orderId, trackingUpdate) => {
+  const order = await getOrderById(orderId);
+  if (!order) return null;
+
+  const nextUpdate = {
+    status: trackingUpdate.status,
+    note: trackingUpdate.note || "",
+    location: trackingUpdate.location || "",
+    courier: trackingUpdate.courier || "",
+    trackingNumber: trackingUpdate.trackingNumber || "",
+    timestamp: trackingUpdate.timestamp || new Date().toISOString(),
+    updatedBy: trackingUpdate.updatedBy || null,
+  };
+
+  const nextTrackingUpdates = [...(order.trackingUpdates || []), nextUpdate];
+
+  const { rows } = await query(
+    `UPDATE orders
+     SET status = $1,
+         tracking_updates = $2,
+         updated_at = NOW()
+     WHERE id = $3
+     RETURNING id`,
+    [nextUpdate.status, JSON.stringify(nextTrackingUpdates), orderId]
   );
 
   if (!rows[0]) return null;

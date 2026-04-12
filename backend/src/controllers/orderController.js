@@ -1,4 +1,4 @@
-import { createOrder, getAllOrders, getOrderById, getOrdersForUser, updateOrderStatus } from '../models/orderModel.js';
+import { createOrder, getAllOrders, getOrderById, getOrdersForUser, updateOrderStatus, updateOrderTracking } from '../models/orderModel.js';
 import { getUserById } from '../models/userModel.js';
 import { sendOrderConfirmationEmail } from '../services/emailService.js';
 
@@ -67,8 +67,9 @@ export const getOrderHandler = async (req, res, next) => {
     const userId = ensureUser(req);
     const orderId = Number(req.params.id);
     const order = await getOrderById(orderId);
+    const orderUserId = Number(order?.userId);
 
-    if (!order || order.userId !== userId) {
+    if (!order || orderUserId !== userId) {
       return res.status(404).json({ error: 'Order not found' });
     }
 
@@ -83,6 +84,29 @@ export const updateOrderStatusHandler = async (req, res, next) => {
     const orderId = Number(req.params.id);
     const { status } = req.body || {};
     const order = await updateOrderStatus(orderId, status);
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    res.json({ order });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateOrderTrackingHandler = async (req, res, next) => {
+  try {
+    const orderId = Number(req.params.id);
+    const { status, note, location, courier, trackingNumber } = req.body || {};
+    const order = await updateOrderTracking(orderId, {
+      status,
+      note,
+      location,
+      courier,
+      trackingNumber,
+      updatedBy: req.body?.updatedBy,
+    });
 
     if (!order) {
       return res.status(404).json({ error: 'Order not found' });

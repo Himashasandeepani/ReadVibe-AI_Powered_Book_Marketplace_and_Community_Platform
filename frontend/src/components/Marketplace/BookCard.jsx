@@ -12,6 +12,7 @@ import {
   faTag,
 } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
+import createBookCoverPlaceholder from "../../utils/imagePlaceholders";
 
 const BookCard = ({
   book,
@@ -36,8 +37,7 @@ const BookCard = ({
           alt={book.title}
           onError={(e) => {
             e.target.onerror = null;
-            e.target.src =
-              "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover";
+            e.target.src = createBookCoverPlaceholder();
           }}
         />
         {!book.inStock && (

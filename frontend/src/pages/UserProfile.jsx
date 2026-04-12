@@ -245,8 +245,8 @@ const UserProfile = () => {
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
 
-    // Navigate to order confirmation page with orderId
-    navigate(`/order-confirmation?orderId=${orderId}`);
+    // Navigate to order confirmation page and open tracking details immediately
+    navigate(`/order-confirmation?orderId=${orderId}&view=tracking`);
   };
 
   const handleEditReview = (review) => {

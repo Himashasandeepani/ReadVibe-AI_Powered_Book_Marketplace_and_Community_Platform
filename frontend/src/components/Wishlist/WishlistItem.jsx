@@ -16,6 +16,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 // In WishlistItem.jsx, EditItemModal.jsx, etc.
 import { renderPriorityStars, formatPrice } from "./utils.jsx";
+import createBookCoverPlaceholder from "../../utils/imagePlaceholders";
 
 const WishlistItem = ({ item, onRemove, onAddToCart, onEditItem }) => {
   return (
@@ -46,8 +47,7 @@ const WishlistItem = ({ item, onRemove, onAddToCart, onEditItem }) => {
             className="wishlist-book-image"
             onError={(e) => {
               e.target.onerror = null;
-              e.target.src =
-                "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover";
+              e.target.src = createBookCoverPlaceholder();
             }}
           />
           {!item.inStock && (

@@ -46,6 +46,7 @@ import {
   updatePublisherApi,
   deletePublisherApi,
   updateOrderStatusApi,
+  updateOrderTrackingApi,
 } from "../components/StockManager/utils";
 
 const StockManager = () => {
@@ -880,38 +881,17 @@ const StockManager = () => {
       return;
     }
 
-    const trackingUpdates =
-      JSON.parse(localStorage.getItem("orderTrackingUpdates")) || [];
-
-    const newTrackingUpdate = {
-      orderId: selectedOrder.id,
-      status: trackingUpdate.status,
-      note: trackingUpdate.note,
-      location: trackingUpdate.location,
-      courier: trackingUpdate.courier,
-      trackingNumber: trackingUpdate.trackingNumber,
-      timestamp: new Date().toISOString(),
-      updatedBy: currentUser.name,
-    };
-
-    trackingUpdates.push(newTrackingUpdate);
-    localStorage.setItem(
-      "orderTrackingUpdates",
-      JSON.stringify(trackingUpdates),
-    );
-
-    // Update order status
     const save = async () => {
       try {
-        const updated = await updateOrderStatusApi(
-          selectedOrder.id,
-          trackingUpdate.status,
-        );
-        const normalized = {
-          ...normalizeOrder(updated),
+        const updated = await updateOrderTrackingApi(selectedOrder.id, {
+          status: trackingUpdate.status,
+          note: trackingUpdate.note,
+          location: trackingUpdate.location,
           courier: trackingUpdate.courier,
           trackingNumber: trackingUpdate.trackingNumber,
-        };
+          updatedBy: currentUser?.name,
+        });
+        const normalized = normalizeOrder(updated);
 
         const updatedOrders = stockOrders.map((order) =>
           String(order.id) === String(selectedOrder.id) ? normalized : order,

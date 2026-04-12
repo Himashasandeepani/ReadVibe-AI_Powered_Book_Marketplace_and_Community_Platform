@@ -3,6 +3,7 @@ import { Row, Col } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBoxOpen } from "@fortawesome/free-solid-svg-icons";
 import { formatPrice } from "./utils";
+import createBookCoverPlaceholder from "../../utils/imagePlaceholders";
 
 const OrderItemsSection = ({ items }) => {
   if (!items || items.length === 0) {
@@ -33,8 +34,7 @@ const OrderItemsSection = ({ items }) => {
                 className="order-item-image img-fluid rounded"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src =
-                    "https://via.placeholder.com/60x80/DBEAFE/1E3A5F?text=Book";
+                  e.target.src = createBookCoverPlaceholder("Book", 60, 80);
                 }}
               />
             </Col>

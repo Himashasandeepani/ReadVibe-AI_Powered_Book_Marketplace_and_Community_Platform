@@ -26,6 +26,7 @@ import {
   calculateOrderSummary,
   generateAddressPreview,
 } from "../components/DeliveryDetails/utils";
+import createBookCoverPlaceholder from "../utils/imagePlaceholders";
 
 import "../styles/pages/DeliveryDetails.css";
 
@@ -94,9 +95,7 @@ const getCheckoutCartItems = () => {
       title: book.title || "Unknown Book",
       author: book.author || "Unknown Author",
       price: book.price || 0,
-      image:
-        book.image ||
-        "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
+      image: book.image || createBookCoverPlaceholder(),
     };
   });
 };

@@ -90,6 +90,8 @@ export const updateCartCount = (cart) => {
   window.dispatchEvent(new CustomEvent('cart-updated', { detail: { count: totalItems } }));
 };
 
+import createBookCoverPlaceholder from "../../utils/imagePlaceholders";
+
 // Check if all items are in stock
 export const checkStockAvailability = (cart, books) => {
   return cart.filter((item) => {
@@ -109,7 +111,7 @@ export const prepareCheckoutData = (cart, books) => {
       title: book?.title || "Unknown Book",
       author: book?.author || "Unknown Author",
       price: book?.price || 0,
-      image: book?.image || "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
+      image: book?.image || createBookCoverPlaceholder(),
     };
   });
 

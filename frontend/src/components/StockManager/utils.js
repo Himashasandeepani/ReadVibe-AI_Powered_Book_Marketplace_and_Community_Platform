@@ -58,6 +58,14 @@ export const updateOrderStatusApi = async (orderId, status) => {
   return data.order;
 };
 
+export const updateOrderTrackingApi = async (orderId, payload) => {
+  const data = await handleApi(`/api/orders/${orderId}/tracking`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  return data.order;
+};
+
 export const fetchPublishersFromApi = async () => {
   const data = await handleApi("/api/publishers");
   return data.publishers || [];

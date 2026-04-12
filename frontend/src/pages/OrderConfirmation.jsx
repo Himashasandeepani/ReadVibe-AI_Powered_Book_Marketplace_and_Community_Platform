@@ -8,6 +8,7 @@ import { getCurrentUser } from "../utils/auth";
 import { showNotification } from "../utils/helpers";
 import { addItem } from "../store/slices/cartSlice";
 import { getOrderApi, getOrdersApi } from "../utils/orderApi";
+import createBookCoverPlaceholder from "../utils/imagePlaceholders";
 
 // Import Components
 import ProgressSteps from "../components/common/ProgressSteps";
@@ -31,6 +32,7 @@ import {
   calculateEstimatedDates,
   downloadInvoice,
   addSupportRequest,
+  getTrackingUpdates,
   shippingMethods,
 } from "../components/OrderConfirmation/utils";
 
@@ -60,8 +62,7 @@ const OrderConfirmation = () => {
         rating: 4.3,
         reviews: 128,
         inStock: true,
-        image:
-          "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
+        image: createBookCoverPlaceholder(),
       },
       {
         id: 2,
@@ -72,8 +73,7 @@ const OrderConfirmation = () => {
         rating: 4.8,
         reviews: 95,
         inStock: true,
-        image:
-          "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
+        image: createBookCoverPlaceholder(),
       },
       {
         id: 3,
@@ -84,8 +84,7 @@ const OrderConfirmation = () => {
         rating: 4.0,
         reviews: 210,
         inStock: true,
-        image:
-          "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
+        image: createBookCoverPlaceholder(),
       },
       {
         id: 4,
@@ -96,8 +95,7 @@ const OrderConfirmation = () => {
         rating: 4.9,
         reviews: 305,
         inStock: false,
-        image:
-          "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
+        image: createBookCoverPlaceholder(),
       },
     ],
     [],
@@ -128,6 +126,7 @@ const OrderConfirmation = () => {
                   image: item.image,
                 })) || [],
               shipping: fetched.shippingAddress || {},
+              trackingUpdates: fetched.trackingUpdates || [],
               totals: {
                 subtotal: fetched.subtotal,
                 shipping: fetched.shippingCost,
@@ -151,6 +150,7 @@ const OrderConfirmation = () => {
                   image: item.image,
                 })) || [],
               shipping: first.shippingAddress || {},
+              trackingUpdates: first.trackingUpdates || [],
               totals: {
                 subtotal: first.subtotal,
                 shipping: first.shippingCost,
@@ -171,7 +171,16 @@ const OrderConfirmation = () => {
     loadOrder();
   }, [currentUser, orderId]);
 
-  const trackingUpdates = [];
+  useEffect(() => {
+    if (order && searchParams.get("view") === "tracking") {
+      setShowTrackModal(true);
+    }
+  }, [order, searchParams]);
+
+  const trackingUpdates =
+    order?.trackingUpdates?.length > 0
+      ? order.trackingUpdates
+      : getTrackingUpdates(order?.id);
 
   const recommendedBooks = useMemo(() => {
     if (!order) return [];

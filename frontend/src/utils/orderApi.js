@@ -66,3 +66,11 @@ export const getOrderApi = async (userId, orderId) => {
   });
   return data.order;
 };
+
+export const updateOrderTrackingApi = async (orderId, payload) => {
+  const data = await handleApi(`/api/orders/${orderId}/tracking`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  return data.order;
+};
