@@ -1,6 +1,49 @@
 // Format price helper
 import { formatPrice, formatDate } from "../../utils/helpers";
 import { getCurrentUser } from "../../utils/auth";
+import { getOrderPaymentConfirmationKey } from "../Checkout/utils";
+
+const getStoredPaymentConfirmation = (orderId) => {
+  try {
+    const key = getOrderPaymentConfirmationKey(orderId);
+    const stored = JSON.parse(
+      localStorage.getItem(key) || sessionStorage.getItem(key) || "null",
+    );
+
+    if (!stored) return null;
+    if (orderId && String(stored.orderId) !== String(orderId)) {
+      return null;
+    }
+
+    return stored;
+  } catch {
+    return null;
+  }
+};
+
+export const getOrderDisplayDate = (order) =>
+  order?.orderDate ||
+  order?.createdAt ||
+  order?.updatedAt ||
+  getStoredPaymentConfirmation(order?.id)?.timestamp ||
+  null;
+
+export const getOrderPaymentInfo = (order) => {
+  const storedPayment = getStoredPaymentConfirmation(order?.id) || {};
+
+  return {
+    method:
+      order?.payment?.method ||
+      order?.paymentMethod ||
+      storedPayment.method ||
+      "Credit Card",
+    transactionId:
+      order?.payment?.transactionId ||
+      order?.transactionId ||
+      storedPayment.transactionId ||
+      "TXN_000000000",
+  };
+};
 
 // Shipping methods configuration
 export const shippingMethods = {
@@ -181,8 +224,9 @@ export const generateInvoiceContent = (order, user, trackingUpdates = []) => {
   }
 
   invoiceText += "Payment Information:\n";
-  invoiceText += `Method: ${order.payment?.method || "Credit Card"}\n`;
-  invoiceText += `Transaction ID: ${order.payment?.transactionId || "N/A"}\n\n`;
+  const paymentInfo = getOrderPaymentInfo(order);
+  invoiceText += `Method: ${paymentInfo.method}\n`;
+  invoiceText += `Transaction ID: ${paymentInfo.transactionId}\n\n`;
 
   invoiceText += "Shipping Information:\n";
   invoiceText += `Method: ${method.title}\n`;

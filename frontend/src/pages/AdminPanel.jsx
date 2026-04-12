@@ -10,6 +10,7 @@ import AdminSidebar from "../components/Admin/AdminSidebar";
 import DashboardTab from "../components/Admin/DashboardTab";
 import UsersTab from "../components/Admin/UsersTab";
 import PostsTab from "../components/Admin/PostsTab";
+import HomeCommunityPostsTab from "../components/Admin/HomeCommunityPostsTab";
 import AnalyticsTab from "../components/Admin/AnalyticsTab";
 import SystemTab from "../components/Admin/SystemTab";
 import StatusTab from "../components/Admin/StatusTab";
@@ -393,6 +394,8 @@ const AdminPanel = () => {
             />
           </>
         );
+      case "home-community-posts":
+        return <HomeCommunityPostsTab />;
       case "analytics":
         return <AnalyticsTab users={users} posts={posts} />;
       case "status":

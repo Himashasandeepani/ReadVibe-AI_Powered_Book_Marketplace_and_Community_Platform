@@ -104,6 +104,18 @@ export const processPayment = async () => {
   });
 };
 
+export const getOrderPaymentConfirmationKey = (orderId) =>
+  orderId ? `orderPaymentConfirmation_${orderId}` : "orderPaymentConfirmation_latest";
+
+export const saveOrderPaymentConfirmation = (confirmation) => {
+  const orderId = confirmation?.orderId;
+  const key = getOrderPaymentConfirmationKey(orderId);
+  const serialized = JSON.stringify(confirmation);
+
+  localStorage.setItem(key, serialized);
+  sessionStorage.setItem(key, serialized);
+};
+
 // Clear checkout data from storage
 export const clearCheckoutData = () => {
   sessionStorage.removeItem("deliveryData");

@@ -5,6 +5,10 @@ import BookCard from "../Home/BookCard";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFire, faBookmark, faCogs } from "@fortawesome/free-solid-svg-icons";
 import { fetchBooksFromApi } from "../StockManager/utils";
+import {
+  getHomeFeaturedBookIds,
+  resolveHomeFeaturedBooks,
+} from "../../utils/homeFeaturedBooks";
 
 const PopularBooksSection = ({ currentUser, onViewDetails }) => {
   const [featuredBooks, setFeaturedBooks] = useState([]);
@@ -39,13 +43,8 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
       try {
         const storedBooks = await fetchBooksFromApi();
 
-        let featured = storedBooks.filter((book) => book.featured === true);
-
-        if (featured.length < 4) {
-          featured = [...storedBooks]
-            .sort((a, b) => (Number(b.salesThisMonth) || 0) - (Number(a.salesThisMonth) || 0))
-            .slice(0, 4);
-        }
+        const selectedIds = getHomeFeaturedBookIds();
+        const featured = resolveHomeFeaturedBooks(storedBooks, selectedIds);
 
         const formattedBooks = featured.map((book) => ({
           id: book.id,
@@ -92,10 +91,10 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
           Popular This Week
           <div className="section-title-decoration"></div>
         </h2>
-        {featuredBooks.some((book) => book.featured) && (
+        {getHomeFeaturedBookIds().length > 0 && (
           <Badge bg="warning" className="fs-6">
             <FontAwesomeIcon icon={faFire} className="me-1" />
-            Featured from Inventory
+            Selected by Admin
           </Badge>
         )}
       </div>
@@ -103,7 +102,7 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
       <Row id="featuredBooks">
         {featuredBooks.length > 0 ? (
           featuredBooks.map((book) => (
-            <Col md={3} key={book.id} className="mb-4">
+            <Col md={6} key={book.id} className="mb-4">
               <BookCard
                 book={book}
                 currentUser={currentUser}

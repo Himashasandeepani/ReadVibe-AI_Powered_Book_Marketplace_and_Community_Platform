@@ -16,6 +16,10 @@ import {
   fetchCommunityPostsApi,
   fetchCommunityPostWithCommentsApi,
 } from "../../utils/communityApi";
+import {
+  getHomeFeaturedCommunityPostIds,
+  resolveHomeFeaturedCommunityPosts,
+} from "../../utils/homeFeaturedCommunityPosts";
 
 const CommunitySection = ({ currentUser }) => {
   const [communityPosts, setCommunityPosts] = useState([]);
@@ -26,8 +30,11 @@ const CommunitySection = ({ currentUser }) => {
       setLoading(true);
       try {
         const posts = await fetchCommunityPostsApi();
+        const selectedIds = getHomeFeaturedCommunityPostIds();
+        const previewSelection = resolveHomeFeaturedCommunityPosts(posts, selectedIds);
+
         const previewPosts = await Promise.all(
-          posts.slice(0, 2).map(async (post) => {
+          previewSelection.map(async (post) => {
             const details = await fetchCommunityPostWithCommentsApi(post.id);
             const comments = Array.isArray(details.comments) ? details.comments : [];
             const name = post.userFullName || post.username || "User";

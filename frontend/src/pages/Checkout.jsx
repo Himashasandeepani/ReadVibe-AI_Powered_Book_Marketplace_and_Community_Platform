@@ -19,6 +19,7 @@ import {
   validatePaymentForm,
   processPayment,
   clearCheckoutData,
+  saveOrderPaymentConfirmation,
 } from "../components/Checkout/utils";
 import { clearCart } from "../store/slices/cartSlice";
 import { getOrderApi } from "../utils/orderApi";
@@ -180,7 +181,14 @@ const Checkout = () => {
 
     try {
       // Process payment (simulated)
-      await processPayment();
+      const paymentResult = await processPayment();
+
+      saveOrderPaymentConfirmation({
+        orderId: orderData?.orderId || null,
+        method: "Credit Card",
+        transactionId: paymentResult.transactionId,
+        timestamp: paymentResult.timestamp,
+      });
 
       // Clear cart state
       dispatch(clearCart());

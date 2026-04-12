@@ -9,6 +9,7 @@ import { showNotification } from "../utils/helpers";
 import { addItem } from "../store/slices/cartSlice";
 import { getOrderApi, getOrdersApi } from "../utils/orderApi";
 import createBookCoverPlaceholder from "../utils/imagePlaceholders";
+import { getOrderPaymentConfirmationKey } from "../components/Checkout/utils";
 
 // Import Components
 import ProgressSteps from "../components/common/ProgressSteps";
@@ -104,6 +105,70 @@ const OrderConfirmation = () => {
   const currentUser = useMemo(() => getCurrentUser(), []);
   const orderId = searchParams.get("orderId");
 
+  const getStoredPaymentConfirmation = (targetOrderId) => {
+    try {
+      const key = getOrderPaymentConfirmationKey(targetOrderId);
+      const stored = JSON.parse(
+        localStorage.getItem(key) || sessionStorage.getItem(key) || "null",
+      );
+
+      if (!stored) return null;
+      if (targetOrderId && String(stored.orderId) !== String(targetOrderId)) {
+        return null;
+      }
+
+      return stored;
+    } catch {
+      return null;
+    }
+  };
+
+  const buildOrderState = (fetchedOrder, fallbackOrderId) => {
+    const paymentConfirmation =
+      getStoredPaymentConfirmation(fetchedOrder?.id || fallbackOrderId) || {};
+
+    return {
+      id: fetchedOrder.id,
+      orderNumber: fetchedOrder.orderNumber || fetchedOrder.id,
+      orderDate:
+        fetchedOrder.orderDate ||
+        fetchedOrder.createdAt ||
+        fetchedOrder.updatedAt ||
+        paymentConfirmation.timestamp ||
+        new Date().toISOString(),
+      createdAt: fetchedOrder.createdAt,
+      updatedAt: fetchedOrder.updatedAt,
+      payment: {
+        method:
+          fetchedOrder.payment?.method ||
+          fetchedOrder.paymentMethod ||
+          paymentConfirmation.method ||
+          "Credit Card",
+        transactionId:
+          fetchedOrder.payment?.transactionId ||
+          fetchedOrder.transactionId ||
+          paymentConfirmation.transactionId ||
+          null,
+      },
+      items:
+        fetchedOrder.items?.map((item) => ({
+          id: item.bookId,
+          title: item.title,
+          quantity: item.quantity,
+          price: item.unitPrice,
+          image: item.image,
+        })) || [],
+      shipping: fetchedOrder.shippingAddress || {},
+      trackingUpdates: fetchedOrder.trackingUpdates || [],
+      totals: {
+        subtotal: fetchedOrder.subtotal,
+        shipping: fetchedOrder.shippingCost,
+        tax: fetchedOrder.tax,
+        total: fetchedOrder.total,
+      },
+    };
+  };
+
   useEffect(() => {
     const loadOrder = async () => {
       if (!currentUser) {
@@ -115,49 +180,13 @@ const OrderConfirmation = () => {
         if (orderId) {
           const fetched = await getOrderApi(currentUser.id, orderId);
           if (fetched) {
-            setOrder({
-              id: fetched.id,
-              items:
-                fetched.items?.map((item) => ({
-                  id: item.bookId,
-                  title: item.title,
-                  quantity: item.quantity,
-                  price: item.unitPrice,
-                  image: item.image,
-                })) || [],
-              shipping: fetched.shippingAddress || {},
-              trackingUpdates: fetched.trackingUpdates || [],
-              totals: {
-                subtotal: fetched.subtotal,
-                shipping: fetched.shippingCost,
-                tax: fetched.tax,
-                total: fetched.total,
-              },
-            });
+            setOrder(buildOrderState(fetched, orderId));
           }
         } else {
           const orders = await getOrdersApi(currentUser.id);
           const first = orders[0];
           if (first) {
-            setOrder({
-              id: first.id,
-              items:
-                first.items?.map((item) => ({
-                  id: item.bookId,
-                  title: item.title,
-                  quantity: item.quantity,
-                  price: item.unitPrice,
-                  image: item.image,
-                })) || [],
-              shipping: first.shippingAddress || {},
-              trackingUpdates: first.trackingUpdates || [],
-              totals: {
-                subtotal: first.subtotal,
-                shipping: first.shippingCost,
-                tax: first.tax,
-                total: first.total,
-              },
-            });
+            setOrder(buildOrderState(first, first.id));
           }
         }
       } catch (err) {
