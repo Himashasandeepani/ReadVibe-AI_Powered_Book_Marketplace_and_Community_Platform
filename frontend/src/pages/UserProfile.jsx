@@ -35,10 +35,13 @@ import {
 import {
   getSupportMessagesForUser,
   getSupportMessagesUpdatedEventName,
+  loadSupportMessages,
 } from "../utils/supportMessages";
 import {
   getLiveChatThreadsForUser,
   getLiveChatUpdatedEventName,
+  loadLiveChatThreads,
+  resolveLiveChatThread,
   sendLiveChatMessage,
 } from "../utils/liveChat";
 
@@ -107,22 +110,24 @@ const UserProfile = () => {
     setLoading(false);
   };
 
-  const refreshSupportMessages = (currentUser) => {
+  const refreshSupportMessages = async (currentUser) => {
     if (!currentUser) {
       setSupportMessages([]);
       return;
     }
 
-    setSupportMessages(getSupportMessagesForUser(currentUser.id));
+    const messages = await loadSupportMessages(currentUser.id);
+    setSupportMessages(messages.length ? messages : getSupportMessagesForUser(currentUser.id));
   };
 
-  const refreshLiveChatThreads = (currentUser) => {
+  const refreshLiveChatThreads = async (currentUser) => {
     if (!currentUser) {
       setLiveChatThreads([]);
       return;
     }
 
-    setLiveChatThreads(getLiveChatThreadsForUser(currentUser.id));
+    const threads = await loadLiveChatThreads(currentUser.id);
+    setLiveChatThreads(threads.length ? threads : getLiveChatThreadsForUser(currentUser.id));
   };
 
   useEffect(() => {
@@ -132,8 +137,8 @@ const UserProfile = () => {
     }
 
     void initializeUserData(user);
-    refreshSupportMessages(user);
-    refreshLiveChatThreads(user);
+    void refreshSupportMessages(user);
+    void refreshLiveChatThreads(user);
 
     const handleStorageChange = (event) => {
       if (event.key === "currentUser") {
@@ -150,8 +155,8 @@ const UserProfile = () => {
       if (currentUser) {
         setUser(currentUser);
         void initializeUserData(currentUser);
-        refreshSupportMessages(currentUser);
-        refreshLiveChatThreads(currentUser);
+        void refreshSupportMessages(currentUser);
+        void refreshLiveChatThreads(currentUser);
       }
     };
 
@@ -227,7 +232,7 @@ const UserProfile = () => {
   };
 
   const handleReviewOrderItems = (orderId) => {
-    const order = orders.find((o) => o.id === orderId);
+    const order = orders.find((o) => String(o.id) === String(orderId));
     if (!order) return;
 
     const unreviewedItems = findUnreviewedItems(order, myReviews);
@@ -238,14 +243,18 @@ const UserProfile = () => {
     }
 
     // For simplicity, review first unreviewed item
-    const bookToReview = books.find(
-      (b) => b.id.toString() === unreviewedItems[0].id.toString(),
-    );
-    if (bookToReview) {
-      setSelectedBook(bookToReview);
-      setSelectedOrderId(orderId);
-      setShowReviewModal(true);
-    }
+    const firstUnreviewedItem = unreviewedItems[0];
+    const bookId = firstUnreviewedItem?.bookId ?? firstUnreviewedItem?.id;
+    const bookToReview = books.find((b) => String(b.id) === String(bookId)) || {
+      id: bookId,
+      title: firstUnreviewedItem?.title || "Book",
+      author: firstUnreviewedItem?.author || "",
+      image: firstUnreviewedItem?.image || "",
+    };
+
+    setSelectedBook(bookToReview);
+    setSelectedOrderId(orderId);
+    setShowReviewModal(true);
   };
 
   const handleSubmitReview = async (reviewData) => {
@@ -296,6 +305,27 @@ const UserProfile = () => {
 
     // Navigate to order confirmation page and open tracking details immediately
     navigate(`/order-confirmation?orderId=${orderId}&view=tracking`);
+  };
+
+  const handleStartLiveChat = async () => {
+    if (!user) return;
+
+    const latestOrder = orders[0];
+    if (!latestOrder) {
+      showNotification("Place an order first to start a live chat thread.", "info");
+      return;
+    }
+
+    await resolveLiveChatThread({
+      order: {
+        id: latestOrder.id,
+        orderNumber: latestOrder.orderNumber || latestOrder.id,
+      },
+      user,
+    });
+
+    await refreshLiveChatThreads(user);
+    setActiveSection("live-chat");
   };
 
   const handleEditReview = (review) => {
@@ -374,19 +404,19 @@ const UserProfile = () => {
           <LiveChatSection
             threads={liveChatThreads}
             onBack={() => setActiveSection("overview")}
+            onStartChat={handleStartLiveChat}
             onSendMessage={(thread, message) => {
               const order = {
                 id: thread.orderId,
                 orderNumber: thread.orderNumber,
               };
-              sendLiveChatMessage({
+              return sendLiveChatMessage({
                 order,
                 user,
                 senderRole: "user",
                 senderName: user.name || user.fullName || user.username || "User",
                 message,
               });
-              return true;
             }}
           />
         );

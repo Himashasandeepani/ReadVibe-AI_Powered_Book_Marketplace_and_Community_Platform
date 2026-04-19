@@ -56,7 +56,7 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
           price: book.price,
           image: resolveBookImage(book),
           rating: Math.min(5, 4 + (Number(book.salesThisMonth) || 0) / 20),
-          reviews: book.totalSales || 0,
+          reviews: book.reviews || book.totalSales || 0,
           inStock: (Number(book.stock) || 0) > 0,
           stock: Number(book.stock) || 0,
           salesThisMonth: Number(book.salesThisMonth) || 0,
@@ -79,9 +79,15 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
       void loadFeaturedBooks();
     };
 
+    const handleBookReviewsUpdate = () => {
+      void loadFeaturedBooks();
+    };
+
     window.addEventListener("storage", handleStorageUpdate);
+    window.addEventListener("book-reviews-updated", handleBookReviewsUpdate);
     return () => {
       window.removeEventListener("storage", handleStorageUpdate);
+      window.removeEventListener("book-reviews-updated", handleBookReviewsUpdate);
     };
   }, []);
 

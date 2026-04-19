@@ -2,7 +2,7 @@ import React from "react";
 import { Button, Card } from "react-bootstrap";
 import LiveChatThreadList from "../LiveChat/LiveChatThreadList";
 
-const LiveChatSection = ({ threads, onBack, onSendMessage }) => {
+const LiveChatSection = ({ threads, onBack, onSendMessage, onStartChat }) => {
   return (
     <Card className="dashboard-card mb-4">
       <Card.Body>
@@ -10,7 +10,7 @@ const LiveChatSection = ({ threads, onBack, onSendMessage }) => {
           <div>
             <h4 className="mb-1">Live Chat</h4>
             <p className="text-muted mb-0">
-              View the active conversation with support and continue the thread here.
+              Start or continue live support conversations from your profile.
             </p>
           </div>
           <Button variant="outline-secondary" onClick={onBack}>
@@ -23,10 +23,11 @@ const LiveChatSection = ({ threads, onBack, onSendMessage }) => {
           description=""
           threads={threads}
           emptyTitle="No live chat threads yet"
-          emptyDescription="Open live chat from order confirmation to start a conversation."
+          emptyDescription="Start a live chat from your profile to open a support conversation."
           currentRole="user"
           onSendMessage={onSendMessage}
           sendButtonLabel="Send"
+          onStartChat={onStartChat}
         />
       </Card.Body>
     </Card>

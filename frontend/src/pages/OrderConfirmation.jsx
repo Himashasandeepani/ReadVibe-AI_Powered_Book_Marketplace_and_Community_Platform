@@ -263,13 +263,17 @@ const OrderConfirmation = () => {
   };
 
   // Handle support request
-  const handleSupportRequest = (message) => {
+  const handleSupportRequest = async (message) => {
     const user = getCurrentUser();
     if (!user || !order) return;
 
-    createSupportMessage({ order, user, message });
-    showNotification("Your support request has been sent.", "success");
-    setShowSupportModal(false);
+    try {
+      await createSupportMessage({ order, user, message });
+      showNotification("Your support request has been sent.", "success");
+      setShowSupportModal(false);
+    } catch (error) {
+      showNotification(error.message || "Failed to send your support request.", "danger");
+    }
   };
 
   if (loading) {

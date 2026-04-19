@@ -363,50 +363,35 @@ const Marketplace = () => {
     return userWishlist.some((item) => item.id === bookId);
   };
 
-  const handleViewDetails = (book) => {
-    setSelectedBook(mergeBookReviews(book));
+  const handleViewDetails = async (book) => {
+    try {
+      const detailedBook = await fetchBookByIdApi(book.id);
+      setSelectedBook(mergeBookReviews(detailedBook || book));
+    } catch (error) {
+      console.error("Failed to load book details", error);
+      setSelectedBook(mergeBookReviews(book));
+    }
+
     setShowBookModal(true);
-
-    const loadBookDetails = async () => {
-      try {
-        const detailedBook = await fetchBookByIdApi(book.id);
-        if (detailedBook) {
-          setSelectedBook((current) =>
-            current && current.id === book.id
-              ? {
-                  ...current,
-                  ...detailedBook,
-                  image: resolveBookImage(detailedBook),
-                  inStock: detailedBook.inStock ?? detailedBook.stock > 0,
-                  reviews:
-                    detailedBook.reviews ??
-                    detailedBook.reviewsList?.length ??
-                    current.reviews,
-                  reviewsList: mergeBookReviews({
-                    ...current,
-                    ...detailedBook,
-                    reviewsList: detailedBook.reviewsList || current.reviewsList || [],
-                  }).reviewsList,
-                }
-              : current,
-          );
-        }
-      } catch (error) {
-        console.error("Failed to load book details", error);
-      }
-    };
-
-    void loadBookDetails();
   };
 
   useEffect(() => {
-    const handleBookReviewsUpdated = () => {
+    const handleBookReviewsUpdated = async () => {
+      try {
+        const apiBooks = await fetchBooksFromApi();
+        const normalized = normalizeBooks(apiBooks);
+        setAllBooks(normalized);
+        setFilteredBooks(searchQuery.length >= 2 ? searchBooks(searchQuery, normalized) : filterBooks(filters, normalized));
+      } catch (error) {
+        console.error("Failed to refresh books after review update", error);
+      }
+
       setSelectedBook((current) => mergeBookReviews(current));
     };
 
     window.addEventListener("book-reviews-updated", handleBookReviewsUpdated);
     return () => window.removeEventListener("book-reviews-updated", handleBookReviewsUpdated);
-  }, [mergeBookReviews]);
+  }, [filters, mergeBookReviews, normalizeBooks, searchQuery]);
 
   const getCategoryIcon = (category) => {
     const icons = {

@@ -25,9 +25,19 @@ const baseSelect = `
     featured,
     sales_this_month,
     total_sales,
+    COALESCE(review_stats.review_count, 0) AS review_count,
+    COALESCE(review_stats.average_rating, 0) AS average_rating,
     created_at,
     updated_at
   FROM books
+  LEFT JOIN (
+    SELECT
+      book_id,
+      COUNT(*)::int AS review_count,
+      ROUND(AVG(rating)::numeric, 1) AS average_rating
+    FROM book_reviews
+    GROUP BY book_id
+  ) review_stats ON review_stats.book_id = books.id
 `;
 
 const mapRow = (row) => ({
@@ -54,6 +64,8 @@ const mapRow = (row) => ({
   featured: row.featured,
   salesThisMonth: row.sales_this_month,
   totalSales: row.total_sales,
+  reviews: Number(row.review_count) || 0,
+  rating: row.average_rating !== null && row.average_rating !== undefined ? Number(row.average_rating) : null,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });

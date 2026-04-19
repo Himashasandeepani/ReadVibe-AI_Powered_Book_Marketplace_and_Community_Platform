@@ -1,5 +1,6 @@
-const SUPPORT_MESSAGES_STORAGE_KEY = "supportMessages";
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 const SUPPORT_MESSAGES_UPDATED_EVENT = "support-messages-updated";
+let supportMessagesCache = [];
 
 const safeParse = (value, fallback) => {
   try {
@@ -13,6 +14,25 @@ const safeParse = (value, fallback) => {
 const emitSupportMessagesUpdated = () => {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(SUPPORT_MESSAGES_UPDATED_EVENT));
+};
+
+const handleApi = async (path, options = {}) => {
+  const { headers = {}, ...restOptions } = options;
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...restOptions,
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = data?.error || data?.message || "Request failed";
+    throw new Error(msg);
+  }
+  return data;
 };
 
 export const getSupportMessageStatusLabel = (status) => {
@@ -31,74 +51,85 @@ export const getSupportMessageStatusVariant = (status) => {
   return "secondary";
 };
 
-export const getSupportMessages = () => {
-  if (typeof window === "undefined") return [];
-  const stored = safeParse(localStorage.getItem(SUPPORT_MESSAGES_STORAGE_KEY), []);
-  return Array.isArray(stored) ? stored : [];
+const normalizeSupportMessage = (message) => ({
+  ...message,
+  orderId: message?.orderId ?? message?.order_id ?? null,
+  orderNumber: message?.orderNumber ?? message?.order_number ?? message?.orderId ?? message?.order_id ?? null,
+  userId: message?.userId ?? message?.user_id ?? null,
+  userName: message?.userName ?? message?.user_name ?? "User",
+  userEmail: message?.userEmail ?? message?.user_email ?? "",
+  subject: message?.subject || "Support request",
+  status: message?.status || "Open",
+  type: message?.type || "support",
+  source: message?.source || "order-confirmation",
+  replies: Array.isArray(message?.replies) ? message.replies : [],
+});
+
+const syncSupportMessagesCache = (messages) => {
+  supportMessagesCache = Array.isArray(messages) ? messages.map(normalizeSupportMessage) : [];
+  return supportMessagesCache;
 };
 
-export const saveSupportMessages = (messages) => {
-  if (typeof window === "undefined") return messages;
-  localStorage.setItem(SUPPORT_MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+export const loadSupportMessages = async (userId = null) => {
+  const query = userId ? `?userId=${encodeURIComponent(userId)}` : "";
+  const data = await handleApi(`/api/support/messages${query}`);
+  return syncSupportMessagesCache(data.messages || []);
+};
+
+export const getSupportMessages = () => supportMessagesCache;
+
+export const saveSupportMessages = async (messages) => {
+  syncSupportMessagesCache(messages);
   emitSupportMessagesUpdated();
-  return messages;
+  return supportMessagesCache;
 };
 
-export const createSupportMessage = ({ order, user, message, type = "support", source = "order-confirmation" }) => {
+export const createSupportMessage = async ({ order, user, message, type = "support", source = "order-confirmation" }) => {
   if (!order || !user || !message?.trim()) return null;
 
-  const now = new Date().toISOString();
-  const nextMessage = {
-    id: `MSG-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  const payload = {
     orderId: order.id,
     orderNumber: order.orderNumber || order.id,
-    userId: user.id,
     userName: user.name || user.fullName || user.username || "User",
     userEmail: user.email || "",
     subject: `Order ${order.orderNumber || order.id} support request`,
     message: message.trim(),
     type,
     source,
-    status: "Open",
-    createdAt: now,
-    updatedAt: now,
-    replies: [],
   };
 
-  const messages = [nextMessage, ...getSupportMessages()];
-  saveSupportMessages(messages);
+  const data = await handleApi("/api/support/messages", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: {
+      "x-user-id": user.id,
+    },
+  });
+
+  const nextMessage = normalizeSupportMessage(data.message);
+  supportMessagesCache = [nextMessage, ...supportMessagesCache.filter((item) => String(item.id) !== String(nextMessage.id))];
+  emitSupportMessagesUpdated();
   return nextMessage;
 };
 
-export const addSupportReply = (messageId, replyText, repliedBy = {}) => {
+export const addSupportReply = async (messageId, replyText, repliedBy = {}) => {
   if (!messageId || !replyText?.trim()) return null;
 
-  const messages = getSupportMessages();
-  const index = messages.findIndex((item) => item.id === messageId);
-  if (index === -1) return null;
+  const data = await handleApi(`/api/support/messages/${messageId}/replies`, {
+    method: "POST",
+    body: JSON.stringify({
+      replyText: replyText.trim(),
+      senderName: repliedBy.name || "Stock Manager",
+      senderRole: repliedBy.role || "stock",
+    }),
+  });
 
-  const now = new Date().toISOString();
-  const reply = {
-    id: `REP-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    senderRole: repliedBy.role || "stock",
-    senderName: repliedBy.name || "Stock Manager",
-    message: replyText.trim(),
-    createdAt: now,
-  };
-
-  const nextMessages = messages.map((item, messageIndex) =>
-    messageIndex === index
-      ? {
-          ...item,
-          status: "Replied",
-          updatedAt: now,
-          replies: [...(item.replies || []), reply],
-        }
-      : item,
+  const nextMessage = normalizeSupportMessage(data.message);
+  supportMessagesCache = supportMessagesCache.map((item) =>
+    String(item.id) === String(nextMessage.id) ? nextMessage : item,
   );
-
-  saveSupportMessages(nextMessages);
-  return reply;
+  emitSupportMessagesUpdated();
+  return nextMessage;
 };
 
 export const getSupportMessagesForUser = (userId) => {

@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Container } from "react-bootstrap";
 import { getCurrentUser as getNormalizedCurrentUser } from "../utils/auth";
-import { getBookReviewsForBook } from "../components/UserProfile/utils";
+import { getBookReviewsForBook, loadBookReviewsForBook } from "../components/UserProfile/utils";
 import GuestNotice from "../components/Home/GuestNotice";
 import HeroSection from "../components/Home/HeroSection";
 import FeaturesSection from "../components/Home/FeaturesSection";
@@ -10,6 +10,7 @@ import PopularBooksSection from "../components/Home/PopularBooksSection";
 import CommunitySection from "../components/Home/CommunitySection";
 import StatsSection from "../components/Home/StatsSection";
 import BookDetailsModal from "../components/Home/BookDetailsModal";
+import { fetchBookByIdApi } from "../components/StockManager/utils";
 import { isPrivilegedUser } from "../utils/auth";
 import "../styles/pages/Home.css";
 
@@ -21,6 +22,11 @@ const Home = () => {
   const [currentUser, setCurrentUser] = useState(() => getStoredCurrentUser());
   const [showBookModal, setShowBookModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
+  const selectedBookRef = useRef(null);
+
+  useEffect(() => {
+    selectedBookRef.current = selectedBook;
+  }, [selectedBook]);
 
   useEffect(() => {
     const handleStorageChange = (event) => {
@@ -61,14 +67,36 @@ const Home = () => {
     };
   };
 
-  const handleViewDetails = (book) => {
-    setSelectedBook(mergeBookReviews(book));
+  const handleViewDetails = async (book) => {
+    try {
+      const detailedBook = await fetchBookByIdApi(book.id);
+      setSelectedBook(mergeBookReviews(detailedBook || book));
+      if (book?.id) {
+        await loadBookReviewsForBook(book.id);
+      }
+    } catch {
+      setSelectedBook(mergeBookReviews(book));
+    }
     setShowBookModal(true);
   };
 
   useEffect(() => {
-    const handleBookReviewsUpdated = () => {
+    const handleBookReviewsUpdated = async () => {
+      const currentBook = selectedBookRef.current;
       setSelectedBook((current) => mergeBookReviews(current));
+
+      if (currentBook?.id) {
+        try {
+          const refreshed = await fetchBookByIdApi(currentBook.id);
+          setSelectedBook((current) =>
+            current && current.id === currentBook.id
+              ? mergeBookReviews(refreshed || current)
+              : current,
+          );
+        } catch {
+          // keep the current book data if refresh fails
+        }
+      }
     };
 
     window.addEventListener("book-reviews-updated", handleBookReviewsUpdated);

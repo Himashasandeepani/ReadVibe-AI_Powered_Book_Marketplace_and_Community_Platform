@@ -1,10 +1,11 @@
 import { formatPrice, formatDate, showNotification, getAllBooks } from "../../utils/helpers";
 import { getCurrentUser, setCurrentUser } from "../../utils/auth";
 import { createBookRequestApi } from "../../utils/communityApi";
+import { fetchBookByIdApi } from "../StockManager/utils";
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-const BOOK_REVIEWS_STORAGE_KEY = "bookReviews";
 const BOOK_REVIEWS_UPDATED_EVENT = "book-reviews-updated";
+const bookReviewsCache = new Map();
 
 const handleApi = async (path, options = {}) => {
   const { headers = {}, ...restOptions } = options;
@@ -64,6 +65,9 @@ const normalizeReview = (review) => ({
   date: review?.date || review?.createdAt,
 });
 
+const normalizeBookReviewList = (reviews = []) =>
+  reviews.map((review) => normalizeReview(review));
+
 const normalizeActivity = (activity) => ({
   ...activity,
   time: activity?.time ? formatDate(activity.time) : "Recently",
@@ -90,24 +94,29 @@ const emitBookReviewsUpdated = () => {
 };
 
 export const getStoredBookReviews = () => {
-  try {
-    const storedReviews = JSON.parse(localStorage.getItem(BOOK_REVIEWS_STORAGE_KEY));
-    return Array.isArray(storedReviews) ? storedReviews : [];
-  } catch {
-    return [];
-  }
+  return [...bookReviewsCache.values()].flat();
 };
 
 export const getBookReviewsForBook = (bookId) => {
   const normalizedBookId = String(bookId ?? "");
-  return getStoredBookReviews().filter((review) => String(review.bookId) === normalizedBookId);
+  return bookReviewsCache.get(normalizedBookId) || [];
+};
+
+export const loadBookReviewsForBook = async (bookId) => {
+  const normalizedBookId = String(bookId ?? "");
+  if (!normalizedBookId) return [];
+
+  const book = await fetchBookByIdApi(normalizedBookId);
+  const reviews = normalizeBookReviewList(book?.reviewsList || []);
+  bookReviewsCache.set(normalizedBookId, reviews);
+  emitBookReviewsUpdated();
+  return reviews;
 };
 
 export const updateBookReviewCache = (review, book, user) => {
   if (!review) return;
 
   try {
-    const storedReviews = getStoredBookReviews();
     const normalizedReview = {
       id: review.id ?? `review-${Date.now()}`,
       bookId: String(review.bookId ?? book?.id ?? ""),
@@ -122,12 +131,14 @@ export const updateBookReviewCache = (review, book, user) => {
       userName: review.userName || getBookReviewDisplayName(user),
     };
 
+    const normalizedBookId = String(normalizedReview.bookId || "");
+    const existingReviews = bookReviewsCache.get(normalizedBookId) || [];
     const nextReviews = [
       normalizedReview,
-      ...storedReviews.filter((item) => String(item.id) !== String(normalizedReview.id)),
+      ...existingReviews.filter((item) => String(item.id) !== String(normalizedReview.id)),
     ];
 
-    localStorage.setItem(BOOK_REVIEWS_STORAGE_KEY, JSON.stringify(nextReviews));
+    bookReviewsCache.set(normalizedBookId, nextReviews);
     emitBookReviewsUpdated();
   } catch (error) {
     console.error("Failed to update book review cache", error);
@@ -286,6 +297,13 @@ export const deleteReview = async (reviewId, userId) => {
     method: "DELETE",
     headers: { "x-user-id": userId },
   });
+  for (const [bookId, reviews] of bookReviewsCache.entries()) {
+    const nextReviews = reviews.filter((review) => String(review.id) !== String(reviewId));
+    if (nextReviews.length !== reviews.length) {
+      bookReviewsCache.set(bookId, nextReviews);
+    }
+  }
+  emitBookReviewsUpdated();
 };
 
 export const findUnreviewedItems = (order, userReviews) => {

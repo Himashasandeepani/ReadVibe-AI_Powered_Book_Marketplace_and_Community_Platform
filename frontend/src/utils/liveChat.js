@@ -1,5 +1,6 @@
-const LIVE_CHAT_STORAGE_KEY = "liveChatThreads";
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 const LIVE_CHAT_UPDATED_EVENT = "live-chat-updated";
+let liveChatCache = [];
 
 const safeParse = (value, fallback) => {
   try {
@@ -14,17 +15,23 @@ const emitLiveChatUpdated = () => {
   window.dispatchEvent(new CustomEvent(LIVE_CHAT_UPDATED_EVENT));
 };
 
-const readThreads = () => {
-  if (typeof window === "undefined") return [];
-  const stored = safeParse(localStorage.getItem(LIVE_CHAT_STORAGE_KEY), []);
-  return Array.isArray(stored) ? stored : [];
-};
+const handleApi = async (path, options = {}) => {
+  const { headers = {}, ...restOptions } = options;
 
-const writeThreads = (threads) => {
-  if (typeof window === "undefined") return threads;
-  localStorage.setItem(LIVE_CHAT_STORAGE_KEY, JSON.stringify(threads));
-  emitLiveChatUpdated();
-  return threads;
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...restOptions,
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = data?.error || data?.message || "Request failed";
+    throw new Error(msg);
+  }
+  return data;
 };
 
 export const getLiveChatUpdatedEventName = () => LIVE_CHAT_UPDATED_EVENT;
@@ -37,7 +44,30 @@ export const normalizeLiveChatThread = (thread) => ({
   messages: Array.isArray(thread?.messages) ? thread.messages : [],
 });
 
-export const getLiveChatThreads = () => readThreads().map(normalizeLiveChatThread);
+const normalizeLiveChatMessage = (message) => ({
+  ...message,
+  senderRole: message?.senderRole || "user",
+  senderName: message?.senderName || "User",
+  message: message?.message || "",
+});
+
+const normalizeLiveChatThreadResponse = (thread) => ({
+  ...normalizeLiveChatThread(thread),
+  messages: Array.isArray(thread?.messages) ? thread.messages.map(normalizeLiveChatMessage) : [],
+});
+
+const syncLiveChatCache = (threads) => {
+  liveChatCache = Array.isArray(threads) ? threads.map(normalizeLiveChatThreadResponse) : [];
+  return liveChatCache;
+};
+
+export const loadLiveChatThreads = async (userId = null) => {
+  const query = userId ? `?userId=${encodeURIComponent(userId)}` : "";
+  const data = await handleApi(`/api/support/live-chat/threads${query}`);
+  return syncLiveChatCache(data.threads || []);
+};
+
+export const getLiveChatThreads = () => liveChatCache;
 
 export const getLiveChatThread = (orderId, userId) =>
   getLiveChatThreads().find(
@@ -52,92 +82,44 @@ export const getLiveChatThreadsForUser = (userId) =>
 export const getUnreadLiveChatThreadCount = () =>
   getLiveChatThreads().filter((thread) => thread.messages[thread.messages.length - 1]?.senderRole === "user").length;
 
-export const ensureLiveChatThread = ({ order, user }) => {
+export const ensureLiveChatThread = async ({ order, user }) => {
   if (!order || !user) return null;
 
-  const orderId = order.id;
-  const userId = user.id;
-  const existing = getLiveChatThread(orderId, userId);
-  if (existing) return existing;
-
-  const now = new Date().toISOString();
-  const thread = normalizeLiveChatThread({
-    id: getLiveChatThreadKey(orderId, userId),
-    orderId,
-    orderNumber: order.orderNumber || order.id,
-    userId,
-    userName: user.name || user.fullName || user.username || "User",
-    userEmail: user.email || "",
-    status: "Open",
-    createdAt: now,
-    updatedAt: now,
-    messages: [
-      {
-        id: `MSG-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        senderRole: "system",
-        senderName: "Support Team",
-        message: "Live chat is now open. A support agent will reply shortly.",
-        createdAt: now,
-      },
-    ],
+  const data = await handleApi("/api/support/live-chat/threads/resolve", {
+    method: "POST",
+    body: JSON.stringify({
+      order,
+      user,
+    }),
   });
 
-  writeThreads([thread, ...getLiveChatThreads()]);
+  const thread = normalizeLiveChatThreadResponse(data.thread);
+  liveChatCache = [thread, ...liveChatCache.filter((item) => String(item.id) !== String(thread.id))];
+  emitLiveChatUpdated();
   return thread;
 };
 
-export const sendLiveChatMessage = ({ order, user, senderRole, senderName, message }) => {
+export const sendLiveChatMessage = async ({ order, user, senderRole, senderName, message }) => {
   if (!order || !user || !message?.trim()) return null;
 
-  const orderId = order.id;
-  const userId = user.id;
-  const now = new Date().toISOString();
-  const nextMessage = {
-    id: `MSG-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    senderRole,
-    senderName,
-    message: message.trim(),
-    createdAt: now,
-  };
+  const data = await handleApi("/api/support/live-chat/messages", {
+    method: "POST",
+    body: JSON.stringify({
+      order,
+      user,
+      senderRole,
+      senderName,
+      message: message.trim(),
+    }),
+  });
 
-  const threads = getLiveChatThreads();
-  const index = threads.findIndex(
-    (thread) => String(thread.orderId) === String(orderId) && String(thread.userId) === String(userId),
-  );
-
-  if (index === -1) {
-    const thread = normalizeLiveChatThread({
-      id: getLiveChatThreadKey(orderId, userId),
-      orderId,
-      orderNumber: order.orderNumber || order.id,
-      userId,
-      userName: user.name || user.fullName || user.username || "User",
-      userEmail: user.email || "",
-      status: "Open",
-      createdAt: now,
-      updatedAt: now,
-      messages: [nextMessage],
-    });
-    writeThreads([thread, ...threads]);
-    return thread;
-  }
-
-  const nextThreads = threads.map((thread, threadIndex) =>
-    threadIndex === index
-      ? {
-          ...thread,
-          updatedAt: now,
-          status: "Open",
-          messages: [...thread.messages, nextMessage],
-        }
-      : thread,
-  );
-
-  writeThreads(nextThreads);
-  return nextMessage;
+  const thread = normalizeLiveChatThreadResponse(data.thread);
+  liveChatCache = [thread, ...liveChatCache.filter((item) => String(item.id) !== String(thread.id))];
+  emitLiveChatUpdated();
+  return thread;
 };
 
-export const resolveLiveChatThread = ({ order, user }) => {
+export const resolveLiveChatThread = async ({ order, user }) => {
   if (!order || !user) return null;
   return ensureLiveChatThread({ order, user });
 };

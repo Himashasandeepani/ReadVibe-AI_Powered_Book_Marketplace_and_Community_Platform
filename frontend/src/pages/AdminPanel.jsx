@@ -36,6 +36,7 @@ import {
 import {
   getLiveChatThreads,
   getLiveChatUpdatedEventName,
+  loadLiveChatThreads,
   sendLiveChatMessage,
   getUnreadLiveChatThreadCount,
 } from "../utils/liveChat";
@@ -104,7 +105,7 @@ const AdminPanel = () => {
     const { statuses: loadedStatuses = [] } = loadData();
     return [...loadedStatuses];
   });
-  const [liveChatThreads, setLiveChatThreads] = useState(() => getLiveChatThreads());
+  const [liveChatThreads, setLiveChatThreads] = useState([]);
 
   // Modal states
   const [showAddUserModal, setShowAddUserModal] = useState(false);
@@ -181,10 +182,11 @@ const AdminPanel = () => {
 
   useEffect(() => {
     const handleLiveChatUpdate = () => {
-      setLiveChatThreads(getLiveChatThreads());
+      void loadLiveChatThreads().then((threads) => setLiveChatThreads(threads));
     };
 
     window.addEventListener(getLiveChatUpdatedEventName(), handleLiveChatUpdate);
+    void loadLiveChatThreads().then((threads) => setLiveChatThreads(threads));
     return () => {
       window.removeEventListener(getLiveChatUpdatedEventName(), handleLiveChatUpdate);
     };

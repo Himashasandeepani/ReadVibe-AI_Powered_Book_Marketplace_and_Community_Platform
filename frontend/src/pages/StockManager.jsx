@@ -54,6 +54,7 @@ import {
   getSupportMessages,
   getSupportMessagesUpdatedEventName,
   getUnreadSupportMessageCount,
+  loadSupportMessages,
 } from "../utils/supportMessages";
 
 const StockManager = () => {
@@ -161,7 +162,7 @@ const StockManager = () => {
   const [bookRequests, setBookRequests] = useState(() => {
     return [];
   });
-  const [supportMessages, setSupportMessages] = useState(() => getSupportMessages());
+  const [supportMessages, setSupportMessages] = useState([]);
   const [replyDrafts, setReplyDrafts] = useState({});
 
   const computeStockStatus = useCallback((stock, minStock) => {
@@ -378,10 +379,11 @@ const StockManager = () => {
 
   useEffect(() => {
     const handleSupportMessagesUpdated = () => {
-      setSupportMessages(getSupportMessages());
+      void loadSupportMessages().then((messages) => setSupportMessages(messages));
     };
 
     window.addEventListener(getSupportMessagesUpdatedEventName(), handleSupportMessagesUpdated);
+    void loadSupportMessages().then((messages) => setSupportMessages(messages));
     return () => {
       window.removeEventListener(getSupportMessagesUpdatedEventName(), handleSupportMessagesUpdated);
     };
@@ -437,9 +439,9 @@ const StockManager = () => {
     }));
   };
 
-  const handleReplyMessage = (messageId) => {
+  const handleReplyMessage = async (messageId) => {
     const replyText = replyDrafts[messageId] || "";
-    const reply = addSupportReply(messageId, replyText, {
+    const reply = await addSupportReply(messageId, replyText, {
       name: currentUser?.name || currentUser?.fullName || "Stock Manager",
       role: currentUser?.role || "stock",
     });

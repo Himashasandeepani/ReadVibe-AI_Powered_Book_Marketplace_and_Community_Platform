@@ -19,9 +19,9 @@ const AddReviewModal = ({ show, onHide, book, onSubmit }) => {
     setReviewData({ ...reviewData, rating });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(reviewData);
+    await onSubmit(reviewData);
     setReviewData({
       rating: 5,
       text: "",

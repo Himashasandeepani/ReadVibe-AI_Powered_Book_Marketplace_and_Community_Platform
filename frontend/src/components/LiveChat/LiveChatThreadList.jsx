@@ -17,6 +17,7 @@ const LiveChatThreadList = ({
   emptyDescription,
   currentRole,
   onSendMessage,
+  onStartChat,
   sendButtonLabel = "Send Message",
 }) => {
   const [drafts, setDrafts] = useState({});
@@ -26,10 +27,10 @@ const LiveChatThreadList = ({
     [threads],
   );
 
-  const handleSubmit = (event, thread) => {
+  const handleSubmit = async (event, thread) => {
     event.preventDefault();
     const draft = drafts[thread.id] || "";
-    const sent = onSendMessage(thread, draft);
+    const sent = await Promise.resolve(onSendMessage(thread, draft));
     if (sent !== false) {
       setDrafts((prev) => ({ ...prev, [thread.id]: "" }));
     }
@@ -57,6 +58,11 @@ const LiveChatThreadList = ({
             <FontAwesomeIcon icon={faCircleInfo} className="fa-3x text-muted mb-3" />
             <h5>{emptyTitle}</h5>
             <p className="text-muted mb-0">{emptyDescription}</p>
+            {typeof onStartChat === "function" ? (
+              <Button variant="primary" className="mt-3" onClick={onStartChat}>
+                Start Live Chat
+              </Button>
+            ) : null}
           </div>
         ) : (
           <div className="d-grid gap-3">
