@@ -202,6 +202,38 @@ const StockManager = () => {
     };
   }, [computeStockStatus]);
 
+  const comparePopularBooks = useCallback((left, right) => {
+    const leftMonthlySales = Number(left.salesThisMonth) || 0;
+    const rightMonthlySales = Number(right.salesThisMonth) || 0;
+    if (rightMonthlySales !== leftMonthlySales) {
+      return rightMonthlySales - leftMonthlySales;
+    }
+
+    const leftTotalSales = Number(left.totalSales) || 0;
+    const rightTotalSales = Number(right.totalSales) || 0;
+    if (rightTotalSales !== leftTotalSales) {
+      return rightTotalSales - leftTotalSales;
+    }
+
+    const leftStock = Number(left.stock) || 0;
+    const rightStock = Number(right.stock) || 0;
+    if (leftStock !== rightStock) {
+      return leftStock - rightStock;
+    }
+
+    return String(left.title || "").localeCompare(String(right.title || ""));
+  }, []);
+
+  const getRankedPopularBooks = useCallback((books) => {
+    return [...books]
+      .sort(comparePopularBooks)
+      .slice(0, 12)
+      .map((book, index) => ({
+        ...book,
+        rank: index + 1,
+      }));
+  }, [comparePopularBooks]);
+
   const persistBooks = useCallback((books) => {
     setStockBooks(books);
     localStorage.setItem("stockBooks", JSON.stringify(books));
@@ -1214,9 +1246,7 @@ const StockManager = () => {
       case "popular-books":
         return (
           <PopularBooksTab
-            popularBooks={[...stockBooks]
-              .sort((a, b) => b.salesThisMonth - a.salesThisMonth)
-              .slice(0, 12)}
+            popularBooks={getRankedPopularBooks(stockBooks)}
             featuredBooks={stockBooks.filter((book) => book.featured)}
             inventoryStats={inventoryStats}
             onEditBook={handleEditBook}

@@ -99,17 +99,17 @@ const PopularBooksTab = ({
                   <td>
                     <div className="rank-badge d-flex align-items-center">
                       <span
-                        className={`rank-number rank-${index + 1} fw-medium`}
+                        className={`rank-number rank-${book.rank || index + 1} fw-medium`}
                       >
-                        #{index + 1}
+                        #{book.rank || index + 1}
                       </span>
-                      {index < 3 && (
+                      {(book.rank || index + 1) <= 3 && (
                         <FontAwesomeIcon
                           icon={faFire}
                           className={`ms-2 ${
-                            index === 0
+                            (book.rank || index + 1) === 1
                               ? "text-danger"
-                              : index === 1
+                              : (book.rank || index + 1) === 2
                                 ? "text-warning"
                                 : "text-success"
                           }`}

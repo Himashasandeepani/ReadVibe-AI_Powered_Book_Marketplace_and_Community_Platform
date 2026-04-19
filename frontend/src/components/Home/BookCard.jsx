@@ -24,7 +24,7 @@ import {
 } from "../../utils/helpers";
 import { addItem, setCart } from "../../store/slices/cartSlice";
 
-const BookCard = ({ book, currentUser, onViewDetails, actionsDisabled = false }) => {
+const BookCard = ({ book, currentUser, onViewDetails, actionsDisabled = false, rank = null }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -174,6 +174,12 @@ const BookCard = ({ book, currentUser, onViewDetails, actionsDisabled = false })
       </div>
 
       <div className="book-info">
+        {rank !== null && rank !== undefined && (
+          <Badge bg="dark" className="mb-2">
+            Rank #{rank}
+          </Badge>
+        )}
+
         {book.rating >= 4.5 && (
           <Badge bg="warning" className="mb-2">
             <FontAwesomeIcon icon={faStar} className="me-1" />

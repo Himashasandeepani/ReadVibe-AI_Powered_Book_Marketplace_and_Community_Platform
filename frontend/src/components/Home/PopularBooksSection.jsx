@@ -10,6 +10,28 @@ import { isPrivilegedUser } from "../../utils/auth";
 const PopularBooksSection = ({ currentUser, onViewDetails }) => {
   const [featuredBooks, setFeaturedBooks] = useState([]);
 
+  const comparePopularBooks = (left, right) => {
+    const leftMonthlySales = Number(left.salesThisMonth) || 0;
+    const rightMonthlySales = Number(right.salesThisMonth) || 0;
+    if (rightMonthlySales !== leftMonthlySales) {
+      return rightMonthlySales - leftMonthlySales;
+    }
+
+    const leftTotalSales = Number(left.totalSales) || 0;
+    const rightTotalSales = Number(right.totalSales) || 0;
+    if (rightTotalSales !== leftTotalSales) {
+      return rightTotalSales - leftTotalSales;
+    }
+
+    const leftStock = Number(left.stock) || 0;
+    const rightStock = Number(right.stock) || 0;
+    if (leftStock !== rightStock) {
+      return leftStock - rightStock;
+    }
+
+    return String(left.title || "").localeCompare(String(right.title || ""));
+  };
+
   const getBookImage = (bookTitle) => {
     const imageMap = {
       "The Midnight Library": "/assets/The_Midnight_Library.jpeg",
@@ -39,16 +61,15 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
     const loadFeaturedBooks = async () => {
       try {
         const storedBooks = await fetchBooksFromApi();
+        const featured = storedBooks.filter((book) => book.featured);
+        const nonFeatured = storedBooks.filter((book) => !book.featured);
 
-        const featured = [...storedBooks]
-          .sort(
-            (left, right) =>
-              (Number(right.salesThisMonth) || 0) - (Number(left.salesThisMonth) || 0) ||
-              (Number(right.totalSales) || 0) - (Number(left.totalSales) || 0),
-          )
-          .slice(0, 2);
+        const prioritizedBooks = [
+          ...featured.sort(comparePopularBooks),
+          ...nonFeatured.sort(comparePopularBooks),
+        ].slice(0, 4);
 
-        const formattedBooks = featured.map((book) => ({
+        const formattedBooks = prioritizedBooks.map((book, index) => ({
           id: book.id,
           title: book.title,
           author: book.author,
@@ -65,6 +86,7 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
           isbn: book.isbn,
           language: book.language,
           pages: book.pages,
+          rank: index + 1,
         }));
 
         setFeaturedBooks(formattedBooks);
@@ -104,12 +126,13 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
       <Row id="featuredBooks">
         {featuredBooks.length > 0 ? (
           featuredBooks.map((book) => (
-            <Col md={6} key={book.id} className="mb-4">
+            <Col md={6} lg={3} key={book.id} className="mb-4">
               <BookCard
                 book={book}
                 currentUser={currentUser}
                 onViewDetails={() => onViewDetails(book)}
                 actionsDisabled={isPrivilegedUser()}
+                rank={book.rank}
               />
             </Col>
           ))

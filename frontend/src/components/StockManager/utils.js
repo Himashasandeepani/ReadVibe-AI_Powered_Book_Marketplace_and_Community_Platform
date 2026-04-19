@@ -176,12 +176,22 @@ export const sortBooks = (books, sortConfig) => {
 
 // Calculate statistics
 export const calculateInventoryStats = (stockBooks) => {
+  const isLowStockBook = (book) => {
+    const stock = Number(book?.stock) || 0;
+    const minStock = Number(book?.minStock ?? book?.min_stock ?? 0);
+
+    if (stock <= 0) return false;
+    if (String(book?.status || "").toLowerCase() === "low stock") return true;
+    if (stock < 10) return true;
+    return Number.isFinite(minStock) && minStock > 0 && stock <= minStock;
+  };
+
   return {
     totalBooks: stockBooks.length,
     inStockBooks: stockBooks.filter((book) => book.status === "In Stock").length,
-    lowStockBooks: stockBooks.filter((book) => book.status === "Low Stock").length,
+    lowStockBooks: stockBooks.filter((book) => isLowStockBook(book)).length,
     outOfStockBooks: stockBooks.filter((book) => book.status === "Out of Stock").length,
-    lowStockItems: stockBooks.filter((book) => book.stock <= book.minStock && book.stock > 0).length,
+    lowStockItems: stockBooks.filter((book) => isLowStockBook(book)).length,
     totalStockValue: stockBooks.reduce((sum, book) => sum + book.price * book.stock, 0),
     totalCostValue: stockBooks.reduce((sum, book) => sum + (book.costPrice || 0) * book.stock, 0),
     potentialProfit: stockBooks.reduce((sum, book) => sum + ((book.price || 0) - (book.costPrice || 0)) * book.stock, 0),
