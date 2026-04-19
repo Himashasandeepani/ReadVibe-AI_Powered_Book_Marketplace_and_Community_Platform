@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import {
@@ -65,6 +65,15 @@ const DEFAULT_FILTERS = {
   preOrder: false,
 };
 
+const getStoredCategories = () => {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem("categories"));
+    return Array.isArray(stored) ? stored : [];
+  } catch {
+    return [];
+  }
+};
+
 const Marketplace = () => {
   const dispatch = useDispatch();
   const resolveBookImage = useCallback((book) => {
@@ -123,7 +132,24 @@ const Marketplace = () => {
   const [userWishlist, setUserWishlist] = useState(() => getStoredWishlist());
   const [showBookModal, setShowBookModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
+  const [storedCategories, setStoredCategories] = useState(() =>
+    typeof window === "undefined" ? [] : getStoredCategories(),
+  );
   const navigate = useNavigate();
+
+  const availableCategories = useMemo(() => {
+    const categories = new Set();
+
+    for (const category of storedCategories) {
+      if (category) categories.add(String(category).trim());
+    }
+
+    for (const book of allBooks) {
+      if (book?.category) categories.add(String(book.category).trim());
+    }
+
+    return [...categories].filter(Boolean).sort((left, right) => left.localeCompare(right));
+  }, [allBooks, storedCategories]);
 
   const applyFilters = useCallback(() => {
     const filtered = filterBooks(filters, allBooks);
@@ -151,6 +177,7 @@ const Marketplace = () => {
       const storedUser = getStoredUser();
       setUser(storedUser);
       setUserWishlist(getStoredWishlist());
+      setStoredCategories(getStoredCategories());
       setCurrentPage(1);
     };
 
@@ -605,6 +632,7 @@ const Marketplace = () => {
           filters={filters}
           setFilters={setFilters}
           handleFilterChange={handleFilterChange}
+          categories={availableCategories}
           changeRating={changeRating}
           resetFilters={resetFilters}
           handleApplyFilters={handleApplyFilters}
