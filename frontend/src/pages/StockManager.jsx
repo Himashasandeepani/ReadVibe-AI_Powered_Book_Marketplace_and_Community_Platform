@@ -214,6 +214,22 @@ const StockManager = () => {
     window.dispatchEvent(new Event("storage"));
   }, []);
 
+  const refreshPublishersFromApi = useCallback(async () => {
+    try {
+      const apiPublishers = await fetchPublishersFromApi();
+      const normalized = Array.isArray(apiPublishers)
+        ? apiPublishers.map((publisher) => ({
+            ...publisher,
+            status: publisher.status || "Active",
+            booksSupplied: Number(publisher.booksSupplied || 0),
+          }))
+        : [];
+      persistPublishers(normalized);
+    } catch (error) {
+      console.error("Failed to refresh publishers from API", error);
+    }
+  }, [persistPublishers]);
+
   const persistOrders = useCallback((orders) => {
     setStockOrders(orders);
     localStorage.setItem("stockOrders", JSON.stringify(orders));
@@ -306,24 +322,8 @@ const StockManager = () => {
   }, [loadBookRequestsFromApi]);
 
   useEffect(() => {
-    const loadPublishersFromApi = async () => {
-      try {
-        const apiPublishers = await fetchPublishersFromApi();
-        const normalized = Array.isArray(apiPublishers)
-          ? apiPublishers.map((publisher) => ({
-              ...publisher,
-              status: publisher.status || "Active",
-              booksSupplied: Number(publisher.booksSupplied || 0),
-            }))
-          : [];
-        persistPublishers(normalized);
-      } catch (error) {
-        console.error("Failed to load publishers from API", error);
-      }
-    };
-
-    loadPublishersFromApi();
-  }, [persistPublishers]);
+    void refreshPublishersFromApi();
+  }, [refreshPublishersFromApi]);
 
   const loadAllData = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -655,6 +655,7 @@ const StockManager = () => {
       const normalized = normalizeBook(created);
       const updatedBooks = [...stockBooks, normalized];
       persistBooks(updatedBooks);
+      await refreshPublishersFromApi();
 
       resetBookForm();
       setShowAddBookModal(false);
@@ -720,6 +721,7 @@ const StockManager = () => {
       );
 
       persistBooks(updatedBooks);
+      await refreshPublishersFromApi();
       resetBookForm();
       setShowAddBookModal(false);
       showNotification("Book updated successfully!", "success");
@@ -752,7 +754,6 @@ const StockManager = () => {
                   ...publisher,
                   ...updatedPublisher,
                   status: publisher.status || "Active",
-                  booksSupplied: publisher.booksSupplied || 0,
                 }
               : publisher,
           );
@@ -770,7 +771,6 @@ const StockManager = () => {
             ...publishers,
             {
               ...createdPublisher,
-              booksSupplied: 0,
               status: "Active",
             },
           ]);
@@ -815,6 +815,7 @@ const StockManager = () => {
           await deleteBookApi(bookId);
           const updatedBooks = stockBooks.filter((book) => book.id !== bookId);
           persistBooks(updatedBooks);
+          await refreshPublishersFromApi();
           showNotification("Book deleted successfully", "success");
         } catch (error) {
           showNotification(error.message || "Failed to delete book", "danger");

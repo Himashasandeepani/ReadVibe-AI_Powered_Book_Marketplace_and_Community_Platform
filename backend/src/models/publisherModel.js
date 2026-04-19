@@ -1,5 +1,27 @@
 import { query } from '../config/database.js';
 
+const baseSelect = `
+  SELECT
+    p.publisher_id,
+    p.publisher_name,
+    p.email,
+    p.phone,
+    p.address,
+    p.status_id,
+    p.created_at,
+    COALESCE(book_stats.books_supplied, 0)::int AS books_supplied
+  FROM publishers p
+  LEFT JOIN (
+    SELECT
+      LOWER(TRIM(publisher)) AS normalized_publisher,
+      COUNT(*)::int AS books_supplied
+    FROM books
+    WHERE publisher IS NOT NULL AND TRIM(publisher) <> ''
+    GROUP BY LOWER(TRIM(publisher))
+  ) book_stats
+    ON book_stats.normalized_publisher = LOWER(TRIM(p.publisher_name))
+`;
+
 const ensureTable = async () => {
   await query(`
     CREATE TABLE IF NOT EXISTS publishers (
@@ -23,21 +45,17 @@ const mapRow = (row) => ({
   phone: row.phone,
   address: row.address,
   statusId: row.status_id,
+  booksSupplied: Number(row.books_supplied) || 0,
   createdAt: row.created_at,
 });
 
 export const listPublishers = async () => {
-  const { rows } = await query(
-    'SELECT publisher_id, publisher_name, email, phone, address, status_id, created_at FROM publishers ORDER BY publisher_name ASC'
-  );
+  const { rows } = await query(`${baseSelect} ORDER BY p.publisher_name ASC`);
   return rows.map(mapRow);
 };
 
 export const getPublisherById = async (id) => {
-  const { rows } = await query(
-    'SELECT publisher_id, publisher_name, email, phone, address, status_id, created_at FROM publishers WHERE publisher_id = $1 LIMIT 1',
-    [id]
-  );
+  const { rows } = await query(`${baseSelect} WHERE p.publisher_id = $1 LIMIT 1`, [id]);
   if (!rows[0]) return null;
   return mapRow(rows[0]);
 };
