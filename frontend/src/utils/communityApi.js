@@ -42,11 +42,12 @@ export const fetchCommunityPostWithCommentsApi = async (postId) => {
   return { post: data.post, comments: data.comments || [] };
 };
 
-export const createCommunityPostApi = async ({ userId, content, category, bookId, bookTitle }) => {
+export const createCommunityPostApi = async ({ userId, title, content, category, bookId, bookTitle }) => {
   if (!userId) throw new Error("userId is required to create a post");
 
   const body = {
     userId,
+    title,
     content,
     category,
   };

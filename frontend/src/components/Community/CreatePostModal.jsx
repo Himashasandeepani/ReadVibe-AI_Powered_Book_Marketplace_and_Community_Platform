@@ -3,6 +3,8 @@ import React from "react";
 const CreatePostModal = ({
   showCreatePostModal,
   setShowCreatePostModal,
+  postTitle,
+  setPostTitle,
   postContent,
   setPostContent,
   postContentRef,
@@ -29,6 +31,18 @@ const CreatePostModal = ({
           </div>
           <div className="modal-body">
             <form id="createPostForm">
+              <div className="mb-3">
+                <label className="form-label fw-semibold">Title *</label>
+                <input
+                  className="form-control"
+                  type="text"
+                  value={postTitle}
+                  onChange={(e) => setPostTitle(e.target.value)}
+                  placeholder="Enter a title for your post"
+                  required
+                  maxLength="120"
+                />
+              </div>
               <div className="mb-3">
                 <label className="form-label fw-semibold">
                   What's on your mind? *

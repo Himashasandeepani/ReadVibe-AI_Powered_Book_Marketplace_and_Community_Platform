@@ -20,6 +20,7 @@ import LiveChatTab from "../components/Admin/LiveChatTab";
 import AddUserModal from "../components/Admin/AddUserModal";
 import EditUserModal from "../components/Admin/EditUserModal";
 import PostModal from "../components/Admin/PostModal";
+import { fetchCommunityPostsApi } from "../utils/communityApi";
 
 // Import Utilities
 import {
@@ -55,6 +56,37 @@ const getStoredUser = () => {
     console.error("Failed to parse currentUser from storage", error);
     return null;
   }
+};
+
+const formatAdminPostTimestamp = (value) => {
+  if (!value) return "Recently";
+
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString();
+  } catch {
+    return String(value);
+  }
+};
+
+const normalizeCommunityPost = (post) => {
+  if (!post) return null;
+
+  const postedBy =
+    post.userFullName || post.username || (typeof post.user === "string" ? post.user : "User");
+
+  return {
+    ...post,
+    user: postedBy,
+    postedBy,
+    title: post.title || "",
+    likes: Number(post.likesCount ?? post.likes ?? 0),
+    comments: Number(post.commentsCount ?? post.comments ?? 0),
+    timestamp: post.createdAt || post.timestamp || new Date().toISOString(),
+    postedOn: formatAdminPostTimestamp(post.createdAt || post.timestamp),
+    status: post.status || "Active",
+  };
 };
 
 const getInitialAdminData = () => {
@@ -147,6 +179,32 @@ const AdminPanel = () => {
 
     pullUsers();
   }, [currentUser]);
+
+  useEffect(() => {
+    const loadCommunityPosts = async () => {
+      try {
+        const apiPosts = await fetchCommunityPostsApi();
+        setPosts(
+          Array.isArray(apiPosts)
+            ? apiPosts.map(normalizeCommunityPost).filter(Boolean)
+            : [],
+        );
+      } catch (error) {
+        console.error("Failed to load community posts from API", error);
+      }
+    };
+
+    const handleCommunityPostsUpdated = () => {
+      void loadCommunityPosts();
+    };
+
+    void loadCommunityPosts();
+
+    window.addEventListener("community-posts-updated", handleCommunityPostsUpdated);
+    return () => {
+      window.removeEventListener("community-posts-updated", handleCommunityPostsUpdated);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;

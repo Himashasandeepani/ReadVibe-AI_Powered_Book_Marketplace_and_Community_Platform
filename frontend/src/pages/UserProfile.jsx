@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -32,6 +32,7 @@ import {
   books,
   showNotification,
 } from "../components/UserProfile/utils";
+import { fetchBooksFromApi } from "../components/StockManager/utils";
 import {
   getSupportMessagesForUser,
   getSupportMessagesUpdatedEventName,
@@ -63,6 +64,29 @@ const EMPTY_USER_DATA = {
   recentActivity: [],
 };
 
+const DEFAULT_REQUEST_CATEGORIES = [
+  "Fiction",
+  "Science Fiction",
+  "Fantasy",
+  "Mystery",
+  "Romance",
+  "Non-Fiction",
+  "Biography",
+  "Self-Help",
+  "Other",
+];
+
+const getStoredCategories = () => {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const stored = JSON.parse(window.localStorage.getItem("categories"));
+    return Array.isArray(stored) ? stored : [];
+  } catch {
+    return [];
+  }
+};
+
 const UserProfile = () => {
   const seededUser = typeof window === "undefined" ? null : getCurrentUser();
   const [searchParams] = useSearchParams();
@@ -83,6 +107,7 @@ const UserProfile = () => {
   const [bookRequests, setBookRequests] = useState([]);
   const [supportMessages, setSupportMessages] = useState([]);
   const [liveChatThreads, setLiveChatThreads] = useState([]);
+  const [requestCategories, setRequestCategories] = useState(DEFAULT_REQUEST_CATEGORIES);
 
   // Modal data
   const [selectedBook, setSelectedBook] = useState(null);
@@ -178,6 +203,31 @@ const UserProfile = () => {
       window.removeEventListener(getLiveChatUpdatedEventName(), handleRefresh);
     };
   }, [user, navigate]);
+
+  useEffect(() => {
+    const loadRequestCategories = async () => {
+      try {
+        const apiBooks = await fetchBooksFromApi();
+        const apiCategories = apiBooks
+          .map((book) => book.category)
+          .filter(Boolean)
+          .map((category) => String(category).trim());
+
+        const storedCategories = getStoredCategories();
+        const next = new Set([
+          ...DEFAULT_REQUEST_CATEGORIES,
+          ...storedCategories,
+          ...apiCategories,
+        ]);
+
+        setRequestCategories([...next].sort((left, right) => left.localeCompare(right)));
+      } catch (error) {
+        console.error("Failed to load request categories", error);
+      }
+    };
+
+    void loadRequestCategories();
+  }, []);
 
   useEffect(() => {
     const section = searchParams.get("section");
@@ -470,6 +520,7 @@ const UserProfile = () => {
         show={showRequestModal}
         onHide={() => setShowRequestModal(false)}
         onSubmit={handleSubmitBookRequest}
+        categories={requestCategories}
       />
 
       <AddReviewModal

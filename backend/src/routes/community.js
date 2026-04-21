@@ -43,6 +43,7 @@ router.get(
 router.post(
   '/posts',
   [
+    body('title').trim().notEmpty().withMessage('Title is required'),
     body('content').trim().notEmpty().withMessage('Content is required'),
     body('category').optional().isString(),
     body('bookTitle').optional().isString(),

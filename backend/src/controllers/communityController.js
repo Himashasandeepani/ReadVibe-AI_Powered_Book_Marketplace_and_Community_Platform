@@ -46,11 +46,12 @@ export const getCommunityPost = async (req, res, next) => {
 export const createCommunityPost = async (req, res, next) => {
   try {
     const userId = ensureUserId(req);
-    const { category, content, bookId, bookTitle } = req.body;
+    const { title, category, content, bookId, bookTitle } = req.body;
     const parsedBookId = Number(bookId);
 
     const post = await createPost({
       userId,
+      title: typeof title === 'string' && title.trim() ? title.trim() : null,
       category: category || null,
       content,
       bookId: Number.isInteger(parsedBookId) && parsedBookId > 0 ? parsedBookId : null,

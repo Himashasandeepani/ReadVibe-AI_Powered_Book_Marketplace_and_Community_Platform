@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faThumbsUp,
@@ -26,6 +26,10 @@ const PostCard = ({
     commentInputs[post.id] || "",
   );
 
+  useEffect(() => {
+    setCommentInput(commentInputs[post.id] || "");
+  }, [commentInputs, post.id]);
+
   const handleCommentChange = (value) => {
     setCommentInput(value);
     setCommentInputs((prev) => ({ ...prev, [post.id]: value }));
@@ -52,6 +56,7 @@ const PostCard = ({
           </small>
         </div>
       </div>
+      {post.title && <h6 className="mb-2 fw-semibold">{post.title}</h6>}
       <p>{post.content}</p>
       {post.bookReference && (
         <div className="book-reference">

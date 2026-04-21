@@ -3,7 +3,7 @@ import { Modal, Button, Form, Alert, Row, Col } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBookMedical, faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 
-const RequestBookModal = ({ show, onHide, onSubmit }) => {
+const RequestBookModal = ({ show, onHide, onSubmit, categories = [] }) => {
   const [formData, setFormData] = useState({
     title: "",
     author: "",
@@ -84,15 +84,11 @@ const RequestBookModal = ({ show, onHide, onSubmit }) => {
               onChange={handleChange}
             >
               <option value="">Select category...</option>
-              <option value="Fiction">Fiction</option>
-              <option value="Science Fiction">Science Fiction</option>
-              <option value="Fantasy">Fantasy</option>
-              <option value="Mystery">Mystery</option>
-              <option value="Romance">Romance</option>
-              <option value="Non-Fiction">Non-Fiction</option>
-              <option value="Biography">Biography</option>
-              <option value="Self-Help">Self-Help</option>
-              <option value="Other">Other</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
             </Form.Select>
           </Form.Group>
           <Form.Group className="mb-3">

@@ -21,6 +21,7 @@ import {
   createBookRequestApi,
   emitCommunityPostsUpdated,
 } from "../utils/communityApi";
+import { fetchBooksFromApi } from "../components/StockManager/utils";
 import { isPrivilegedUser } from "../utils/auth";
 
 const createDefaultCommunityPosts = () => [
@@ -74,6 +75,29 @@ const createDefaultCommunityPosts = () => [
   },
 ];
 
+const DEFAULT_REQUEST_CATEGORIES = [
+  "Fiction",
+  "Science Fiction",
+  "Fantasy",
+  "Mystery",
+  "Romance",
+  "Non-Fiction",
+  "Biography",
+  "Self-Help",
+  "Other",
+];
+
+const getStoredCategories = () => {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const stored = JSON.parse(window.localStorage.getItem("categories"));
+    return Array.isArray(stored) ? stored : [];
+  } catch {
+    return [];
+  }
+};
+
 const getStoredCurrentUser = () => {
   const storedUser = localStorage.getItem("currentUser");
   if (!storedUser) {
@@ -105,6 +129,7 @@ const mapApiPostToUi = (post) => {
   return {
     id: String(post.id),
     user: username,
+    title: post.title || "",
     content: post.content,
     category: post.category || "Discussion",
     bookReference: post.bookTitle || null,
@@ -152,9 +177,11 @@ const Community = () => {
 
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [showRequestBookModal, setShowRequestBookModal] = useState(false);
+  const [postTitle, setPostTitle] = useState("");
   const [postContent, setPostContent] = useState("");
   const [postCategory, setPostCategory] = useState("Discussion");
   const [bookName, setBookName] = useState("");
+  const [requestCategories, setRequestCategories] = useState(DEFAULT_REQUEST_CATEGORIES);
   const postContentRef = useRef(null);
   const [commentInputs, setCommentInputs] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
@@ -173,7 +200,6 @@ const Community = () => {
     "Book Review",
     "Recommendation",
     "Question",
-    "Announcement",
   ];
 
   const popularTags = [
@@ -185,10 +211,43 @@ const Community = () => {
       if (event.key === "currentUser") {
         setCurrentUser(getStoredCurrentUser());
       }
+
+      if (event.key === "categories") {
+        const storedCategories = getStoredCategories();
+        setRequestCategories((current) => {
+          const next = new Set([...DEFAULT_REQUEST_CATEGORIES, ...storedCategories, ...current]);
+          return [...next].sort((left, right) => left.localeCompare(right));
+        });
+      }
     };
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  useEffect(() => {
+    const loadRequestCategories = async () => {
+      try {
+        const apiBooks = await fetchBooksFromApi();
+        const apiCategories = apiBooks
+          .map((book) => book.category)
+          .filter(Boolean)
+          .map((category) => String(category).trim());
+
+        const storedCategories = getStoredCategories();
+        const next = new Set([
+          ...DEFAULT_REQUEST_CATEGORIES,
+          ...storedCategories,
+          ...apiCategories,
+        ]);
+
+        setRequestCategories([...next].sort((left, right) => left.localeCompare(right)));
+      } catch (error) {
+        console.error("Failed to load request categories", error);
+      }
+    };
+
+    void loadRequestCategories();
   }, []);
 
   useEffect(() => {
@@ -393,6 +452,7 @@ const Community = () => {
     try {
       const createdPost = await createCommunityPostApi({
         userId: currentUser.id,
+        title: postTitle.trim(),
         content: trimmedContent,
         category: postCategory,
         bookTitle: bookName || undefined,
@@ -401,6 +461,7 @@ const Community = () => {
       const uiPostFromApi = mapApiPostToUi(createdPost);
       const uiPost = {
         ...uiPostFromApi,
+        title: uiPostFromApi.title || postContent,
         bookReference: bookName || uiPostFromApi.bookReference,
       };
 
@@ -419,6 +480,7 @@ const Community = () => {
         console.error("Error updating admin panel posts from created post:", error);
       }
 
+      setPostTitle("");
       setPostContent("");
       setPostCategory("Discussion");
       setBookName("");
@@ -747,6 +809,8 @@ const Community = () => {
         postContent={postContent}
         setPostContent={setPostContent}
         postContentRef={postContentRef}
+        postTitle={postTitle}
+        setPostTitle={setPostTitle}
         postCategory={postCategory}
         setPostCategory={setPostCategory}
         postCategories={postCategories}
@@ -762,6 +826,7 @@ const Community = () => {
         setShowRequestBookModal={setShowRequestBookModal}
         requestForm={requestForm}
         setRequestForm={setRequestForm}
+        categories={requestCategories}
         handleRequestBook={handleRequestBook}
       />
 

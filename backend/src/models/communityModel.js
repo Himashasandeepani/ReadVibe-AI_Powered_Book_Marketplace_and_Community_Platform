@@ -6,6 +6,7 @@ const postBaseSelect = `
     p.user_id,
     u.username,
     u.full_name,
+    p.title,
     p.category,
     p.content,
     p.book_id,
@@ -32,6 +33,7 @@ const mapPostRow = (row) => ({
   userId: row.user_id,
   username: row.username,
   userFullName: row.full_name,
+  title: row.title,
   category: row.category,
   content: row.content,
   bookId: row.book_id,
@@ -51,6 +53,7 @@ const ensureTables = async () => {
     CREATE TABLE IF NOT EXISTS community_posts (
       id BIGSERIAL PRIMARY KEY,
       user_id BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+      title TEXT,
       category TEXT,
       content TEXT NOT NULL,
       book_id BIGINT REFERENCES books(id) ON DELETE SET NULL,
@@ -61,6 +64,7 @@ const ensureTables = async () => {
     );
   `);
 
+  await query(`ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS title TEXT;`);
   await query(`ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS book_title TEXT;`);
 
   await query(`
@@ -128,12 +132,12 @@ export const getPostById = async (id) => {
   return mapPostRow(rows[0]);
 };
 
-export const createPost = async ({ userId, category, content, bookId, bookTitle }) => {
+export const createPost = async ({ userId, title, category, content, bookId, bookTitle }) => {
   const { rows } = await query(
-    `INSERT INTO community_posts (user_id, category, content, book_id, book_title)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO community_posts (user_id, title, category, content, book_id, book_title)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING id`,
-    [userId, category || null, content, bookId || null, bookTitle || null]
+    [userId, title || null, category || null, content, bookId || null, bookTitle || null]
   );
   return getPostById(rows[0].id);
 };
