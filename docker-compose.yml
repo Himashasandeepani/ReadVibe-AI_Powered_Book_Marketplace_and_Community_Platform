@@ -16,7 +16,7 @@ services:
       - POSTGRES_USER=readvibe
       - POSTGRES_PASSWORD=readvibe_password
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql/data
     networks:
       - readvibe-network
     healthcheck:
@@ -41,7 +41,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin_data:/var/lib/pgadmin
       - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
     networks:
       - readvibe-network
@@ -54,7 +54,7 @@ services:
     container_name: readvibe-backend
     restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "5001:5000"
     environment:
       - NODE_ENV=development
       - PORT=5000
@@ -94,8 +94,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - VITE_BACKEND_URL=http://localhost:5000
-      - VITE_WEBSOCKET_URL=http://localhost:5000
+      - VITE_BACKEND_URL=http://localhost:5001
+      - VITE_WEBSOCKET_URL=http://localhost:5001
       - CHOKIDAR_USEPOLLING=true
     depends_on:
       - backend
@@ -106,11 +106,11 @@ services:
       - readvibe-network
     command: npm run dev -- --host 0.0.0.0 --port 3000
 
-volumes:
-  postgres_data:
-    driver: local
-  pgadmin_data:
-    driver: local
+# volumes:
+  # postgres_data:
+  #   driver: local
+  # pgadmin_data:
+  #   driver: local
 
 networks:
   readvibe-network:
