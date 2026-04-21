@@ -3,6 +3,7 @@ import { query } from '../config/database.js';
 const baseSelect = `
   SELECT
     id,
+    dataset_book_id,
     isbn,
     title,
     author,
@@ -42,6 +43,7 @@ const baseSelect = `
 
 const mapRow = (row) => ({
   id: row.id,
+  datasetBookId: row.dataset_book_id,
   isbn: row.isbn,
   title: row.title,
   author: row.author,
@@ -74,6 +76,7 @@ const ensureTable = async () => {
   await query(`
     CREATE TABLE IF NOT EXISTS books (
       id BIGSERIAL PRIMARY KEY,
+      dataset_book_id TEXT,
       isbn TEXT,
       title TEXT NOT NULL,
       author TEXT,
@@ -107,6 +110,7 @@ const ensureLegacyColumns = async () => {
   await query(`
     ALTER TABLE books
       ADD COLUMN IF NOT EXISTS id BIGSERIAL,
+      ADD COLUMN IF NOT EXISTS dataset_book_id TEXT,
       ADD COLUMN IF NOT EXISTS isbn TEXT,
       ADD COLUMN IF NOT EXISTS title TEXT,
       ADD COLUMN IF NOT EXISTS author TEXT,
@@ -208,6 +212,7 @@ export const createBook = async (payload) => {
   const normalizedImages = normalizeImages(payload.images) ?? [];
   const { rows } = await query(
     `INSERT INTO books (
+      dataset_book_id,
       isbn,
       title,
       author,
@@ -231,9 +236,10 @@ export const createBook = async (payload) => {
       sales_this_month,
       total_sales
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
     ) RETURNING id`,
     [
+      payload.datasetBookId || null,
       payload.isbn || null,
       payload.title,
       payload.author || null,
@@ -274,6 +280,7 @@ export const updateBook = async (id, updates = {}) => {
   };
 
   if (updates.isbn !== undefined) addField('isbn', updates.isbn);
+  if (updates.datasetBookId !== undefined) addField('dataset_book_id', updates.datasetBookId);
   if (updates.title !== undefined) addField('title', updates.title);
   if (updates.author !== undefined) addField('author', updates.author);
   if (updates.category !== undefined) addField('category', updates.category);

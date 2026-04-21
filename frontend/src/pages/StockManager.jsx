@@ -106,6 +106,7 @@ const StockManager = () => {
   });
 
   const [newBook, setNewBook] = useState({
+    datasetBookId: "",
     isbn: "",
     title: "",
     author: "",
@@ -186,6 +187,7 @@ const StockManager = () => {
 
     return {
       ...book,
+      datasetBookId: book.datasetBookId ?? book.dataset_book_id ?? "",
       price: Number(book.price) || 0,
       costPrice:
         book.costPrice !== undefined
@@ -562,6 +564,7 @@ const StockManager = () => {
 
   const resetBookForm = () => {
     setNewBook({
+      datasetBookId: "",
       isbn: "",
       title: "",
       author: "",
@@ -653,6 +656,7 @@ const StockManager = () => {
     const status = computeStockStatus(stockValue, minValue);
 
     const payload = {
+      datasetBookId: newBook.datasetBookId,
       isbn: newBook.isbn,
       title: newBook.title,
       author: newBook.author,
@@ -718,6 +722,7 @@ const StockManager = () => {
     const status = computeStockStatus(stockValue, minValue);
 
     const payload = {
+      datasetBookId: newBook.datasetBookId,
       isbn: newBook.isbn,
       title: newBook.title,
       author: newBook.author,
@@ -862,6 +867,7 @@ const StockManager = () => {
     const book = stockBooks.find((b) => b.id === bookId);
     if (book) {
       setNewBook({
+        datasetBookId: book.datasetBookId || "",
         isbn: book.isbn,
         title: book.title,
         author: book.author,

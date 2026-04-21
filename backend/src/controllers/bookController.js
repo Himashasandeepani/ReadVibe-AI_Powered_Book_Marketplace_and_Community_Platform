@@ -32,6 +32,7 @@ export const getBook = async (req, res, next) => {
 export const createBookHandler = async (req, res, next) => {
   try {
     const book = await createBook({
+      datasetBookId: req.body.datasetBookId,
       isbn: req.body.isbn,
       title: req.body.title,
       author: req.body.author,
@@ -70,6 +71,7 @@ export const updateBookHandler = async (req, res, next) => {
     }
 
     const book = await updateBook(id, {
+      datasetBookId: req.body.datasetBookId,
       isbn: req.body.isbn,
       title: req.body.title,
       author: req.body.author,

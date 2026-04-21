@@ -59,6 +59,7 @@ const BooksTable = ({
             <th>Author</th>
             <th>Publisher</th>
             <th>Category</th>
+            <th>Dataset Book ID</th>
             <th>
               <button
                 className="btn btn-link p-0 text-decoration-none text-dark fw-bold"
@@ -104,6 +105,11 @@ const BooksTable = ({
               <td>{book.publisher || "-"}</td>
               <td>
                 <span className="badge bg-secondary">{book.category}</span>
+              </td>
+              <td>
+                <small className="text-muted">
+                  {book.datasetBookId || book.dataset_book_id || "-"}
+                </small>
               </td>
               <td className="text-end">
                 <div className="fw-medium">{formatMoney(book.price)}</div>

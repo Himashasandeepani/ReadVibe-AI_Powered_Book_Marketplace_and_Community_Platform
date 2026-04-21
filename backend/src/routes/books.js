@@ -41,6 +41,7 @@ router.post(
   [
     body('title').trim().notEmpty().withMessage('Title is required'),
     body('price').isNumeric().withMessage('Price is required'),
+    body('datasetBookId').optional().trim().matches(/^[A-Za-z0-9_-]+$/).withMessage('Dataset book id must contain only letters, numbers, hyphens, or underscores'),
     body('stock').optional().isInt({ min: 0 }).withMessage('Stock must be integer'),
     body('minStock').optional().isInt({ min: 0 }),
     body('maxStock').optional().isInt({ min: 0 }),
