@@ -8,9 +8,10 @@ import { getCurrentUser } from "../utils/auth";
 import { showNotification } from "../utils/helpers";
 import { addItem } from "../store/slices/cartSlice";
 import { getOrderApi, getOrdersApi } from "../utils/orderApi";
-import createBookCoverPlaceholder from "../utils/imagePlaceholders";
 import { getOrderPaymentConfirmationKey } from "../components/Checkout/utils";
 import { createSupportMessage } from "../utils/supportMessages";
+import { fetchBooksFromApi } from "../components/StockManager/utils";
+import { BOOK_RECOMMENDATION_RULES } from "../data/recommendationRules";
 
 // Import Components
 import ProgressSteps from "../components/common/ProgressSteps";
@@ -28,8 +29,9 @@ import ContactSupportModal from "../components/OrderConfirmation/ContactSupportM
 
 // Import Utilities
 import {
-  getOrderedCategories,
-  getRecommendedBooks,
+  getOrderedDatasetBookIds,
+  getRecommendedBookIds,
+  getRecommendedBooksByIds,
   calculateEstimatedDates,
   downloadInvoice,
   getTrackingUpdates,
@@ -44,64 +46,16 @@ const OrderConfirmation = () => {
   const dispatch = useDispatch();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [books, setBooks] = useState([]);
 
   // Modal states
   const [showTrackModal, setShowTrackModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
 
-  // Sample books data
-  const books = useMemo(
-    () => [
-      {
-        id: 1,
-        title: "The Midnight Library",
-        author: "Matt Haig",
-        price: 6000.0,
-        category: "Fiction",
-        rating: 4.3,
-        reviews: 128,
-        inStock: true,
-        image: createBookCoverPlaceholder(),
-      },
-      {
-        id: 2,
-        title: "Project Hail Mary",
-        author: "Andy Weir",
-        price: 6500.0,
-        category: "Science Fiction",
-        rating: 4.8,
-        reviews: 95,
-        inStock: true,
-        image: createBookCoverPlaceholder(),
-      },
-      {
-        id: 3,
-        title: "Dune",
-        author: "Frank Herbert",
-        price: 5400.0,
-        category: "Science Fiction",
-        rating: 4.0,
-        reviews: 210,
-        inStock: true,
-        image: createBookCoverPlaceholder(),
-      },
-      {
-        id: 4,
-        title: "The Hobbit",
-        author: "J.R.R. Tolkien",
-        price: 3500.0,
-        category: "Fantasy",
-        rating: 4.9,
-        reviews: 305,
-        inStock: false,
-        image: createBookCoverPlaceholder(),
-      },
-    ],
-    [],
-  );
-
   const currentUser = useMemo(() => getCurrentUser(), []);
   const orderId = searchParams.get("orderId");
+
+  const recommendationRules = BOOK_RECOMMENDATION_RULES;
 
   const getStoredPaymentConfirmation = (targetOrderId) => {
     try {
@@ -200,6 +154,20 @@ const OrderConfirmation = () => {
   }, [currentUser, orderId]);
 
   useEffect(() => {
+    const loadBooks = async () => {
+      try {
+        const apiBooks = await fetchBooksFromApi();
+        setBooks(Array.isArray(apiBooks) ? apiBooks : []);
+      } catch (error) {
+        console.error("Failed to load books for recommendations", error);
+        setBooks([]);
+      }
+    };
+
+    loadBooks();
+  }, []);
+
+  useEffect(() => {
     if (order && searchParams.get("view") === "tracking") {
       setShowTrackModal(true);
     }
@@ -212,9 +180,10 @@ const OrderConfirmation = () => {
 
   const recommendedBooks = useMemo(() => {
     if (!order) return [];
-    const orderedCategories = getOrderedCategories(order, books);
-    return getRecommendedBooks(orderedCategories, books, 4);
-  }, [order, books]);
+    const selectedBookIds = getOrderedDatasetBookIds(order, books);
+    const recommendedBookIds = getRecommendedBookIds(selectedBookIds, recommendationRules, books, 4);
+    return getRecommendedBooksByIds(recommendedBookIds, books);
+  }, [order, books, recommendationRules]);
 
   useEffect(() => {
     if (!currentUser) {
