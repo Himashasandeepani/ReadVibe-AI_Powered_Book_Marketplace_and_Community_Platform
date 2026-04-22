@@ -175,7 +175,7 @@ export const sortBooks = (books, sortConfig) => {
 };
 
 // Calculate statistics
-export const calculateInventoryStats = (stockBooks) => {
+export const calculateInventoryStats = (stockBooks, stockOrders = []) => {
   const isLowStockBook = (book) => {
     const stock = Number(book?.stock) || 0;
     const minStock = Number(book?.minStock ?? book?.min_stock ?? 0);
@@ -186,6 +186,47 @@ export const calculateInventoryStats = (stockBooks) => {
     return Number.isFinite(minStock) && minStock > 0 && stock <= minStock;
   };
 
+  const booksById = new Map(
+    stockBooks.map((book) => [Number(book?.id), book]),
+  );
+
+  const orderSales = stockOrders.flatMap((order) => {
+    const items = Array.isArray(order?.itemsList)
+      ? order.itemsList
+      : Array.isArray(order?.items)
+        ? order.items
+        : [];
+
+    return items.map((item) => {
+      const quantity = Number(item?.quantity) || 0;
+      const bookId = Number(item?.bookId ?? item?.book_id ?? 0);
+      const book = booksById.get(bookId);
+      const unitPrice = Number(item?.unitPrice ?? item?.unit_price) || 0;
+      const costPrice = Number(
+        book?.costPrice ?? book?.cost_price ?? item?.costPrice ?? item?.cost_price ?? 0,
+      ) || 0;
+
+      return { quantity, unitPrice, costPrice };
+    });
+  });
+
+  const hasOrderItemSales = orderSales.some((item) => item.quantity > 0);
+  const totalSalesCount = hasOrderItemSales
+    ? orderSales.reduce((sum, item) => sum + item.quantity, 0)
+    : stockBooks.reduce((sum, book) => sum + (Number(book.totalSales) || 0), 0);
+
+  const totalProfitEarned = hasOrderItemSales
+    ? orderSales.reduce(
+        (sum, item) => sum + ((item.unitPrice - item.costPrice) * item.quantity),
+        0,
+      )
+    : stockBooks.reduce(
+        (sum, book) =>
+          sum +
+          (((Number(book.price) || 0) - (Number(book.costPrice) || 0)) * (Number(book.totalSales) || 0)),
+        0,
+      );
+
   return {
     totalBooks: stockBooks.length,
     inStockBooks: stockBooks.filter((book) => book.status === "In Stock").length,
@@ -195,11 +236,8 @@ export const calculateInventoryStats = (stockBooks) => {
     totalStockValue: stockBooks.reduce((sum, book) => sum + book.price * book.stock, 0),
     totalCostValue: stockBooks.reduce((sum, book) => sum + (book.costPrice || 0) * book.stock, 0),
     potentialProfit: stockBooks.reduce((sum, book) => sum + ((book.price || 0) - (book.costPrice || 0)) * book.stock, 0),
-    totalSalesCount: stockBooks.reduce((sum, book) => sum + (Number(book.totalSales) || 0), 0),
-    totalProfitEarned: stockBooks.reduce(
-      (sum, book) => sum + (((Number(book.price) || 0) - (Number(book.costPrice) || 0)) * (Number(book.totalSales) || 0)),
-      0,
-    ),
+    totalSalesCount,
+    totalProfitEarned,
     featuredBooks: stockBooks.filter((book) => book.featured).length,
     totalMonthlySales: stockBooks.reduce((sum, book) => sum + book.salesThisMonth, 0),
   };

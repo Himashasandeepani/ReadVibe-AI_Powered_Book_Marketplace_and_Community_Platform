@@ -11,6 +11,8 @@ A full-stack e-commerce and community platform for book lovers built with React,
 
 ReadVibe is a comprehensive book marketplace platform that combines e-commerce functionality with a vibrant community. It features user authentication, shopping cart, order management, inventory tracking, and community discussions—all with role-based access control for different user types.
 
+The finished platform also includes AI-powered recommendations, live support chat, order confirmation emails, and stock manager analytics that are backed by the Node.js and PostgreSQL stack.
+
 ## ✨ Key Features
 
 ### For Regular Users
@@ -57,10 +59,10 @@ ReadVibe/
 │   │   ├── middleware/
 │   │   ├── config/
 │   │   └── utils/
-│   ├── docker-compose.yml
 │   ├── Dockerfile
 │   ├── package.json
 │   └── README.md
+├── docker-compose.yml  # Multi-service local development stack
 └── README.md          # This file
 ```
 
@@ -110,10 +112,11 @@ Frontend runs on: `http://localhost:5173`
 
 #### Option A: Using Docker (Recommended)
 ```bash
-cd backend
 cp .env.example .env
 docker-compose up --build
 ```
+
+Run this command from the repository root where `docker-compose.yml` lives.
 
 #### Option B: Local PostgreSQL
 ```bash
@@ -140,6 +143,11 @@ The application uses PostgreSQL with the following main entities:
 - **community_posts** - User posts and discussions
 - **post_comments** - Comments on posts
 - **reviews** - Book ratings and reviews
+
+### Support & AI
+- **support_messages** - Customer support conversations
+- **live_chat_threads** - Live support chat threads
+- **recommendation_rules** - Apriori rule data used by the recommendation engine
 
 ### Supplier & Requests
 - **suppliers** - Book suppliers
@@ -190,6 +198,14 @@ GET    /api/orders           - Get user's orders
 GET    /api/orders/:id       - Get specific order
 ```
 
+### Support
+```
+GET    /api/support/messages      - Get support messages
+POST   /api/support/messages      - Create support message
+GET    /api/support/live-chat     - Get live chat threads
+POST   /api/support/live-chat     - Create or reply in live chat
+```
+
 ### Users
 ```
 GET    /api/users/profile    - Get user profile
@@ -211,7 +227,6 @@ For complete API documentation, see [Backend README](backend/README.md)
 ### Using Docker Compose (Frontend + Backend + Database)
 
 ```bash
-cd backend
 docker-compose up --build
 ```
 
@@ -248,6 +263,13 @@ PORT=5000
 NODE_ENV=development
 JWT_SECRET=your_jwt_secret_key
 FRONTEND_URL=http://localhost:5173
+EMAIL_ENABLED=true
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-gmail-address@gmail.com
+SMTP_PASS=your-gmail-app-password
+EMAIL_FROM=your-gmail-address@gmail.com
 ```
 
 ## 🛠️ Development
@@ -394,11 +416,11 @@ docker-compose -f docker-compose.yml up -d
 - [x] Backend API Structure
 - [x] Database Schema
 - [x] Docker Setup
-- [ ] Backend Controllers Implementation
-- [ ] API Integration
-- [ ] Authentication Implementation
-- [ ] Testing
-- [ ] Production Deployment
+- [x] Backend Controllers Implementation
+- [x] API Integration
+- [x] Authentication Implementation
+- [ ] Automated testing
+- [ ] Production deployment
 
 ## 📝 License
 
@@ -417,10 +439,7 @@ This project is developed as a **Final Year Project** for educational purposes, 
 ## 📈 Future Enhancements
 
 - [ ] Payment gateway integration
-- [ ] Email notifications
-- [ ] Advanced analytics
 - [ ] Mobile app version
-- [ ] Book recommendations AI
 - [ ] Multi-language support
 - [ ] Performance optimization
 - [ ] Security enhancements

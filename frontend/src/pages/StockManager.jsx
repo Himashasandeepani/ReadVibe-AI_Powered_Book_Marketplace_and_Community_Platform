@@ -450,7 +450,7 @@ const StockManager = () => {
   }, [currentUser, navigate, handleStorageChange]);
 
   // Calculate statistics
-  const inventoryStats = calculateInventoryStats(stockBooks);
+  const inventoryStats = calculateInventoryStats(stockBooks, stockOrders);
   const orderStats = calculateOrderStats(stockOrders);
   const requestStats = calculateRequestStats(bookRequests);
 

@@ -59,7 +59,7 @@ const DEFAULT_FILTERS = {
   category: "all",
   minPrice: 0,
   maxPrice: 10000,
-  minRating: 4.0,
+  minRating: 0,
   minReviews: 0,
   inStock: false,
   preOrder: false,
@@ -90,8 +90,14 @@ const Marketplace = () => {
         image: resolveBookImage(book),
         inStock: book.inStock ?? book.stock > 0,
         stock: book.stock ?? 0,
-        rating: book.rating || 4.2,
-        reviews: book.reviews || book.totalSales || 12,
+        rating:
+          book.rating !== undefined && book.rating !== null
+            ? Number(book.rating)
+            : 0,
+        reviews:
+          book.reviews !== undefined && book.reviews !== null
+            ? Number(book.reviews)
+            : 0,
         price: Number(book.price) || 0,
       })),
     [resolveBookImage],

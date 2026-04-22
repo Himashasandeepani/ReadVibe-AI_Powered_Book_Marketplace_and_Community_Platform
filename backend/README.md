@@ -1,6 +1,6 @@
 # ReadVibe Backend
 
-Node.js + Express.js backend with PostgreSQL database for ReadVibe project.
+Node.js + Express.js backend with PostgreSQL database for the ReadVibe project.
 
 ## Setup
 
@@ -16,14 +16,22 @@ Node.js + Express.js backend with PostgreSQL database for ReadVibe project.
    cp .env.example .env
    ```
 
-2. **Update .env with your settings:**
-   ```
+2. **Update `.env` with your settings:**
+   ```env
    DB_HOST=localhost
    DB_PORT=5432
    DB_NAME=readvibe_db
    DB_USER=postgres
    DB_PASSWORD=password
    JWT_SECRET=your_secret_key
+   FRONTEND_URL=http://localhost:5173
+   EMAIL_ENABLED=true
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_SECURE=false
+   SMTP_USER=your-gmail-address@gmail.com
+   SMTP_PASS=your-gmail-app-password
+   EMAIL_FROM=your-gmail-address@gmail.com
    ```
 
 3. **Install dependencies:**
@@ -33,8 +41,9 @@ Node.js + Express.js backend with PostgreSQL database for ReadVibe project.
 
 ### Running with Docker
 
-1. **Build and start containers:**
+1. **Build and start containers from the repository root:**
    ```bash
+   cd ..
    docker-compose up --build
    ```
 
@@ -75,7 +84,6 @@ backend/
 │   └── server.js      # Main server file
 ├── .env.example       # Environment variables template
 ├── Dockerfile         # Docker image configuration
-├── docker-compose.yml # Docker Compose configuration
 └── package.json       # Project dependencies
 ```
 
@@ -107,11 +115,18 @@ backend/
 - GET `/api/orders` - Get orders
 - POST `/api/orders` - Create order
 - GET `/api/orders/:id` - Get order by ID
+- GET `/api/orders/all` - Get all orders for stock manager and admin dashboards
 
 ### Community
 - GET `/api/community/posts` - Get all posts
 - POST `/api/community/posts` - Create post
 - DELETE `/api/community/posts/:id` - Delete post
+
+### Support
+- GET `/api/support/messages` - Get support messages
+- POST `/api/support/messages` - Create a support message
+- GET `/api/support/live-chat` - Get live chat threads
+- POST `/api/support/live-chat` - Create or reply in a live chat thread
 
 ## Development
 
@@ -119,6 +134,8 @@ backend/
 ```bash
 npm test
 ```
+
+Note: the current `npm test` script exits with a placeholder message because an automated test suite has not been added yet.
 
 ### Docker Commands
 
@@ -142,5 +159,6 @@ docker-compose down -v
 - **Framework:** Express.js
 - **Database:** PostgreSQL
 - **Authentication:** JWT
+- **Email:** Nodemailer with Gmail SMTP support
 - **Containerization:** Docker
 - **Package Manager:** npm
