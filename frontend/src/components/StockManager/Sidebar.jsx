@@ -8,6 +8,7 @@ import {
   faTruck,
   faFire,
   faBook,
+  faComments,
 } from "@fortawesome/free-solid-svg-icons";
 
 const Sidebar = ({
@@ -16,6 +17,7 @@ const Sidebar = ({
   inventoryStats,
   orderStats,
   requestStats,
+  supportMessageCount,
 }) => {
   return (
     <div className="col-lg-2">
@@ -70,7 +72,7 @@ const Sidebar = ({
           </li>
           <li className="nav-item">
             <button
-              className={`nav-link ${activeTab === "Publishers" ? "active" : ""}`}
+              className={`nav-link ${activeTab === "publishers" ? "active" : ""}`}
               onClick={() => onTabChange("publishers")}
             >
               <FontAwesomeIcon icon={faTruck} className="me-2" />
@@ -101,6 +103,20 @@ const Sidebar = ({
               {requestStats?.pending > 0 && (
                 <span className="badge bg-danger ms-2">
                   {requestStats.pending}
+                </span>
+              )}
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === "messages" ? "active" : ""}`}
+              onClick={() => onTabChange("messages")}
+            >
+              <FontAwesomeIcon icon={faComments} className="me-2" />
+              Messages
+              {supportMessageCount > 0 && (
+                <span className="badge bg-primary ms-2">
+                  {supportMessageCount}
                 </span>
               )}
             </button>

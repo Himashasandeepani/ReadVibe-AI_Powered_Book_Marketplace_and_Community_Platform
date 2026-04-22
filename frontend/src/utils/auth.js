@@ -1,14 +1,32 @@
 // User management utility functions
 // utils/auth.js
+const normalizeUser = (user) => {
+  if (!user || typeof user !== "object") {
+    return null;
+  }
+
+  const resolvedId =
+    user.id ??
+    user.userId ??
+    user.user_id ??
+    user.userID ??
+    null;
+
+  return {
+    ...user,
+    id: resolvedId !== null && resolvedId !== undefined ? Number(resolvedId) : null,
+  };
+};
+
 export const setCurrentUser = (user) => {
-  localStorage.setItem('currentUser', JSON.stringify(user));
+  localStorage.setItem('currentUser', JSON.stringify(normalizeUser(user)));
   // Trigger storage event for other tabs
-  window.dispatchEvent(new Event('storage'));
+  setTimeout(() => window.dispatchEvent(new Event('storage')), 0);
 };
 
 export const getCurrentUser = () => {
   const user = localStorage.getItem('currentUser');
-  return user ? JSON.parse(user) : null;
+  return user ? normalizeUser(JSON.parse(user)) : null;
 };
 
 export const logout = () => {
@@ -32,6 +50,11 @@ export const isStockManager = () => {
 export const isRegularUser = () => {
   const user = getCurrentUser();
   return user && user.role === 'user';
+};
+
+export const isPrivilegedUser = () => {
+  const user = getCurrentUser();
+  return user && (user.role === 'admin' || user.role === 'stock');
 };
 
 
@@ -146,4 +169,3 @@ export const getOrderById = (orderId) => {
   const orders = getUserOrders();
   return orders.find(order => order.id === orderId);
 };
-

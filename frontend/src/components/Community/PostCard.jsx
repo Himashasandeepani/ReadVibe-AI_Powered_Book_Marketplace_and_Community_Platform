@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faThumbsUp,
@@ -10,6 +10,7 @@ import {
 const PostCard = ({
   post,
   currentUser,
+  actionsDisabled = false,
   onLike,
   onToggleComments,
   onAddComment,
@@ -24,6 +25,10 @@ const PostCard = ({
   const [commentInput, setCommentInput] = useState(
     commentInputs[post.id] || "",
   );
+
+  useEffect(() => {
+    setCommentInput(commentInputs[post.id] || "");
+  }, [commentInputs, post.id]);
 
   const handleCommentChange = (value) => {
     setCommentInput(value);
@@ -51,6 +56,7 @@ const PostCard = ({
           </small>
         </div>
       </div>
+      {post.title && <h6 className="mb-2 fw-semibold">{post.title}</h6>}
       <p>{post.content}</p>
       {post.bookReference && (
         <div className="book-reference">
@@ -66,53 +72,52 @@ const PostCard = ({
               : ""
           }`}
           onClick={() => onLike(post.id)}
-          disabled={!currentUser}
-          title={!currentUser ? "Login to like posts" : ""}
+          disabled={!currentUser || actionsDisabled}
+          title={actionsDisabled ? "Not available for admin or stock manager accounts" : !currentUser ? "Login to like posts" : ""}
         >
           <FontAwesomeIcon icon={faThumbsUp} /> <span>{post.likes || 0}</span>
         </button>
         <button
           className="btn btn-sm btn-outline-secondary me-2 comment-btn"
           onClick={() => onToggleComments(post.id)}
-          title={!currentUser ? "Login to comment" : ""}
+          title={actionsDisabled ? "Not available for admin or stock manager accounts" : expandedComments[post.id] ? "Hide comments" : "Show comments"}
+          disabled={actionsDisabled}
         >
           <FontAwesomeIcon icon={faComment} /> <span>{post.comments || 0}</span>
         </button>
         <button
           className="btn btn-sm btn-outline-secondary share-btn"
           onClick={() => onShare(post.id)}
+          disabled={actionsDisabled}
         >
           <FontAwesomeIcon icon={faShareSquare} /> Share
         </button>
       </div>
 
-      {/* Comments Section */}
       {expandedComments[post.id] && (
         <div className="mt-3">
-          <div className="comments-section" id={`commentsList${post.id}`}>
+          <div className="comments-section mb-3" id={`commentsList${post.id}`}>
+            <h6 className="mb-2">
+              <FontAwesomeIcon icon={faComment} className="me-2" />
+              Comments ({post.comments || 0})
+            </h6>
+
             {!post.commentsList || post.commentsList.length === 0 ? (
               <div className="text-center py-3">
                 <p className="text-muted mb-0">
-                  No comments yet.{" "}
-                  {!currentUser
-                    ? "Login to be the first to comment!"
-                    : "Be the first to comment!"}
+                  No comments yet. {currentUser ? "Be the first to comment!" : "Login to be the first to comment!"}
                 </p>
               </div>
             ) : (
               post.commentsList.map((comment, index) => (
                 <div className="comment-item" key={index}>
                   <div className="d-flex">
-                    <div className="comment-avatar">
-                      {getUserAvatar(comment)}
-                    </div>
+                    <div className="comment-avatar">{getUserAvatar(comment)}</div>
                     <div>
                       <h6 className="mb-0" style={{ fontSize: "0.95rem" }}>
                         {getUserName(comment)}
                       </h6>
-                      <small className="text-muted">
-                        {formatTimestamp(comment.timestamp)}
-                      </small>
+                      <small className="text-muted">{formatTimestamp(comment.timestamp)}</small>
                       <p className="mb-0 mt-1">{comment.content}</p>
                     </div>
                   </div>
@@ -120,6 +125,7 @@ const PostCard = ({
               ))
             )}
           </div>
+
           <div className="comment-input-group input-group">
             <input
               type="text"
@@ -129,7 +135,7 @@ const PostCard = ({
               }
               value={commentInput}
               onChange={(e) => handleCommentChange(e.target.value)}
-              disabled={!currentUser}
+              disabled={!currentUser || actionsDisabled}
               onKeyPress={(e) =>
                 e.key === "Enter" && onAddComment(post.id, commentInput)
               }
@@ -137,8 +143,8 @@ const PostCard = ({
             <button
               className="btn btn-outline-primary"
               onClick={() => onAddComment(post.id, commentInput)}
-              disabled={!currentUser}
-              title={!currentUser ? "Login to comment" : ""}
+              disabled={!currentUser || actionsDisabled}
+              title={actionsDisabled ? "Not available for admin or stock manager accounts" : !currentUser ? "Login to comment" : ""}
             >
               Post
             </button>

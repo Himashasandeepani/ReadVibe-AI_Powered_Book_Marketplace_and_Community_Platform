@@ -28,37 +28,53 @@ import {
   generateStarRating,
   addToWishlist,
   showNotification,
+  getUserWishlist,
 } from "../../utils/helpers";
 import { addItem, setCart } from "../../store/slices/cartSlice";
+import { isPrivilegedUser } from "../../utils/auth";
 
-const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
+const BookDetailsModal = ({ show, onHide, book, currentUser, actionsDisabled }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   if (!book) return null;
+  const reviewItems = Array.isArray(book.reviewsList) ? book.reviewsList : [];
 
   const isLoggedIn = () => currentUser !== null;
+  const isActionsDisabled = actionsDisabled ?? isPrivilegedUser();
 
   const isInWishlist = (bookId) => {
     if (!currentUser) return false;
-    const wishlist =
-      JSON.parse(localStorage.getItem(`wishlist_${currentUser.id}`)) || [];
+    const wishlist = getUserWishlist();
     return wishlist.some((item) => item.id === bookId);
   };
 
-  const handleAddToWishlist = () => {
+  const handleAddToWishlist = async () => {
+    if (isActionsDisabled) {
+      showNotification("Admin and stock manager accounts cannot use wishlist actions.", "warning");
+      return;
+    }
+
     if (!isLoggedIn()) {
       onHide();
       navigate("/login");
       return;
     }
 
-    addToWishlist(book.id, currentUser.id);
-    window.dispatchEvent(new CustomEvent("wishlist-updated"));
-    showNotification("Book added to wishlist!", "success");
+    try {
+      await addToWishlist(book.id, currentUser.id);
+      showNotification("Book added to wishlist!", "success");
+    } catch (error) {
+      showNotification(error.message || "Failed to add to wishlist", "danger");
+    }
   };
 
   const handleAddToCart = () => {
+    if (isActionsDisabled) {
+      showNotification("Admin and stock manager accounts cannot add books to cart.", "warning");
+      return;
+    }
+
     if (!isLoggedIn()) {
       onHide();
       navigate("/login");
@@ -84,6 +100,11 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
   };
 
   const handleBuyNow = () => {
+    if (isActionsDisabled) {
+      showNotification("Admin and stock manager accounts cannot buy books.", "warning");
+      return;
+    }
+
     if (!isLoggedIn()) {
       onHide();
       navigate("/login");
@@ -219,7 +240,7 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
                     <FontAwesomeIcon icon={faCalendar} className="me-2" />
                     Published:
                   </strong>{" "}
-                  {book.publishedDate || "Not specified"}
+                  {book.publishedDate || book.publicationYear || "Not specified"}
                 </li>
                 <li>
                   <strong>
@@ -252,19 +273,37 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
                 <FontAwesomeIcon icon={faComments} className="me-2" />
                 Customer Reviews
               </h5>
-              <div className="mb-3 p-3 border rounded">
-                <div className="d-flex align-items-center mb-2">
-                  <span className="fw-bold fs-5 me-2">
-                    <FontAwesomeIcon icon={faUser} className="me-1" />
-                    Verified Reader
-                  </span>
-                  <span className="text-warning">{generateStarRating(5)}</span>
+              {reviewItems.length > 0 ? (
+                reviewItems.map((review, index) => (
+                  <div key={index} className="mb-3 p-3 border rounded">
+                    <div className="d-flex align-items-center mb-2">
+                      <span className="fw-bold fs-5 me-2">
+                        <FontAwesomeIcon icon={faUser} className="me-1" />
+                        {review.userName || "Reader"}
+                      </span>
+                      <span className="text-warning">
+                        {generateStarRating(review.rating)}
+                      </span>
+                    </div>
+                    {review.title ? <div className="fw-semibold mb-1">{review.title}</div> : null}
+                    <p className="mb-0">{review.text}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="mb-3 p-3 border rounded">
+                  <div className="d-flex align-items-center mb-2">
+                    <span className="fw-bold fs-5 me-2">
+                      <FontAwesomeIcon icon={faUser} className="me-1" />
+                      Verified Reader
+                    </span>
+                    <span className="text-warning">{generateStarRating(5)}</span>
+                  </div>
+                  <p className="mb-0">
+                    Sold {book.salesThisMonth || 0} copies this month! Highly
+                    recommended.
+                  </p>
                 </div>
-                <p className="mb-0">
-                  Sold {book.salesThisMonth || 0} copies this month! Highly
-                  recommended.
-                </p>
-              </div>
+              )}
             </div>
           </Col>
         </Row>
@@ -281,6 +320,7 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
               variant={isInWishlist(book.id) ? "danger" : "outline-danger"}
               onClick={handleAddToWishlist}
               className="book-action-btn"
+              disabled={isActionsDisabled}
             >
               <FontAwesomeIcon
                 icon={isInWishlist(book.id) ? faHeart : faHeartRegular}
@@ -294,7 +334,7 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
               variant="outline-primary"
               onClick={handleAddToCart}
               className="book-action-btn"
-              disabled={!book.inStock || book.stock === 0}
+              disabled={isActionsDisabled || !book.inStock || book.stock === 0}
             >
               <FontAwesomeIcon icon={faShoppingCart} className="me-2" />
               Add to Cart
@@ -303,7 +343,7 @@ const BookDetailsModal = ({ show, onHide, book, currentUser }) => {
               variant="primary"
               onClick={handleBuyNow}
               className="book-action-btn"
-              disabled={!book.inStock || book.stock === 0}
+              disabled={isActionsDisabled || !book.inStock || book.stock === 0}
             >
               <FontAwesomeIcon icon={faTruck} className="me-2" />
               Buy Now

@@ -15,72 +15,25 @@ import AddBookModal from "../components/Wishlist/AddBookModal";
 import EditItemModal from "../components/Wishlist/EditItemModal";
 
 // Import Utilities
-import {
-  sampleBooks,
-  applyFilter,
-  sortWishlist,
-  // ... other imports
-} from "../components/Wishlist/utils.jsx";
+import { sampleBooks, applyFilter, sortWishlist } from "../components/Wishlist/utils.jsx";
 
-import { showNotification, getAllBooks } from "../utils/helpers";
+import { showNotification, getAllBooks, getCurrentUser } from "../utils/helpers";
+import { isPrivilegedUser } from "../utils/auth";
 import { addItem, selectCartItems, setCart } from "../store/slices/cartSlice";
+import {
+  fetchWishlistApi,
+  addWishlistItemApi,
+  updateWishlistItemApi,
+  deleteWishlistItemApi,
+  clearWishlistApi,
+} from "../utils/wishlistApi";
 import "../styles/pages/Wishlist.css";
-
-const canAccessStorage = () =>
-  typeof window !== "undefined" && typeof window.localStorage !== "undefined";
-
-const getWishlistKey = (userId) => `wishlist_${userId}`;
-
-const getStoredUser = () => {
-  if (!canAccessStorage()) return null;
-
-  try {
-    return JSON.parse(window.localStorage.getItem("currentUser"));
-  } catch (error) {
-    console.error("Failed to parse currentUser from storage", error);
-    return null;
-  }
-};
 
 const SAMPLE_NOTES = [
   "Really want to read this!",
   "Great reviews from friends",
   "Classic sci-fi masterpiece",
 ];
-
-const readWishlistFromStorage = (userId) => {
-  if (!canAccessStorage() || !userId) return [];
-  try {
-    return (
-      JSON.parse(window.localStorage.getItem(getWishlistKey(userId))) || []
-    );
-  } catch (error) {
-    console.error("Failed to parse wishlist from storage", error);
-    return [];
-  }
-};
-
-const seedWishlistForUser = (currentUser) => {
-  if (!currentUser || !canAccessStorage()) return [];
-
-  const storageKey = getWishlistKey(currentUser.id);
-  const storedWishlist = readWishlistFromStorage(currentUser.id);
-
-  if (storedWishlist.length > 0) {
-    return storedWishlist;
-  }
-
-  const sampleWishlist = sampleBooks.slice(0, 3).map((book, index) => ({
-    ...book,
-    priority: Math.max(5 - index, 1),
-    notes: SAMPLE_NOTES[index] || "",
-    dateAdded: new Date().toISOString(),
-    userId: currentUser.id,
-  }));
-
-  window.localStorage.setItem(storageKey, JSON.stringify(sampleWishlist));
-  return sampleWishlist;
-};
 
 const Wishlist = () => {
   const navigate = useNavigate();
@@ -102,18 +55,22 @@ const Wishlist = () => {
       );
 
       return (items || []).map((item) => {
-        const match = catalogMap.get(String(item.id));
+        const itemId = item.id ?? item.bookId;
+        const match = catalogMap.get(String(itemId));
         const base = match || {};
 
         return {
           ...base,
           ...item,
+          id: itemId,
+          bookId: item.bookId ?? itemId,
           image: resolveBookImage(item) || base.image || "/assets/default_book.jpg",
           inStock:
             item.inStock ?? base.inStock ?? (base.stock !== undefined ? base.stock > 0 : true),
           price: Number(item.price ?? base.price ?? 0),
           rating: item.rating || base.rating || 4.2,
           reviews: item.reviews || base.reviews || base.totalSales || 0,
+          dateAdded: item.dateAdded || new Date().toISOString(),
         };
       });
     },
@@ -121,11 +78,9 @@ const Wishlist = () => {
   );
 
   // State management
-  const [user, setUser] = useState(() => getStoredUser());
+  const [user, setUser] = useState(() => getCurrentUser());
   const [allBooks, setAllBooks] = useState(() => getAllBooks());
-  const [wishlist, setWishlist] = useState(() =>
-    normalizeWishlistItems(seedWishlistForUser(getStoredUser()), getAllBooks()),
-  );
+  const [wishlist, setWishlist] = useState([]);
   const [currentFilter, setCurrentFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -141,25 +96,14 @@ const Wishlist = () => {
     price: "",
     category: "Fiction",
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || !canAccessStorage()) return;
-
-    const handleWishlistUpdated = () => {
-      setWishlist(
-        normalizeWishlistItems(readWishlistFromStorage(user.id), allBooks),
-      );
-    };
-
-    window.addEventListener("wishlist-updated", handleWishlistUpdated);
-    return () =>
-      window.removeEventListener("wishlist-updated", handleWishlistUpdated);
-  }, [allBooks, normalizeWishlistItems, user]);
-
-  useEffect(() => {
-    if (!canAccessStorage()) return undefined;
-
     const handleStorageChange = (event) => {
+      if (event.key === "currentUser") {
+        setUser(getCurrentUser());
+      }
+
       if (event.key === "stockBooks") {
         const updated = getAllBooks();
         setAllBooks(updated);
@@ -167,38 +111,39 @@ const Wishlist = () => {
       }
     };
 
-    const handleAuthChange = () => {
-      const updatedUser = getStoredUser();
-      setUser(updatedUser);
-      setWishlist(
-        normalizeWishlistItems(
-          seedWishlistForUser(updatedUser),
-          allBooks,
-        ),
-      );
-    };
-
     window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("auth-change", handleAuthChange);
     return () => {
       window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("auth-change", handleAuthChange);
     };
-  }, [allBooks, normalizeWishlistItems]);
+  }, [normalizeWishlistItems]);
+
+  useEffect(() => {
+    const loadWishlist = async () => {
+      if (!user?.id) {
+        setWishlist([]);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const items = await fetchWishlistApi(user.id);
+        setWishlist(normalizeWishlistItems(items, allBooks));
+      } catch (error) {
+        console.error("Failed to load wishlist", error);
+        showNotification(error.message || "Failed to load wishlist", "danger");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadWishlist();
+  }, [user, allBooks, normalizeWishlistItems]);
 
   const filteredWishlist = useMemo(() => {
     if (!user) return [];
     return sortWishlist(applyFilter(wishlist, currentFilter), sortOrder);
   }, [wishlist, currentFilter, sortOrder, user]);
-
-  // Save wishlist to localStorage
-  const saveWishlist = (updatedWishlist) => {
-    if (!user) return;
-    localStorage.setItem(
-      `wishlist_${user.id}`,
-      JSON.stringify(updatedWishlist),
-    );
-  };
 
   // Apply filters to wishlist
   const handleApplyFilter = (filter) => {
@@ -210,12 +155,13 @@ const Wishlist = () => {
     setSortOrder(sortType);
     const sorted = sortWishlist(wishlist, sortType);
     setWishlist(sorted);
-    saveWishlist(sorted);
   };
 
   // Search books
-  const handleSearchBooks = () => {
-    if (!searchTerm.trim()) {
+  const handleSearchBooks = (term = searchTerm) => {
+    const normalizedTerm = (term || "").trim();
+
+    if (!normalizedTerm) {
       setSearchResults([]);
       return;
     }
@@ -224,10 +170,13 @@ const Wishlist = () => {
     const results = catalog
       .filter(
         (book) =>
-          book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          book.author.toLowerCase().includes(searchTerm.toLowerCase()),
+          book.title.toLowerCase().includes(normalizedTerm.toLowerCase()) ||
+          book.author.toLowerCase().includes(normalizedTerm.toLowerCase()),
       )
-      .filter((book) => !wishlist.some((item) => item.id === book.id));
+      .filter(
+        (book) =>
+          !wishlist.some((item) => String(item.id) === String(book.id ?? book.bookId)),
+      );
 
     setSearchResults(results);
   };
@@ -244,34 +193,42 @@ const Wishlist = () => {
       return false;
     }
 
+    if (isPrivilegedUser()) {
+      showNotification("Admin and stock manager accounts cannot use the wishlist.", "warning");
+      return false;
+    }
+
     const existingItem = wishlist.find((item) => item.id === book.id);
     if (existingItem) {
       showNotification("This book is already in your wishlist", "info");
       return false;
     }
 
-    const wishlistItem = {
-      ...book,
-      priority: priorityLevel,
-      notes: notesText,
-      dateAdded: new Date().toISOString(),
-      userId: user.id,
+    const add = async () => {
+      try {
+        const items = await addWishlistItemApi({
+          userId: user.id,
+          bookId: book.id,
+          priority: priorityLevel,
+          notes: notesText,
+        });
+        setWishlist(normalizeWishlistItems(items, allBooks));
+        // Always show full list after adding so the user can immediately see the new item.
+        setCurrentFilter("all");
+        showNotification("Book added to wishlist!", "success");
+        setSearchTerm("");
+        setSearchResults([]);
+        setPriority(3);
+        setNotes("");
+        setShowAddModal(false);
+        return true;
+      } catch (error) {
+        showNotification(error.message || "Failed to add to wishlist", "danger");
+        return false;
+      }
     };
 
-    const updatedWishlist = [...wishlist, wishlistItem];
-    setWishlist(updatedWishlist);
-    saveWishlist(updatedWishlist);
-
-    showNotification("Book added to wishlist!", "success");
-    window.dispatchEvent(new CustomEvent("wishlist-updated"));
-
-    // Reset form
-    setSearchTerm("");
-    setSearchResults([]);
-    setPriority(3);
-    setNotes("");
-    setShowAddModal(false);
-
+    void add();
     return true;
   };
 
@@ -283,43 +240,29 @@ const Wishlist = () => {
       return;
     }
 
-    if (!newBook.title || !newBook.author || !newBook.price) {
-      showNotification("Please fill in all required fields", "warning");
+    if (isPrivilegedUser()) {
+      showNotification("Admin and stock manager accounts cannot use the wishlist.", "warning");
       return;
     }
 
-    const customBook = {
-      id: Date.now(),
-      title: newBook.title,
-      author: newBook.author,
-      price: parseFloat(newBook.price),
-      category: newBook.category,
-      rating: 0,
-      reviews: 0,
-      inStock: true,
-      image:
-        "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Custom+Book",
-    };
-
-    handleAddToWishlist(customBook, priority, notes);
-    setNewBook({
-      title: "",
-      author: "",
-      price: "",
-      category: "Fiction",
-    });
+    showNotification("Please select an existing catalog book to wishlist", "warning");
   };
 
   // Remove from wishlist
   const handleRemoveFromWishlist = (bookId) => {
     if (!window.confirm("Remove this book from your wishlist?")) return;
 
-    const updatedWishlist = wishlist.filter((item) => item.id !== bookId);
-    setWishlist(updatedWishlist);
-    saveWishlist(updatedWishlist);
+    const remove = async () => {
+      try {
+        const items = await deleteWishlistItemApi({ userId: user.id, bookId });
+        setWishlist(normalizeWishlistItems(items, allBooks));
+        showNotification("Book removed from wishlist", "info");
+      } catch (error) {
+        showNotification(error.message || "Failed to remove item", "danger");
+      }
+    };
 
-    window.dispatchEvent(new CustomEvent("wishlist-updated"));
-    showNotification("Book removed from wishlist", "info");
+    void remove();
   };
 
   // Clear wishlist
@@ -336,11 +279,17 @@ const Wishlist = () => {
       return;
     }
 
-    setWishlist([]);
-    saveWishlist([]);
+    const clear = async () => {
+      try {
+        await clearWishlistApi(user.id);
+        setWishlist([]);
+        showNotification("Wishlist cleared", "info");
+      } catch (error) {
+        showNotification(error.message || "Failed to clear wishlist", "danger");
+      }
+    };
 
-    window.dispatchEvent(new CustomEvent("wishlist-updated"));
-    showNotification("Wishlist cleared", "info");
+    void clear();
   };
 
   // Edit wishlist item
@@ -355,15 +304,23 @@ const Wishlist = () => {
   const handleUpdateItem = () => {
     if (!selectedItem) return;
 
-    const updatedWishlist = wishlist.map((item) =>
-      item.id === selectedItem.id ? { ...item, priority, notes } : item,
-    );
+    const update = async () => {
+      try {
+        const items = await updateWishlistItemApi({
+          userId: user.id,
+          bookId: selectedItem.id,
+          priority,
+          notes,
+        });
+        setWishlist(normalizeWishlistItems(items, allBooks));
+        setShowEditModal(false);
+        showNotification("Wishlist item updated!", "success");
+      } catch (error) {
+        showNotification(error.message || "Failed to update item", "danger");
+      }
+    };
 
-    setWishlist(updatedWishlist);
-    saveWishlist(updatedWishlist);
-    setShowEditModal(false);
-
-    showNotification("Wishlist item updated!", "success");
+    void update();
   };
 
   // Add to cart from wishlist
@@ -371,6 +328,11 @@ const Wishlist = () => {
     if (!user) {
       showNotification("Please login to add items to cart", "warning");
       navigate("/login");
+      return;
+    }
+
+    if (isPrivilegedUser()) {
+      showNotification("Admin and stock manager accounts cannot add books to cart.", "warning");
       return;
     }
 
@@ -411,6 +373,11 @@ const Wishlist = () => {
 
   // Add all available to cart
   const handleAddAllToCart = () => {
+    if (isPrivilegedUser()) {
+      showNotification("Admin and stock manager accounts cannot add books to cart.", "warning");
+      return;
+    }
+
     const availableItems = wishlist.filter((item) => item.inStock);
 
     if (availableItems.length === 0) {
@@ -447,7 +414,13 @@ const Wishlist = () => {
 
       const updatedWishlist = wishlist.filter((item) => !item.inStock);
       setWishlist(updatedWishlist);
-      saveWishlist(updatedWishlist);
+
+      // Remove added items from backend wishlist
+      Promise.all(
+        availableItems.map((item) =>
+          deleteWishlistItemApi({ userId: user.id, bookId: item.id }).catch(() => null),
+        ),
+      ).catch(() => null);
 
       showNotification(
         `${availableItems.length} items added to cart!`,
@@ -458,7 +431,7 @@ const Wishlist = () => {
 
   // Share wishlist
   const handleShareWishlist = (method) => {
-    if (!user) return;
+    if (!user || isPrivilegedUser()) return;
 
     switch (method) {
       case "link": {
@@ -511,6 +484,14 @@ const Wishlist = () => {
     setNotes("");
   };
 
+  if (loading) {
+    return (
+      <Container className="py-4 wishlist-page">
+        <div className="text-center py-5">Loading wishlist...</div>
+      </Container>
+    );
+  }
+
   return (
     <>
       <Container className="py-4 wishlist-page">
@@ -543,6 +524,7 @@ const Wishlist = () => {
                         onEdit={handleEditItem}
                         onAddToCart={handleAddToCart}
                         onEditItem={handleEditItem}
+                        actionsDisabled={isPrivilegedUser()}
                       />
                     ))}
                   </Row>

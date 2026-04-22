@@ -1,3 +1,97 @@
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+const handleApi = async (path, options = {}) => {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = data?.error || data?.message || "Request failed";
+    throw new Error(msg);
+  }
+  return data;
+};
+
+export const fetchBooksFromApi = async () => {
+  const data = await handleApi("/api/books");
+  return data.books || [];
+};
+
+export const fetchBookByIdApi = async (bookId) => {
+  const data = await handleApi(`/api/books/${bookId}`);
+  return data.book || null;
+};
+
+export const createBookApi = async (payload) => {
+  const data = await handleApi("/api/books", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return data.book;
+};
+
+export const updateBookApi = async (bookId, payload) => {
+  const data = await handleApi(`/api/books/${bookId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  return data.book;
+};
+
+export const deleteBookApi = async (bookId) => {
+  await handleApi(`/api/books/${bookId}`, { method: "DELETE" });
+  return true;
+};
+
+export const fetchAllOrdersApi = async () => {
+  const data = await handleApi("/api/orders/all");
+  return data.orders || [];
+};
+
+export const updateOrderStatusApi = async (orderId, status) => {
+  const data = await handleApi(`/api/orders/${orderId}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  });
+  return data.order;
+};
+
+export const updateOrderTrackingApi = async (orderId, payload) => {
+  const data = await handleApi(`/api/orders/${orderId}/tracking`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  return data.order;
+};
+
+export const fetchPublishersFromApi = async () => {
+  const data = await handleApi("/api/publishers");
+  return data.publishers || [];
+};
+
+export const createPublisherApi = async (payload) => {
+  const data = await handleApi("/api/publishers", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return data.publisher;
+};
+
+export const updatePublisherApi = async (publisherId, payload) => {
+  const data = await handleApi(`/api/publishers/${publisherId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  return data.publisher;
+};
+
+export const deletePublisherApi = async (publisherId) => {
+  await handleApi(`/api/publishers/${publisherId}`, { method: "DELETE" });
+  return true;
+};
+
 // Currency formatter for LKR
 export const formatCurrency = (amount) => {
   return new Intl.NumberFormat("en-LK", {
@@ -81,27 +175,85 @@ export const sortBooks = (books, sortConfig) => {
 };
 
 // Calculate statistics
-export const calculateInventoryStats = (stockBooks) => {
+export const calculateInventoryStats = (stockBooks, stockOrders = []) => {
+  const isLowStockBook = (book) => {
+    const stock = Number(book?.stock) || 0;
+    const minStock = Number(book?.minStock ?? book?.min_stock ?? 0);
+
+    if (stock <= 0) return false;
+    if (String(book?.status || "").toLowerCase() === "low stock") return true;
+    if (stock < 10) return true;
+    return Number.isFinite(minStock) && minStock > 0 && stock <= minStock;
+  };
+
+  const booksById = new Map(
+    stockBooks.map((book) => [Number(book?.id), book]),
+  );
+
+  const orderSales = stockOrders.flatMap((order) => {
+    const items = Array.isArray(order?.itemsList)
+      ? order.itemsList
+      : Array.isArray(order?.items)
+        ? order.items
+        : [];
+
+    return items.map((item) => {
+      const quantity = Number(item?.quantity) || 0;
+      const bookId = Number(item?.bookId ?? item?.book_id ?? 0);
+      const book = booksById.get(bookId);
+      const unitPrice = Number(item?.unitPrice ?? item?.unit_price) || 0;
+      const costPrice = Number(
+        book?.costPrice ?? book?.cost_price ?? item?.costPrice ?? item?.cost_price ?? 0,
+      ) || 0;
+
+      return { quantity, unitPrice, costPrice };
+    });
+  });
+
+  const hasOrderItemSales = orderSales.some((item) => item.quantity > 0);
+  const totalSalesCount = hasOrderItemSales
+    ? orderSales.reduce((sum, item) => sum + item.quantity, 0)
+    : stockBooks.reduce((sum, book) => sum + (Number(book.totalSales) || 0), 0);
+
+  const totalProfitEarned = hasOrderItemSales
+    ? orderSales.reduce(
+        (sum, item) => sum + ((item.unitPrice - item.costPrice) * item.quantity),
+        0,
+      )
+    : stockBooks.reduce(
+        (sum, book) =>
+          sum +
+          (((Number(book.price) || 0) - (Number(book.costPrice) || 0)) * (Number(book.totalSales) || 0)),
+        0,
+      );
+
   return {
     totalBooks: stockBooks.length,
     inStockBooks: stockBooks.filter((book) => book.status === "In Stock").length,
-    lowStockBooks: stockBooks.filter((book) => book.status === "Low Stock").length,
+    lowStockBooks: stockBooks.filter((book) => isLowStockBook(book)).length,
     outOfStockBooks: stockBooks.filter((book) => book.status === "Out of Stock").length,
-    lowStockItems: stockBooks.filter((book) => book.stock <= book.minStock && book.stock > 0).length,
+    lowStockItems: stockBooks.filter((book) => isLowStockBook(book)).length,
     totalStockValue: stockBooks.reduce((sum, book) => sum + book.price * book.stock, 0),
-    totalCostValue: stockBooks.reduce((sum, book) => sum + book.costPrice * book.stock, 0),
-    potentialProfit: stockBooks.reduce((sum, book) => sum + (book.price - book.costPrice) * book.stock, 0),
+    totalCostValue: stockBooks.reduce((sum, book) => sum + (book.costPrice || 0) * book.stock, 0),
+    potentialProfit: stockBooks.reduce((sum, book) => sum + ((book.price || 0) - (book.costPrice || 0)) * book.stock, 0),
+    totalSalesCount,
+    totalProfitEarned,
     featuredBooks: stockBooks.filter((book) => book.featured).length,
     totalMonthlySales: stockBooks.reduce((sum, book) => sum + book.salesThisMonth, 0),
   };
 };
 
 export const calculateOrderStats = (stockOrders) => {
+  const normalizeStatus = (status) => String(status || "").toLowerCase();
+
   return {
     total: stockOrders.length,
-    processing: stockOrders.filter((order) => order.status === "Processing").length,
-    shipped: stockOrders.filter((order) => order.status === "Shipped").length,
-    delivered: stockOrders.filter((order) => order.status === "Delivered").length,
+    processing: stockOrders.filter((order) => {
+      const status = normalizeStatus(order.status);
+      return status === "processing" || status === "pending";
+    }).length,
+    shipped: stockOrders.filter((order) => normalizeStatus(order.status) === "shipped").length,
+    delivered: stockOrders.filter((order) => normalizeStatus(order.status) === "delivered").length,
     totalRevenue: stockOrders.reduce((sum, order) => sum + order.total, 0),
     avgOrderValue: stockOrders.length > 0
       ? stockOrders.reduce((sum, order) => sum + order.total, 0) / stockOrders.length

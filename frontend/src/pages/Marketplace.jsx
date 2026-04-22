@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import {
@@ -25,15 +25,19 @@ import {
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 import {
-  getAllBooks,
   formatPrice,
   generateStarRating,
   searchBooks,
   filterBooks,
   showNotification,
+  getUserWishlist,
   addToWishlist,
 } from "../utils/helpers";
-import { addItem, setCart } from "../store/slices/cartSlice";
+import { getCurrentUser as getNormalizedCurrentUser, isPrivilegedUser } from "../utils/auth";
+import { getBookReviewsForBook } from "../components/UserProfile/utils";
+import { setCart } from "../store/slices/cartSlice";
+import { addCartItemApi, fetchCartApi } from "../utils/cartApi";
+import { fetchBooksFromApi, fetchBookByIdApi } from "../components/StockManager/utils";
 import "../styles/pages/Marketplace.css";
 
 // Components
@@ -47,23 +51,27 @@ import GuestNotice from "../components/Marketplace/GuestNotice";
 import SearchBar from "../components/Marketplace/SearchBar";
 import EmptyState from "../components/Marketplace/EmptyState";
 
-const getStoredUser = () => {
-  const storedUser = localStorage.getItem("currentUser");
-  return storedUser ? JSON.parse(storedUser) : null;
-};
+const getStoredUser = () => getNormalizedCurrentUser();
 
-const getStoredWishlist = (targetUser) => {
-  if (!targetUser) return [];
-  return JSON.parse(localStorage.getItem(`wishlist_${targetUser.id}`)) || [];
-};
+const getStoredWishlist = () => getUserWishlist();
 
 const DEFAULT_FILTERS = {
   category: "all",
   minPrice: 0,
   maxPrice: 10000,
-  minRating: 4.0,
-  inStock: true,
+  minRating: 0,
+  minReviews: 0,
+  inStock: false,
   preOrder: false,
+};
+
+const getStoredCategories = () => {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem("categories"));
+    return Array.isArray(stored) ? stored : [];
+  } catch {
+    return [];
+  }
 };
 
 const Marketplace = () => {
@@ -82,33 +90,72 @@ const Marketplace = () => {
         image: resolveBookImage(book),
         inStock: book.inStock ?? book.stock > 0,
         stock: book.stock ?? 0,
-        rating: book.rating || 4.2,
-        reviews: book.reviews || book.totalSales || 12,
+        rating:
+          book.rating !== undefined && book.rating !== null
+            ? Number(book.rating)
+            : 0,
+        reviews:
+          book.reviews !== undefined && book.reviews !== null
+            ? Number(book.reviews)
+            : 0,
         price: Number(book.price) || 0,
       })),
     [resolveBookImage],
   );
 
-  const loadBooks = useCallback(() => {
-    const source = getAllBooks();
-    return normalizeBooks(source);
-  }, [normalizeBooks]);
-  const [allBooks, setAllBooks] = useState(() => loadBooks());
+  const mergeBookReviews = useCallback((book) => {
+    if (!book) return book;
+
+    const cachedReviews = getBookReviewsForBook(book.id);
+    if (cachedReviews.length === 0) return book;
+
+    const nextReviewsList = [
+      ...(Array.isArray(book.reviewsList) ? book.reviewsList : []),
+      ...cachedReviews,
+    ].filter((review, index, allReviews) => {
+      const key = `${review.id || review.userName || review.user || index}-${review.text || review.comment || ""}`;
+      return allReviews.findIndex((item, reviewIndex) => {
+        const itemKey = `${item.id || item.userName || item.user || reviewIndex}-${item.text || item.comment || ""}`;
+        return itemKey === key;
+      }) === index;
+    });
+
+    return {
+      ...book,
+      reviews: Math.max(Number(book.reviews) || 0, nextReviewsList.length),
+      reviewsList: nextReviewsList,
+    };
+  }, []);
+
+  const [allBooks, setAllBooks] = useState([]);
   const [filters, setFilters] = useState(() => ({ ...DEFAULT_FILTERS }));
-  const [filteredBooks, setFilteredBooks] = useState(() =>
-    filterBooks(DEFAULT_FILTERS, loadBooks()),
-  );
+  const [filteredBooks, setFilteredBooks] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [booksPerPage] = useState(12);
   const [isFilterCollapsed, setIsFilterCollapsed] = useState(false);
   const [user, setUser] = useState(() => getStoredUser());
-  const [userWishlist, setUserWishlist] = useState(() =>
-    getStoredWishlist(getStoredUser()),
-  );
+  const [userWishlist, setUserWishlist] = useState(() => getStoredWishlist());
   const [showBookModal, setShowBookModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
+  const [storedCategories, setStoredCategories] = useState(() =>
+    typeof window === "undefined" ? [] : getStoredCategories(),
+  );
   const navigate = useNavigate();
+
+  const availableCategories = useMemo(() => {
+    const categories = new Set();
+
+    for (const category of storedCategories) {
+      if (category) categories.add(String(category).trim());
+    }
+
+    for (const book of allBooks) {
+      if (book?.category) categories.add(String(book.category).trim());
+    }
+
+    return [...categories].filter(Boolean).sort((left, right) => left.localeCompare(right));
+  }, [allBooks, storedCategories]);
 
   const applyFilters = useCallback(() => {
     const filtered = filterBooks(filters, allBooks);
@@ -117,25 +164,67 @@ const Marketplace = () => {
   }, [allBooks, filters]);
 
   useEffect(() => {
+    const loadBooks = async () => {
+      try {
+        const apiBooks = await fetchBooksFromApi();
+        const normalized = normalizeBooks(apiBooks);
+        setAllBooks(normalized);
+        setFilteredBooks(filterBooks(DEFAULT_FILTERS, normalized));
+      } catch (error) {
+        console.error("Failed to load books from API", error);
+        setAllBooks([]);
+        setFilteredBooks([]);
+      }
+    };
+
+    void loadBooks();
+
     const handleStorageChange = () => {
       const storedUser = getStoredUser();
       setUser(storedUser);
-      setUserWishlist(getStoredWishlist(storedUser));
-
-      const updatedBooks = loadBooks();
-      setAllBooks(updatedBooks);
-
-      if (searchQuery.length >= 2) {
-        setFilteredBooks(searchBooks(searchQuery, updatedBooks));
-      } else {
-        setFilteredBooks(filterBooks(filters, updatedBooks));
-      }
+      setUserWishlist(getStoredWishlist());
+      setStoredCategories(getStoredCategories());
       setCurrentPage(1);
     };
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, [filters, loadBooks, searchQuery]);
+  }, [normalizeBooks]);
+
+  useEffect(() => {
+    if (searchQuery.length >= 2) {
+      setFilteredBooks(searchBooks(searchQuery, allBooks));
+      setCurrentPage(1);
+      return;
+    }
+
+    setFilteredBooks(filterBooks(filters, allBooks));
+  }, [allBooks, filters, searchQuery]);
+
+  useEffect(() => {
+    const syncCart = async () => {
+      if (!user?.id) return;
+      try {
+        const items = await fetchCartApi(user.id);
+        dispatch(
+          setCart(
+            items.map((item) => ({
+              id: item.bookId,
+              quantity: item.quantity,
+              title: item.title,
+              price: item.price,
+              image: resolveBookImage(item),
+              stock: item.stock,
+            })),
+          ),
+        );
+      } catch (error) {
+        console.error("Failed to sync cart from API", error);
+      }
+    };
+
+    syncCart();
+  }, [dispatch, resolveBookImage, user]);
 
   const handleSearch = (e) => {
     const query = e.target.value;
@@ -201,6 +290,8 @@ const Marketplace = () => {
     return user !== null;
   };
 
+  const isCustomerActionAllowed = () => !isPrivilegedUser();
+
   const requireLogin = (actionName) => {
     if (!isLoggedIn()) {
       showNotification(`Please login to ${actionName}`, "warning");
@@ -214,6 +305,10 @@ const Marketplace = () => {
     if (e) e.stopPropagation();
 
     if (!requireLogin("add items to cart")) return;
+    if (!isCustomerActionAllowed()) {
+      showNotification("Admin and stock manager accounts cannot add books to cart.", "warning");
+      return;
+    }
 
     const targetBook = allBooks.find((b) => b.id === bookId);
     if (!targetBook) return;
@@ -222,23 +317,38 @@ const Marketplace = () => {
       return;
     }
 
-    dispatch(
-      addItem({
-        id: targetBook.id,
-        title: targetBook.title,
-        price: targetBook.price,
-        quantity: 1,
-        image: targetBook.image,
-        stock: targetBook.stock,
-      }),
-    );
-    showNotification("Book added to cart!", "success");
+    const add = async () => {
+      try {
+        const items = await addCartItemApi(user.id, targetBook.id, 1);
+        dispatch(
+          setCart(
+            items.map((item) => ({
+              id: item.bookId,
+              quantity: item.quantity,
+              title: item.title,
+              price: item.price,
+              image: resolveBookImage(item),
+              stock: item.stock,
+            })),
+          ),
+        );
+        showNotification("Book added to cart!", "success");
+      } catch (error) {
+        showNotification(error.message || "Failed to add to cart", "danger");
+      }
+    };
+
+    add();
   };
 
   const handleBuyNow = (bookId, e = null) => {
     if (e) e.stopPropagation();
 
     if (!requireLogin("buy books")) return;
+    if (!isCustomerActionAllowed()) {
+      showNotification("Admin and stock manager accounts cannot buy books.", "warning");
+      return;
+    }
 
     const targetBook = allBooks.find((b) => b.id === bookId);
     if (!targetBook || !targetBook.inStock || targetBook.stock === 0) {
@@ -264,28 +374,57 @@ const Marketplace = () => {
     navigate("/delivery-details");
   };
 
-  const handleAddToWishlist = (bookId, e = null) => {
+  const handleAddToWishlist = async (bookId, e = null) => {
     if (e) e.stopPropagation();
 
     if (!requireLogin("add items to wishlist")) return;
+    if (!isCustomerActionAllowed()) {
+      showNotification("Admin and stock manager accounts cannot use the wishlist.", "warning");
+      return;
+    }
 
-    addToWishlist(bookId, user.id);
-    const updatedWishlist =
-      JSON.parse(localStorage.getItem(`wishlist_${user.id}`)) || [];
-    setUserWishlist(updatedWishlist);
-
-    window.dispatchEvent(new CustomEvent("wishlist-updated"));
-    showNotification("Book added to wishlist!", "success");
+    try {
+      const items = await addToWishlist(bookId, user.id);
+      setUserWishlist(items);
+      showNotification("Book added to wishlist!", "success");
+    } catch (error) {
+      showNotification(error.message || "Failed to add to wishlist", "danger");
+    }
   };
 
   const isInWishlist = (bookId) => {
     return userWishlist.some((item) => item.id === bookId);
   };
 
-  const handleViewDetails = (book) => {
-    setSelectedBook(book);
+  const handleViewDetails = async (book) => {
+    try {
+      const detailedBook = await fetchBookByIdApi(book.id);
+      setSelectedBook(mergeBookReviews(detailedBook || book));
+    } catch (error) {
+      console.error("Failed to load book details", error);
+      setSelectedBook(mergeBookReviews(book));
+    }
+
     setShowBookModal(true);
   };
+
+  useEffect(() => {
+    const handleBookReviewsUpdated = async () => {
+      try {
+        const apiBooks = await fetchBooksFromApi();
+        const normalized = normalizeBooks(apiBooks);
+        setAllBooks(normalized);
+        setFilteredBooks(searchQuery.length >= 2 ? searchBooks(searchQuery, normalized) : filterBooks(filters, normalized));
+      } catch (error) {
+        console.error("Failed to refresh books after review update", error);
+      }
+
+      setSelectedBook((current) => mergeBookReviews(current));
+    };
+
+    window.addEventListener("book-reviews-updated", handleBookReviewsUpdated);
+    return () => window.removeEventListener("book-reviews-updated", handleBookReviewsUpdated);
+  }, [filters, mergeBookReviews, normalizeBooks, searchQuery]);
 
   const getCategoryIcon = (category) => {
     const icons = {
@@ -367,6 +506,7 @@ const Marketplace = () => {
       <BookCard
         book={book}
         isLoggedIn={isLoggedIn()}
+        actionsDisabled={isPrivilegedUser()}
         isInWishlist={isInWishlist}
         onViewDetails={handleViewDetails}
         onAddToWishlist={handleAddToWishlist}
@@ -465,6 +605,7 @@ const Marketplace = () => {
         onHide={() => setShowBookModal(false)}
         book={selectedBook}
         isLoggedIn={isLoggedIn()}
+        actionsDisabled={isPrivilegedUser()}
         isInWishlist={isInWishlist}
         onAddToWishlist={handleAddToWishlist}
         onAddToCart={handleAddToCart}
@@ -497,6 +638,7 @@ const Marketplace = () => {
           filters={filters}
           setFilters={setFilters}
           handleFilterChange={handleFilterChange}
+          categories={availableCategories}
           changeRating={changeRating}
           resetFilters={resetFilters}
           handleApplyFilters={handleApplyFilters}

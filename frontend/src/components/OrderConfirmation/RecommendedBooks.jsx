@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Button } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
 import { formatPrice } from "./utils";
+import createBookCoverPlaceholder from "../../utils/imagePlaceholders";
 
 const RecommendedBooks = ({ books, onAddToCart }) => {
   if (!books || books.length === 0) return null;
@@ -22,8 +23,7 @@ const RecommendedBooks = ({ books, onAddToCart }) => {
                     className="recommended-book-cover"
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src =
-                        "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover";
+                      e.target.src = createBookCoverPlaceholder();
                     }}
                   />
                   <Card.Body>

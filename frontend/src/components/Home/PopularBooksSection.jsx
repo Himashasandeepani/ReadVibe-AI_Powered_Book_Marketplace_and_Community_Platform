@@ -4,9 +4,33 @@ import { Container, Row, Col, Badge } from "react-bootstrap";
 import BookCard from "../Home/BookCard";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFire, faBookmark, faCogs } from "@fortawesome/free-solid-svg-icons";
+import { fetchBooksFromApi } from "../StockManager/utils";
+import { isPrivilegedUser } from "../../utils/auth";
 
 const PopularBooksSection = ({ currentUser, onViewDetails }) => {
   const [featuredBooks, setFeaturedBooks] = useState([]);
+
+  const comparePopularBooks = (left, right) => {
+    const leftMonthlySales = Number(left.salesThisMonth) || 0;
+    const rightMonthlySales = Number(right.salesThisMonth) || 0;
+    if (rightMonthlySales !== leftMonthlySales) {
+      return rightMonthlySales - leftMonthlySales;
+    }
+
+    const leftTotalSales = Number(left.totalSales) || 0;
+    const rightTotalSales = Number(right.totalSales) || 0;
+    if (rightTotalSales !== leftTotalSales) {
+      return rightTotalSales - leftTotalSales;
+    }
+
+    const leftStock = Number(left.stock) || 0;
+    const rightStock = Number(right.stock) || 0;
+    if (leftStock !== rightStock) {
+      return leftStock - rightStock;
+    }
+
+    return String(left.title || "").localeCompare(String(right.title || ""));
+  };
 
   const getBookImage = (bookTitle) => {
     const imageMap = {
@@ -31,40 +55,38 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
           ? book.images[0]
           : "");
 
-      // Prefer stored image (data URL or uploaded path); fallback to static map
       return localImage || getBookImage(book.title);
     };
 
-    const loadFeaturedBooks = () => {
+    const loadFeaturedBooks = async () => {
       try {
-        const storedBooks =
-          JSON.parse(localStorage.getItem("stockBooks")) || [];
+        const storedBooks = await fetchBooksFromApi();
+        const featured = storedBooks.filter((book) => book.featured);
+        const nonFeatured = storedBooks.filter((book) => !book.featured);
 
-        let featured = storedBooks.filter((book) => book.featured === true);
+        const prioritizedBooks = [
+          ...featured.sort(comparePopularBooks),
+          ...nonFeatured.sort(comparePopularBooks),
+        ].slice(0, 4);
 
-        if (featured.length < 4) {
-          featured = [...storedBooks]
-            .sort((a, b) => b.salesThisMonth - a.salesThisMonth)
-            .slice(0, 4);
-        }
-
-        const formattedBooks = featured.map((book) => ({
+        const formattedBooks = prioritizedBooks.map((book, index) => ({
           id: book.id,
           title: book.title,
           author: book.author,
           category: book.category,
           price: book.price,
           image: resolveBookImage(book),
-          rating: Math.min(5, 4 + book.salesThisMonth / 20),
-          reviews: book.totalSales || Math.floor(Math.random() * 50) + 10,
-          inStock: book.stock > 0,
-          stock: book.stock,
-          salesThisMonth: book.salesThisMonth,
+          rating: Math.min(5, 4 + (Number(book.salesThisMonth) || 0) / 20),
+          reviews: book.reviews || book.totalSales || 0,
+          inStock: (Number(book.stock) || 0) > 0,
+          stock: Number(book.stock) || 0,
+          salesThisMonth: Number(book.salesThisMonth) || 0,
           publisher: book.publisher,
           publishedDate: book.publicationYear?.toString(),
           isbn: book.isbn,
           language: book.language,
           pages: book.pages,
+          rank: index + 1,
         }));
 
         setFeaturedBooks(formattedBooks);
@@ -73,15 +95,21 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
       }
     };
 
-    loadFeaturedBooks();
+    void loadFeaturedBooks();
 
     const handleStorageUpdate = () => {
-      loadFeaturedBooks();
+      void loadFeaturedBooks();
+    };
+
+    const handleBookReviewsUpdate = () => {
+      void loadFeaturedBooks();
     };
 
     window.addEventListener("storage", handleStorageUpdate);
+    window.addEventListener("book-reviews-updated", handleBookReviewsUpdate);
     return () => {
       window.removeEventListener("storage", handleStorageUpdate);
+      window.removeEventListener("book-reviews-updated", handleBookReviewsUpdate);
     };
   }, []);
 
@@ -93,22 +121,18 @@ const PopularBooksSection = ({ currentUser, onViewDetails }) => {
           Popular This Week
           <div className="section-title-decoration"></div>
         </h2>
-        {featuredBooks.some((book) => book.featured) && (
-          <Badge bg="warning" className="fs-6">
-            <FontAwesomeIcon icon={faFire} className="me-1" />
-            Featured from Inventory
-          </Badge>
-        )}
       </div>
 
       <Row id="featuredBooks">
         {featuredBooks.length > 0 ? (
           featuredBooks.map((book) => (
-            <Col md={3} key={book.id} className="mb-4">
+            <Col md={6} lg={3} key={book.id} className="mb-4">
               <BookCard
                 book={book}
                 currentUser={currentUser}
                 onViewDetails={() => onViewDetails(book)}
+                actionsDisabled={isPrivilegedUser()}
+                rank={book.rank}
               />
             </Col>
           ))

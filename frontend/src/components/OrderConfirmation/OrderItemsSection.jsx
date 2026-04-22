@@ -3,6 +3,7 @@ import { Row, Col } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBoxOpen } from "@fortawesome/free-solid-svg-icons";
 import { formatPrice } from "./utils";
+import createBookCoverPlaceholder from "../../utils/imagePlaceholders";
 
 const OrderItemsSection = ({ items }) => {
   if (!items || items.length === 0) {
@@ -26,21 +27,21 @@ const OrderItemsSection = ({ items }) => {
       {items.map((item, index) => (
         <div key={index} className="order-item mb-3 pb-3 border-bottom">
           <Row className="align-items-center">
-            <Col xs={3} md={2}>
+            <Col xs={5} md={4} lg={3}>
               <img
                 src={item.image}
                 alt={item.title}
                 className="order-item-image img-fluid rounded"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src =
-                    "https://via.placeholder.com/60x80/DBEAFE/1E3A5F?text=Book";
+                  e.target.src = createBookCoverPlaceholder("Book", 60, 80);
                 }}
+                style={{ width: "180px", maxWidth: "180px", height: "180px", objectFit: "cover" }}
               />
             </Col>
-            <Col xs={9} md={6}>
+            <Col xs={7} md={5} lg={6}>
               <h6 className="mb-1">{item.title}</h6>
-              <p className="text-muted mb-0">by {item.author}</p>
+              {item.author ? <p className="text-muted mb-0">by {item.author}</p> : null}
             </Col>
             <Col xs={12} md={4} className="text-end mt-2 mt-md-0">
               <div className="order-item-price">

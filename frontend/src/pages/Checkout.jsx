@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Alert } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { getCurrentUser } from "../utils/auth";
+import { isPrivilegedUser } from "../utils/auth";
 import { showNotification } from "../utils/helpers";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBookOpen } from "@fortawesome/free-solid-svg-icons";
@@ -18,33 +19,13 @@ import CheckoutButtons from "../components/Checkout/CheckoutButtons";
 import {
   validatePaymentForm,
   processPayment,
-  createOrder,
-  saveOrderToStorage,
   clearCheckoutData,
+  saveOrderPaymentConfirmation,
 } from "../components/Checkout/utils";
 import { clearCart } from "../store/slices/cartSlice";
+import { getOrderApi } from "../utils/orderApi";
 
 import "../styles/pages/Checkout.css";
-
-// Sample books data referenced when building order summaries
-const SAMPLE_BOOKS = [
-  {
-    id: 1,
-    title: "The Midnight Library",
-    author: "Matt Haig",
-    price: 6000.0,
-    category: "Fiction",
-    image: "https://via.placeholder.com/60x80/DBEAFE/1E3A5F?text=Book",
-  },
-  {
-    id: 2,
-    title: "Project Hail Mary",
-    author: "Andy Weir",
-    price: 6500.0,
-    category: "Science Fiction",
-    image: "https://via.placeholder.com/60x80/DBEAFE/1E3A5F?text=Book",
-  },
-];
 
 const safeParseJSON = (value) => {
   if (!value) {
@@ -60,47 +41,22 @@ const safeParseJSON = (value) => {
 
 const buildOrderData = () => {
   const deliveryData = safeParseJSON(sessionStorage.getItem("deliveryData"));
-  const cart = safeParseJSON(localStorage.getItem("cart")) || [];
+  const checkoutCart = safeParseJSON(sessionStorage.getItem("checkoutCart")) || [];
 
-  if (!deliveryData || cart.length === 0) {
+  if (!deliveryData || checkoutCart.length === 0) {
     return null;
   }
 
-  const subtotal = cart.reduce((sum, item) => {
-    const book = SAMPLE_BOOKS.find((b) => b.id === item.id);
-    return sum + (book?.price || 0) * item.quantity;
-  }, 0);
-  const shippingMethod = deliveryData.shipping?.shippingMethod;
-  const shipping =
-    shippingMethod === "standard"
-      ? 500.0
-      : shippingMethod === "express"
-        ? 1200.0
-        : 2500.0;
-
-  const tax = subtotal * 0.05;
-  const total = subtotal + shipping + tax;
+  const totals =
+    deliveryData.serverTotals ||
+    deliveryData.orderSummary ||
+    { subtotal: 0, shipping: 0, tax: 0, total: 0 };
 
   return {
-    items: cart.map((item) => {
-      const book = SAMPLE_BOOKS.find((b) => b.id === item.id);
-      return {
-        ...item,
-        title: book?.title || "Unknown Book",
-        author: book?.author || "Unknown Author",
-        price: book?.price || 0,
-        image:
-          book?.image ||
-          "https://via.placeholder.com/60x80/DBEAFE/1E3A5F?text=Book",
-      };
-    }),
+    items: checkoutCart,
     shipping: deliveryData.shipping || {},
-    totals: {
-      subtotal,
-      shipping,
-      tax,
-      total,
-    },
+    totals,
+    orderId: deliveryData.orderId,
   };
 };
 
@@ -129,6 +85,18 @@ const Checkout = () => {
   }, [user, navigate]);
 
   useEffect(() => {
+    if (!user || !isPrivilegedUser()) {
+      return;
+    }
+
+    showNotification(
+      "Admin and stock manager accounts cannot complete checkout.",
+      "warning",
+    );
+    navigate("/");
+  }, [user, navigate]);
+
+  useEffect(() => {
     if (!user || orderData) {
       return;
     }
@@ -151,34 +119,48 @@ const Checkout = () => {
         setUser(getCurrentUser());
       }
 
-      if (event.key === "cart" || event.key === "deliveryData") {
+      if (event.key === "deliveryData" || event.key === "checkoutCart") {
         setOrderData(buildOrderData());
       }
     };
 
-    const handleCartUpdated = () => {
-      setOrderData(buildOrderData());
-    };
-
     window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("cart-updated", handleCartUpdated);
-
     return () => {
       window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("cart-updated", handleCartUpdated);
     };
   }, []);
 
   useEffect(() => {
-    const handleStorageChange = (event) => {
-      if (event.key === "currentUser") {
-        setUser(getCurrentUser());
+    const fetchOrder = async () => {
+      if (!user || !orderData?.orderId) return;
+      try {
+        const order = await getOrderApi(user.id, orderData.orderId);
+        if (order) {
+          setOrderData({
+            items: order.items?.map((item) => ({
+              id: item.bookId,
+              title: item.title,
+              quantity: item.quantity,
+              price: item.unitPrice,
+              image: item.image,
+            })) || [],
+            shipping: order.shippingAddress || orderData.shipping,
+            totals: {
+              subtotal: order.subtotal,
+              shipping: order.shippingCost,
+              tax: order.tax,
+              total: order.total,
+            },
+            orderId: order.id,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch order", err);
       }
     };
 
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+    fetchOrder();
+  }, [user, orderData?.orderId, orderData?.shipping]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -211,14 +193,15 @@ const Checkout = () => {
     setIsLoading(true);
 
     try {
-      // Process payment
+      // Process payment (simulated)
       const paymentResult = await processPayment();
 
-      // Create order
-      const order = createOrder(user, orderData, paymentResult);
-
-      // Save order
-      saveOrderToStorage(order);
+      saveOrderPaymentConfirmation({
+        orderId: orderData?.orderId || null,
+        method: "Credit Card",
+        transactionId: paymentResult.transactionId,
+        timestamp: paymentResult.timestamp,
+      });
 
       // Clear cart state
       dispatch(clearCart());
@@ -231,7 +214,8 @@ const Checkout = () => {
 
       // Redirect to confirmation page
       setTimeout(() => {
-        navigate(`/order-confirmation?orderId=${order.id}`);
+        const id = orderData?.orderId || "";
+        navigate(`/order-confirmation${id ? `?orderId=${id}` : ""}`);
       }, 1500);
     } catch (error) {
       console.error("Checkout error:", error);

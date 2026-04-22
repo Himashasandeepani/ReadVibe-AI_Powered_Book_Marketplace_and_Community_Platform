@@ -4,13 +4,11 @@ import {
   faQuestionCircle,
   faEye,
   faPhone,
-  faComment,
 } from "@fortawesome/free-solid-svg-icons";
 
 const SupportOptions = ({
   onViewOrderStatus,
   onContactSupport,
-  onLiveChat,
 }) => {
   return (
     <div className="support-info mt-4">
@@ -34,14 +32,6 @@ const SupportOptions = ({
         >
           <FontAwesomeIcon icon={faPhone} className="me-2 text-primary" />
           <span>Contact Support</span>
-        </div>
-        <div
-          className="support-option"
-          onClick={onLiveChat}
-          style={{ cursor: "pointer" }}
-        >
-          <FontAwesomeIcon icon={faComment} className="me-2 text-primary" />
-          <span>Live Chat</span>
         </div>
       </div>
     </div>

@@ -3,12 +3,16 @@ import React from "react";
 const CreatePostModal = ({
   showCreatePostModal,
   setShowCreatePostModal,
+  postTitle,
+  setPostTitle,
   postContent,
   setPostContent,
+  postContentRef,
   postCategory,
   setPostCategory,
-  selectedBook,
-  setSelectedBook,
+  postCategories,
+  bookName,
+  setBookName,
   handleCreatePost,
 }) => {
   if (!showCreatePostModal) return null;
@@ -28,10 +32,23 @@ const CreatePostModal = ({
           <div className="modal-body">
             <form id="createPostForm">
               <div className="mb-3">
+                <label className="form-label fw-semibold">Title *</label>
+                <input
+                  className="form-control"
+                  type="text"
+                  value={postTitle}
+                  onChange={(e) => setPostTitle(e.target.value)}
+                  placeholder="Enter a title for your post"
+                  required
+                  maxLength="120"
+                />
+              </div>
+              <div className="mb-3">
                 <label className="form-label fw-semibold">
                   What's on your mind? *
                 </label>
                 <textarea
+                  ref={postContentRef}
                   className="form-control"
                   rows="4"
                   placeholder="Share your thoughts about books, reading experiences, or ask for recommendations..."
@@ -53,36 +70,25 @@ const CreatePostModal = ({
                     onChange={(e) => setPostCategory(e.target.value)}
                     required
                   >
-                    <option value="Discussion">Discussion</option>
-                    <option value="Book Review">Book Review</option>
-                    <option value="Recommendation">Recommendation</option>
-                    <option value="Question">Question</option>
-                    <option value="Announcement">Announcement</option>
+                    {postCategories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="col-md-6 mb-3">
                   <label className="form-label fw-semibold">
-                    Add a book reference (optional)
+                    Book name (optional)
                   </label>
-                  <select
-                    className="form-select"
-                    value={selectedBook}
-                    onChange={(e) => setSelectedBook(e.target.value)}
-                  >
-                    <option value="">Select a book...</option>
-                    <option value="The Midnight Library by Matt Haig">
-                      The Midnight Library by Matt Haig
-                    </option>
-                    <option value="Project Hail Mary by Andy Weir">
-                      Project Hail Mary by Andy Weir
-                    </option>
-                    <option value="Dune by Frank Herbert">
-                      Dune by Frank Herbert
-                    </option>
-                    <option value="The Hobbit by J.R.R. Tolkien">
-                      The Hobbit by J.R.R. Tolkien
-                    </option>
-                  </select>
+                  <input
+                    className="form-control"
+                    type="text"
+                    value={bookName}
+                    onChange={(e) => setBookName(e.target.value)}
+                    placeholder="Type the book name..."
+                    maxLength="120"
+                  />
                 </div>
               </div>
               <div className="alert alert-info">

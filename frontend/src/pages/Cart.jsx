@@ -4,10 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import {
   selectCartItems,
-  removeItem,
-  updateQuantity,
   clearCart,
   syncFromStorage,
+  setCart,
 } from "../store/slices/cartSlice";
 
 // Import Components
@@ -22,6 +21,12 @@ import {
   checkStockAvailability,
   prepareCheckoutData,
 } from "../components/Cart/cartUtils";
+import {
+  fetchCartApi,
+  updateCartItemApi,
+  deleteCartItemApi,
+  clearCartApi,
+} from "../utils/cartApi";
 
 import { getCurrentUser } from "../utils/auth";
 import { showNotification, getAllBooks } from "../utils/helpers";
@@ -40,6 +45,27 @@ const Cart = () => {
       navigate("/login");
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    const loadCart = async () => {
+      if (!user?.id) return;
+      try {
+        const items = await fetchCartApi(user.id);
+        dispatch(setCart(items.map((item) => ({
+          id: item.bookId,
+          quantity: item.quantity,
+          title: item.title,
+          price: item.price,
+          image: item.image,
+          stock: item.stock,
+        }))));
+      } catch (error) {
+        console.error("Failed to sync cart from API", error);
+      }
+    };
+
+    loadCart();
+  }, [dispatch, user]);
 
   useEffect(() => {
     const handleStorageChange = (event) => {
@@ -82,24 +108,69 @@ const Cart = () => {
         "Are you sure you want to remove this item from your cart?",
       )
     ) {
-      dispatch(removeItem(bookId));
-      showNotification("Item removed from cart", "info");
+      const remove = async () => {
+        try {
+          const items = await deleteCartItemApi(user.id, bookId);
+          dispatch(setCart(items.map((item) => ({
+            id: item.bookId,
+            quantity: item.quantity,
+            title: item.title,
+            price: item.price,
+            image: item.image,
+            stock: item.stock,
+          }))));
+          showNotification("Item removed from cart", "info");
+        } catch (error) {
+          showNotification(error.message || "Failed to remove item", "danger");
+        }
+      };
+
+      remove();
     }
   };
 
   const handleUpdateQuantity = (bookId, change) => {
-    dispatch(updateQuantity({ id: bookId, delta: change }));
-    if (change > 0) {
-      showNotification("Quantity increased", "success");
-    } else if (change < 0) {
-      showNotification("Quantity decreased", "info");
-    }
+    const currentItem = cart.find((item) => item.id === bookId);
+    const nextQuantity = (currentItem?.quantity || 0) + change;
+
+    const update = async () => {
+      try {
+        const items = await updateCartItemApi(user.id, bookId, nextQuantity);
+        dispatch(setCart(items.map((item) => ({
+          id: item.bookId,
+          quantity: item.quantity,
+          title: item.title,
+          price: item.price,
+          image: item.image,
+          stock: item.stock,
+        }))));
+
+        if (change > 0) {
+          showNotification("Quantity increased", "success");
+        } else if (change < 0) {
+          showNotification("Quantity decreased", "info");
+        }
+      } catch (error) {
+        showNotification(error.message || "Failed to update quantity", "danger");
+      }
+    };
+
+    update();
   };
 
   const handleClearCart = () => {
     if (window.confirm("Are you sure you want to clear your entire cart?")) {
-      dispatch(clearCart());
-      showNotification("Cart cleared", "info");
+      const clear = async () => {
+        try {
+          await clearCartApi(user.id);
+          dispatch(clearCart());
+          showNotification("Cart cleared", "info");
+        } catch (error) {
+          showNotification(error.message || "Failed to clear cart", "danger");
+        }
+      };
+
+      clear();
     }
   };
 

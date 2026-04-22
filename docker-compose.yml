@@ -25,6 +25,27 @@ services:
       timeout: 5s
       retries: 5
 
+  # pgAdmin Database UI
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: readvibe-pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@readvibe.com
+      - PGADMIN_DEFAULT_PASSWORD=admin123
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
+    networks:
+      - readvibe-network
+
   # Backend API
   backend:
     build:
@@ -33,7 +54,7 @@ services:
     container_name: readvibe-backend
     restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "5001:5000"
     environment:
       - NODE_ENV=development
       - PORT=5000
@@ -46,6 +67,13 @@ services:
       - JWT_SECRET=${JWT_SECRET:-development-secret-change-in-production}
       - JWT_EXPIRE=24h
       - FRONTEND_URL=http://localhost:3000
+      - EMAIL_ENABLED=${EMAIL_ENABLED:-false}
+      - EMAIL_FROM=${EMAIL_FROM:-noreply@readvibe.com}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_SECURE=${SMTP_SECURE:-false}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -66,8 +94,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - VITE_BACKEND_URL=http://localhost:5000
-      - VITE_WEBSOCKET_URL=http://localhost:5000
+      - VITE_BACKEND_URL=http://localhost:5001
+      - VITE_WEBSOCKET_URL=http://localhost:5001
       - CHOKIDAR_USEPOLLING=true
     depends_on:
       - backend
@@ -80,7 +108,7 @@ services:
 
 volumes:
   postgres_data:
-    driver: local
+  pgadmin_data:
 
 networks:
   readvibe-network:

@@ -13,6 +13,9 @@ ReadVibe is a full-featured book marketplace and community platform featuring:
 - Admin dashboard for system management
 - Stock manager dashboard for inventory and order tracking
 - User profile management
+- AI-powered recommendations and order-confirmation recommendations
+- Live support chat and support message flows
+- Backend-backed reviews, ratings, orders, and cart persistence
 
 ## Tech Stack
 
@@ -133,7 +136,7 @@ frontend/
 
 ### Authentication & Authorization
 - User registration and login
-- JWT-based authentication (ready for backend integration)
+- JWT-based authentication backed by the Node.js API
 - Role-based access control (User, Stock Manager, Admin)
 - Persistent login with localStorage
 
@@ -144,13 +147,14 @@ frontend/
 - Community highlights
 - Statistics section
 - Guest notice for non-logged-in users
+- AI recommendations call to action
 
 ### Marketplace
 - Browse all available books
 - Search and filter functionality
 - Book details modal
 - Add to cart/wishlist
-- Book reviews and ratings
+- Book reviews and ratings loaded from the backend
 
 ### Shopping Cart
 - View cart items
@@ -165,6 +169,7 @@ frontend/
 - Payment method selection
 - Order review
 - Order confirmation
+- Order confirmation email flow through the backend
 
 ### User Features
 - User profile management
@@ -172,6 +177,7 @@ frontend/
 - Wishlist management
 - Community participation
 - Review and ratings
+- Support and live chat access from the profile and order flows
 
 ### Community
 - View community posts
@@ -196,6 +202,7 @@ frontend/
 - Book request handling
 - Popular books management
 - Report generation
+- Sales, revenue, and profit analytics based on order data
 
 ## Authentication & User Roles
 
@@ -212,13 +219,14 @@ frontend/
 
 ## Storage
 
-The application uses localStorage for data persistence:
+The application uses a mix of backend persistence and localStorage for UI state:
 - `currentUser` - Current logged-in user
 - `cart` - Shopping cart items
 - `wishlist_${userId}` - User wishlists
 - `userOrders` - User orders
 - `communityPosts` - Community posts
-- And more role-specific data
+- Support message and live chat caches are synchronized with backend APIs
+- Books, reviews, orders, and stock data are sourced from the backend API
 
 ## Navigation
 
@@ -233,6 +241,10 @@ The application uses localStorage for data persistence:
 - **Regular Users**: Can access Cart, Profile, Wishlist, Community
 - **Stock Managers**: Can access Stock Manager Dashboard
 - **Admins**: Can access Admin Dashboard and Stock Manager Dashboard
+
+### Additional Pages
+- `/recommendations` - AI recommendations page for logged-in users
+- Order confirmation page - recommendations and support options after checkout
 
 ## Styling
 
@@ -289,6 +301,13 @@ This frontend is designed to work with the Node.js/Express backend. See the back
 - Database schema
 - Running backend with Docker
 - Environment setup
+
+Important backend-backed features include:
+- Marketplace books, ratings, and review details
+- Cart and wishlist persistence
+- Orders and stock manager inventory updates
+- Support messages and live chat threads
+- Order confirmation emails sent via Gmail SMTP
 
 ## License
 

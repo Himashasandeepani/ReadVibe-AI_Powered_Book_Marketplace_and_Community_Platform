@@ -18,6 +18,11 @@ const TrackOrderModal = ({
   deliveryDate,
   processingDays,
 }) => {
+  const latestUpdate = trackingUpdates[trackingUpdates.length - 1] || null;
+  const trackingNumber = order.trackingNumber || latestUpdate?.trackingNumber || "";
+  const courier = order.courier || latestUpdate?.courier || "";
+  const trackingLocation = order.trackingLocation || latestUpdate?.location || "";
+
   return (
     <Modal show={show} onHide={onHide} size="lg">
       <Modal.Header closeButton>
@@ -33,6 +38,25 @@ const TrackOrderModal = ({
             <p>
               <strong>Shipping Method:</strong> {methodDetails.title}
             </p>
+            {(trackingNumber || courier || trackingLocation) && (
+              <>
+                {courier && (
+                  <p>
+                    <strong>Courier:</strong> {courier}
+                  </p>
+                )}
+                {trackingNumber && (
+                  <p>
+                    <strong>Tracking Number:</strong> {trackingNumber}
+                  </p>
+                )}
+                {trackingLocation && (
+                  <p>
+                    <strong>Current Location:</strong> {trackingLocation}
+                  </p>
+                )}
+              </>
+            )}
             <p>
               <strong>Expected Delivery:</strong> {deliveryDate}
             </p>

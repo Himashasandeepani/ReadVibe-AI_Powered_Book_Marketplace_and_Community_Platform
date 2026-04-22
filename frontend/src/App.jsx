@@ -16,6 +16,7 @@ import Checkout from "./pages/Checkout";
 import DeliveryDetails from "./pages/DeliveryDetails";
 import UserProfile from "./pages/UserProfile";
 import OrderConfirmation from "./pages/OrderConfirmation";
+import Recommendations from "./pages/Recommendations";
 import Wishlist from "./pages/Wishlist";
 import AdminPanel from "./pages/AdminPanel";
 import StockManager from "./pages/StockManager";
@@ -124,6 +125,14 @@ function App() {
             element={
               <MainLayout>
                 <OrderConfirmation />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/recommendations"
+            element={
+              <MainLayout>
+                <Recommendations />
               </MainLayout>
             }
           />

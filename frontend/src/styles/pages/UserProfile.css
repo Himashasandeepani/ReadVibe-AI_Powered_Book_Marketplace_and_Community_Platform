@@ -184,11 +184,19 @@
 .order-history-card .badge {
     font-size: 0.75rem;
     padding: 0.25rem 0.75rem;
+    border-radius: 20px;
     font-weight: 500;
 }
 
 /* ---------- Request Status Badges ---------- */
 .request-status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 500;
+}
+
+.support-message-status-badge {
     font-size: 0.75rem;
     padding: 0.25rem 0.75rem;
     border-radius: 20px;

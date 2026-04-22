@@ -8,6 +8,7 @@ const FilterSection = ({
   setIsFilterCollapsed,
   filters,
   handleFilterChange,
+  categories,
   changeRating,
   resetFilters,
   handleApplyFilters,
@@ -40,12 +41,11 @@ const FilterSection = ({
                 size="sm"
               >
                 <option value="all">All Categories</option>
-                <option value="Fiction">Fiction</option>
-                <option value="Science Fiction">Science Fiction</option>
-                <option value="Fantasy">Fantasy</option>
-                <option value="Mystery">Mystery</option>
-                <option value="Romance">Romance</option>
-                <option value="Non-Fiction">Non-Fiction</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
               </Form.Select>
             </div>
           </Col>
@@ -117,6 +117,23 @@ const FilterSection = ({
                   +
                 </Button>
               </div>
+            </div>
+
+            <div className="filter-group mb-3">
+              <Form.Label className="fw-medium">Minimum Reviews</Form.Label>
+              <Form.Control
+                type="number"
+                name="minReviews"
+                value={filters.minReviews}
+                onChange={handleFilterChange}
+                min="0"
+                step="1"
+                size="sm"
+                placeholder="e.g. 20"
+              />
+              <Form.Text className="text-muted">
+                Show only books with at least this many reviews.
+              </Form.Text>
             </div>
           </Col>
 

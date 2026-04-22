@@ -10,14 +10,17 @@ import AdminSidebar from "../components/Admin/AdminSidebar";
 import DashboardTab from "../components/Admin/DashboardTab";
 import UsersTab from "../components/Admin/UsersTab";
 import PostsTab from "../components/Admin/PostsTab";
+import HomeCommunityPostsTab from "../components/Admin/HomeCommunityPostsTab";
 import AnalyticsTab from "../components/Admin/AnalyticsTab";
 import SystemTab from "../components/Admin/SystemTab";
 import StatusTab from "../components/Admin/StatusTab";
 import UserTable from "../components/Admin/UserTable";
 import PostsTable from "../components/Admin/PostsTable";
+import LiveChatTab from "../components/Admin/LiveChatTab";
 import AddUserModal from "../components/Admin/AddUserModal";
 import EditUserModal from "../components/Admin/EditUserModal";
 import PostModal from "../components/Admin/PostModal";
+import { fetchCommunityPostsApi } from "../utils/communityApi";
 
 // Import Utilities
 import {
@@ -26,7 +29,18 @@ import {
   validateNewUser,
   validateEditUser,
   showNotification,
+  fetchUsersFromApi,
+  createAdminUserApi,
+  updateAdminUserApi,
+  deleteAdminUserApi,
 } from "../components/Admin/utils";
+import {
+  getLiveChatThreads,
+  getLiveChatUpdatedEventName,
+  loadLiveChatThreads,
+  sendLiveChatMessage,
+  getUnreadLiveChatThreadCount,
+} from "../utils/liveChat";
 
 const DEFAULT_SYSTEM_SETTINGS = {
   platformName: "ReadVibe",
@@ -42,6 +56,37 @@ const getStoredUser = () => {
     console.error("Failed to parse currentUser from storage", error);
     return null;
   }
+};
+
+const formatAdminPostTimestamp = (value) => {
+  if (!value) return "Recently";
+
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString();
+  } catch {
+    return String(value);
+  }
+};
+
+const normalizeCommunityPost = (post) => {
+  if (!post) return null;
+
+  const postedBy =
+    post.userFullName || post.username || (typeof post.user === "string" ? post.user : "User");
+
+  return {
+    ...post,
+    user: postedBy,
+    postedBy,
+    title: post.title || "",
+    likes: Number(post.likesCount ?? post.likes ?? 0),
+    comments: Number(post.commentsCount ?? post.comments ?? 0),
+    timestamp: post.createdAt || post.timestamp || new Date().toISOString(),
+    postedOn: formatAdminPostTimestamp(post.createdAt || post.timestamp),
+    status: post.status || "Active",
+  };
 };
 
 const getInitialAdminData = () => {
@@ -92,6 +137,7 @@ const AdminPanel = () => {
     const { statuses: loadedStatuses = [] } = loadData();
     return [...loadedStatuses];
   });
+  const [liveChatThreads, setLiveChatThreads] = useState([]);
 
   // Modal states
   const [showAddUserModal, setShowAddUserModal] = useState(false);
@@ -111,6 +157,54 @@ const AdminPanel = () => {
       navigate("/");
     }
   }, [currentUser, navigate]);
+
+  useEffect(() => {
+    const pullUsers = async () => {
+      if (!currentUser || currentUser.role !== "admin") return;
+      try {
+        const apiUsers = await fetchUsersFromApi();
+        const normalized = apiUsers.map((user) => ({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          status: (user.status || "active").toLowerCase(),
+          joinDate: user.createdAt ? user.createdAt.split("T")[0] : "",
+        }));
+        setUsers(normalized);
+      } catch (error) {
+        console.error("Failed to load users from API", error);
+      }
+    };
+
+    pullUsers();
+  }, [currentUser]);
+
+  useEffect(() => {
+    const loadCommunityPosts = async () => {
+      try {
+        const apiPosts = await fetchCommunityPostsApi();
+        setPosts(
+          Array.isArray(apiPosts)
+            ? apiPosts.map(normalizeCommunityPost).filter(Boolean)
+            : [],
+        );
+      } catch (error) {
+        console.error("Failed to load community posts from API", error);
+      }
+    };
+
+    const handleCommunityPostsUpdated = () => {
+      void loadCommunityPosts();
+    };
+
+    void loadCommunityPosts();
+
+    window.addEventListener("community-posts-updated", handleCommunityPostsUpdated);
+    return () => {
+      window.removeEventListener("community-posts-updated", handleCommunityPostsUpdated);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -144,6 +238,18 @@ const AdminPanel = () => {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
+  useEffect(() => {
+    const handleLiveChatUpdate = () => {
+      void loadLiveChatThreads().then((threads) => setLiveChatThreads(threads));
+    };
+
+    window.addEventListener(getLiveChatUpdatedEventName(), handleLiveChatUpdate);
+    void loadLiveChatThreads().then((threads) => setLiveChatThreads(threads));
+    return () => {
+      window.removeEventListener(getLiveChatUpdatedEventName(), handleLiveChatUpdate);
+    };
+  }, []);
+
   const handleTabChange = (tab) => {
     navigate(`${location.pathname}?tab=${tab}`);
     if (tab === "users") {
@@ -157,23 +263,37 @@ const AdminPanel = () => {
       alert(errors.join("\n"));
       return;
     }
+    const create = async () => {
+      try {
+        const newUser = await createAdminUserApi({
+          username: formData.username,
+          email: formData.email,
+          role: formData.role,
+          status: "active",
+          password: formData.password,
+          fullName: formData.username,
+        });
 
-    const newUserObj = {
-      id: users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1,
-      username: formData.username,
-      email: formData.email,
-      role: formData.role,
-      status: "active",
-      joinDate: new Date().toISOString().split("T")[0],
+        const userRecord = {
+          id: newUser.id,
+          username: newUser.username,
+          email: newUser.email,
+          role: newUser.role,
+          status: (newUser.status || "active").toLowerCase(),
+          joinDate: newUser.createdAt ? newUser.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
+        };
+
+        const updatedUsers = [...users, userRecord];
+        setUsers(updatedUsers);
+        saveData(updatedUsers, null, null);
+        setShowAddUserModal(false);
+        showNotification("User added successfully");
+      } catch (error) {
+        alert(error.message || "Failed to add user");
+      }
     };
 
-    const updatedUsers = [...users, newUserObj];
-    setUsers(updatedUsers);
-    saveData(updatedUsers, null, null);
-
-    setShowAddUserModal(false);
-
-    showNotification("User added successfully");
+    create();
   };
 
   const handleEditUser = (userId) => {
@@ -193,25 +313,40 @@ const AdminPanel = () => {
       return;
     }
 
-    const updatedUsers = users.map((user) => {
-      if (user.id === editingUser.id) {
-        return {
-          ...user,
+    const update = async () => {
+      try {
+        const updated = await updateAdminUserApi(editingUser.id, {
           username: formData.username,
           email: formData.email,
           role: formData.role,
           status: formData.status,
-        };
+        });
+
+        const updatedUsers = users.map((user) => {
+          if (user.id === editingUser.id) {
+            return {
+              ...user,
+              username: updated.username,
+              email: updated.email,
+              role: updated.role,
+              status: (updated.status || formData.status).toLowerCase(),
+            };
+          }
+          return user;
+        });
+
+        setUsers(updatedUsers);
+        saveData(updatedUsers, null, null);
+
+        setShowEditUserModal(false);
+        setEditingUser(null);
+        showNotification("User updated successfully");
+      } catch (error) {
+        alert(error.message || "Failed to update user");
       }
-      return user;
-    });
+    };
 
-    setUsers(updatedUsers);
-    saveData(updatedUsers, null, null);
-
-    setShowEditUserModal(false);
-    setEditingUser(null);
-    showNotification("User updated successfully");
+    update();
   };
 
   const handleDeleteUser = (userId) => {
@@ -220,10 +355,19 @@ const AdminPanel = () => {
         "Are you sure you want to delete this user? This action cannot be undone.",
       )
     ) {
-      const updatedUsers = users.filter((user) => user.id !== userId);
-      setUsers(updatedUsers);
-      saveData(updatedUsers, null, null);
-      showNotification("User deleted successfully");
+      const remove = async () => {
+        try {
+          await deleteAdminUserApi(userId);
+          const updatedUsers = users.filter((user) => user.id !== userId);
+          setUsers(updatedUsers);
+          saveData(updatedUsers, null, null);
+          showNotification("User deleted successfully");
+        } catch (error) {
+          alert(error.message || "Failed to delete user");
+        }
+      };
+
+      remove();
     }
   };
 
@@ -329,6 +473,8 @@ const AdminPanel = () => {
             />
           </>
         );
+      case "home-community-posts":
+        return <HomeCommunityPostsTab />;
       case "analytics":
         return <AnalyticsTab users={users} posts={posts} />;
       case "status":
@@ -345,6 +491,29 @@ const AdminPanel = () => {
             systemSettings={systemSettings}
             onSystemSettingsChange={handleSystemSettingsChange}
             onSaveSettings={handleSaveSettings}
+          />
+        );
+      case "live-chat":
+        return (
+          <LiveChatTab
+            threads={liveChatThreads}
+            onSendMessage={(thread, message, currentUser) => {
+              const threadOrder = {
+                id: thread.orderId,
+                orderNumber: thread.orderNumber,
+              };
+              sendLiveChatMessage({
+                order: threadOrder,
+                user: {
+                  id: thread.userId,
+                  name: thread.userName,
+                  email: thread.userEmail,
+                },
+                senderRole: "admin",
+                senderName: currentUser?.name || currentUser?.fullName || currentUser?.username || "Admin",
+                message,
+              });
+            }}
           />
         );
       default:
@@ -375,7 +544,11 @@ const AdminPanel = () => {
         <div className="row">
           {/* Sidebar */}
           <div className="col-lg-2">
-            <AdminSidebar activeTab={activeTab} onTabChange={handleTabChange} />
+            <AdminSidebar
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              liveChatCount={getUnreadLiveChatThreadCount()}
+            />
           </div>
 
           {/* Main Content */}

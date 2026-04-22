@@ -78,7 +78,6 @@ const AddUserModal = ({ show, onClose, onSubmit }) => {
                     required
                   >
                     <option value="user">User</option>
-                    <option value="admin">Admin</option>
                     <option value="stock">Stock Manager</option>
                   </select>
                 </div>

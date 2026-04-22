@@ -5,6 +5,7 @@ const RequestBookModal = ({
   setShowRequestBookModal,
   requestForm,
   setRequestForm,
+  categories = [],
   handleRequestBook,
 }) => {
   if (!showRequestBookModal) return null;
@@ -93,15 +94,11 @@ const RequestBookModal = ({
                   }
                 >
                   <option value="">Select category...</option>
-                  <option value="Fiction">Fiction</option>
-                  <option value="Science Fiction">Science Fiction</option>
-                  <option value="Fantasy">Fantasy</option>
-                  <option value="Mystery">Mystery</option>
-                  <option value="Romance">Romance</option>
-                  <option value="Non-Fiction">Non-Fiction</option>
-                  <option value="Biography">Biography</option>
-                  <option value="Self-Help">Self-Help</option>
-                  <option value="Other">Other</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="mb-3">

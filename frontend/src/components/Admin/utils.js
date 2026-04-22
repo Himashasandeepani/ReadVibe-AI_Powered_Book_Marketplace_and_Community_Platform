@@ -1,4 +1,46 @@
 // Initial sample data
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+const handleApi = async (path, options = {}) => {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const errorMsg = data?.error || data?.message || "Request failed";
+    throw new Error(errorMsg);
+  }
+  return data;
+};
+
+export const fetchUsersFromApi = async () => {
+  const data = await handleApi("/api/users");
+  return data.users || [];
+};
+
+export const createAdminUserApi = async (payload) => {
+  const data = await handleApi("/api/users", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return data.user;
+};
+
+export const updateAdminUserApi = async (userId, payload) => {
+  const data = await handleApi(`/api/users/${userId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  return data.user;
+};
+
+export const deleteAdminUserApi = async (userId) => {
+  await handleApi(`/api/users/${userId}`, { method: "DELETE" });
+  return true;
+};
+
 export const initialUsers = [
   {
     id: 1,
@@ -225,6 +267,10 @@ export const validateNewUser = (user, existingUsers) => {
   if (!user.email) errors.push("Email is required");
   if (!user.password) errors.push("Password is required");
 
+  if (user.role === "admin") {
+    errors.push("You cannot add new admin users");
+  }
+
   if (user.password !== user.confirmPassword) {
     errors.push("Passwords do not match");
   }
@@ -245,6 +291,10 @@ export const validateEditUser = (user, editingUser, existingUsers) => {
 
   if (!user.username) errors.push("Username is required");
   if (!user.email) errors.push("Email is required");
+
+  if (editingUser?.role !== "admin" && user.role === "admin") {
+    errors.push("You cannot promote users to admin");
+  }
 
   const existingUser = existingUsers.find(
     (u) =>

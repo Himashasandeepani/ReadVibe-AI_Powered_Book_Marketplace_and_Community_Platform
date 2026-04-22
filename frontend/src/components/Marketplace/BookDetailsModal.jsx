@@ -25,6 +25,7 @@ const BookDetailsModal = ({
   onHide,
   book,
   isLoggedIn,
+  actionsDisabled = false,
   isInWishlist,
   onAddToWishlist,
   onAddToCart,
@@ -34,6 +35,11 @@ const BookDetailsModal = ({
   generateStarRating,
 }) => {
   if (!book) return null;
+  const reviewItems = Array.isArray(book.reviewsList)
+    ? book.reviewsList
+    : Array.isArray(book.reviewHighlights)
+      ? book.reviewHighlights
+      : [];
 
   return (
     <Modal show={show} onHide={onHide} size="lg" animation={true} centered>
@@ -108,7 +114,7 @@ const BookDetailsModal = ({
                     <FontAwesomeIcon icon={faCalendar} className="me-2" />
                     Published:
                   </strong>{" "}
-                  {book.publishedDate || "Not specified"}
+                  {book.publishedDate || book.publicationYear || "Not specified"}
                 </li>
                 <li>
                   <strong>
@@ -132,23 +138,26 @@ const BookDetailsModal = ({
                 <FontAwesomeIcon icon={faComments} className="me-2" />
                 Customer Reviews
               </h5>
-              {book.reviewHighlights && book.reviewHighlights.length > 0 ? (
-                book.reviewHighlights.map((review, index) => (
+              {reviewItems.length > 0 ? (
+                reviewItems.map((review, index) => (
                   <div key={index} className="mb-3 p-3 border rounded">
                     <div className="d-flex align-items-center mb-2">
-                      <span className="fw-bold me-2">
+                      <span className="fw-bold me-2" style={{ fontSize: "0.95rem" }}>
                         <FontAwesomeIcon icon={faUser} className="me-1" />
-                        {review.user}
+                        {review.userName || review.user || "Reader"}
                       </span>
                       <span className="text-warning">
                         {generateStarRating(review.rating)}
                       </span>
                     </div>
-                    <p className="mb-0">{review.comment}</p>
+                    {review.title ? <div className="fw-semibold mb-1">{review.title}</div> : null}
+                    <p className="mb-0" style={{ fontSize: "0.92rem" }}>
+                      {review.text || review.comment}
+                    </p>
                   </div>
                 ))
               ) : (
-                <p>No reviews yet. Be the first to review this book! </p>
+                <p style={{ fontSize: "0.92rem" }}>No reviews yet. Be the first to review this book! </p>
               )}
             </div>
           </Col>
@@ -166,6 +175,7 @@ const BookDetailsModal = ({
               variant={isInWishlist(book.id) ? "danger" : "outline-danger"}
               onClick={() => onAddToWishlist(book.id)}
               className="book-action-btn"
+              disabled={actionsDisabled}
             >
               <FontAwesomeIcon
                 icon={isInWishlist(book.id) ? faHeart : faHeartRegular}
@@ -179,6 +189,7 @@ const BookDetailsModal = ({
               variant="outline-primary"
               onClick={() => onAddToCart(book.id)}
               className="book-action-btn"
+              disabled={actionsDisabled}
             >
               <FontAwesomeIcon icon={faShoppingCart} className="me-2" />
               Add to Cart
@@ -190,6 +201,7 @@ const BookDetailsModal = ({
                 onHide();
               }}
               className="book-action-btn"
+              disabled={actionsDisabled}
             >
               <FontAwesomeIcon icon={faTruck} className="me-2" />
               Buy Now

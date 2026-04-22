@@ -7,15 +7,19 @@ const Sidebar = ({ topContributors, popularTags, handleTagClick }) => {
         <i className="fas fa-crown me-2"></i>Top Contributors
       </h5>
       <div id="topContributors">
-        {topContributors.map((contributor, index) => (
-          <div className="contributor-item" key={index}>
-            <div className="contributor-avatar">{contributor.avatar}</div>
-            <div className="contributor-info">
-              <h6 className="mb-0">{contributor.name}</h6>
-              <small className="text-muted">{contributor.posts} posts</small>
+        {topContributors.length > 0 ? (
+          topContributors.map((contributor, index) => (
+            <div className="contributor-item" key={index}>
+              <div className="contributor-avatar">{contributor.avatar}</div>
+              <div className="contributor-info">
+                <h6 className="mb-0">{contributor.name}</h6>
+                <small className="text-muted">{contributor.posts} posts</small>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className="text-muted small mb-0">No contributors yet.</p>
+        )}
       </div>
 
       <h5 className="mt-4">

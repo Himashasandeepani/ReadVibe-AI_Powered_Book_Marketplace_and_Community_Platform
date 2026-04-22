@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBookOpen,
@@ -19,8 +19,10 @@ import "../../styles/components/AdminHeaderFooter.css";
 const AdminHeader = () => {
   const [user, setUser] = useState(() => getCurrentUser());
   const [expanded, setExpanded] = useState(false);
+  const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const isOnAdminPanel = location.pathname === "/admin-panel";
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -118,15 +120,17 @@ const AdminHeader = () => {
                 </Dropdown.Header>
                 <Dropdown.Divider className="admin-dropdown-divider" />
 
-                <Dropdown.Item
-                  as={Link}
-                  to="/admin-panel"
-                  className="admin-dropdown-item"
-                  onClick={handleGoToAdminPanel}
-                >
-                  <FontAwesomeIcon icon={faTachometerAlt} className="me-2" />
-                  Admin Dashboard
-                </Dropdown.Item>
+                {!isOnAdminPanel && (
+                  <Dropdown.Item
+                    as={Link}
+                    to="/admin-panel"
+                    className="admin-dropdown-item"
+                    onClick={handleGoToAdminPanel}
+                  >
+                    <FontAwesomeIcon icon={faTachometerAlt} className="me-2" />
+                    Admin Dashboard
+                  </Dropdown.Item>
+                )}
 
                 <Dropdown.Item
                   as={Link}

@@ -1,6 +1,133 @@
 // Format price helper
 import { formatPrice, formatDate } from "../../utils/helpers";
 import { getCurrentUser } from "../../utils/auth";
+import { getOrderPaymentConfirmationKey } from "../Checkout/utils";
+
+const normalizeRecommendationId = (value) => {
+  if (value === null || value === undefined) return "";
+  return String(value).trim();
+};
+
+const getBookRecommendationId = (book) =>
+  normalizeRecommendationId(
+    book?.datasetBookId ?? book?.dataset_book_id ?? book?.id,
+  );
+
+const buildRecommendationLookup = (books = []) => {
+  const lookup = new Map();
+
+  (Array.isArray(books) ? books : []).forEach((book) => {
+    if (!book) return;
+
+    const datasetId = getBookRecommendationId(book);
+    if (datasetId) {
+      lookup.set(datasetId, book);
+    }
+
+    const numericId = normalizeRecommendationId(book.id);
+    if (numericId) {
+      lookup.set(numericId, book);
+    }
+  });
+
+  return lookup;
+};
+
+const resolveDatasetBookIds = (bookIds = [], books = []) => {
+  const lookup = buildRecommendationLookup(books);
+  const resolved = [];
+
+  (Array.isArray(bookIds) ? bookIds : []).forEach((bookId) => {
+    const key = normalizeRecommendationId(bookId);
+    if (!key) return;
+
+    const matchedBook = lookup.get(key);
+    const datasetId = getBookRecommendationId(matchedBook) || key;
+
+    if (datasetId && !resolved.includes(datasetId)) {
+      resolved.push(datasetId);
+    }
+  });
+
+  return resolved;
+};
+
+const normalizeRules = (rules = []) => {
+  return (Array.isArray(rules) ? rules : [])
+    .map((rule) => ({
+      antecedent: Array.isArray(rule?.antecedent)
+        ? rule.antecedent.map(normalizeRecommendationId).filter(Boolean)
+        : [],
+      consequent: Array.isArray(rule?.consequent)
+        ? rule.consequent.map(normalizeRecommendationId).filter(Boolean)
+        : [],
+      confidence: Number(rule?.confidence) || 0,
+      lift: Number(rule?.lift) || 0,
+      support: Number(rule?.support) || 0,
+    }))
+    .filter((rule) => rule.antecedent.length > 0 && rule.consequent.length > 0);
+};
+
+const uniquePush = (list, value) => {
+  if (!value || list.includes(value)) return;
+  list.push(value);
+};
+
+const getBookByRecommendationId = (books, bookId) => {
+  const lookup = buildRecommendationLookup(books);
+  return lookup.get(normalizeRecommendationId(bookId)) || null;
+};
+
+const shuffleBooks = (books = []) => {
+  const shuffled = [...books];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+  return shuffled;
+};
+
+const getStoredPaymentConfirmation = (orderId) => {
+  try {
+    const key = getOrderPaymentConfirmationKey(orderId);
+    const stored = JSON.parse(
+      localStorage.getItem(key) || sessionStorage.getItem(key) || "null",
+    );
+
+    if (!stored) return null;
+    if (orderId && String(stored.orderId) !== String(orderId)) {
+      return null;
+    }
+
+    return stored;
+  } catch {
+    return null;
+  }
+};
+
+export const getOrderDisplayDate = (order) =>
+  order?.orderDate ||
+  order?.createdAt ||
+  order?.updatedAt ||
+  getStoredPaymentConfirmation(order?.id)?.timestamp ||
+  null;
+
+export const getOrderPaymentInfo = (order) => {
+  const storedPayment = getStoredPaymentConfirmation(order?.id) || {};
+
+  return {
+    method:
+      order?.payment?.method ||
+      order?.paymentMethod ||
+      storedPayment.method ||
+      "Credit Card",
+    transactionId:
+      order?.payment?.transactionId ||
+      order?.transactionId ||
+      storedPayment.transactionId ||
+      "TXN_000000000",
+  };
+};
 
 // Shipping methods configuration
 export const shippingMethods = {
@@ -66,13 +193,133 @@ export const getOrderedCategories = (order, books) => {
 
   const categories = [];
   order.items.forEach((item) => {
-    const book = books.find((b) => b.id === item.id);
+    const bookId = item.id ?? item.bookId;
+    const book = books.find((b) => b.id === bookId);
     if (book && book.category && !categories.includes(book.category)) {
       categories.push(book.category);
     }
   });
 
   return categories;
+};
+
+export const getOrderedDatasetBookIds = (order, books) => {
+  if (!order || !order.items || !books) return [];
+
+  const selectedIds = [];
+  order.items.forEach((item) => {
+    const candidateIds = [
+      item.datasetBookId,
+      item.dataset_book_id,
+      item.bookDatasetId,
+      item.book_id,
+      item.bookId,
+      item.id,
+    ];
+
+    candidateIds.forEach((candidateId) => {
+      const resolved = normalizeRecommendationId(candidateId);
+      if (!resolved) return;
+
+      const matchedBook = getBookByRecommendationId(books, resolved);
+      if (matchedBook) {
+        const datasetId = getBookRecommendationId(matchedBook);
+        uniquePush(selectedIds, datasetId);
+      }
+    });
+  });
+
+  return selectedIds;
+};
+
+export const getRecommendedBookIds = (selectedBookIds, rules, books, limit = 4) => {
+  const availableBooks = Array.isArray(books) ? books : [];
+  const selectedIds = resolveDatasetBookIds(selectedBookIds, availableBooks);
+  const selectedIdSet = new Set(selectedIds);
+  const lookup = buildRecommendationLookup(availableBooks);
+  const recommendedIds = [];
+
+  const addIfValid = (bookId) => {
+    const normalizedId = normalizeRecommendationId(bookId);
+    if (!normalizedId || selectedIdSet.has(normalizedId) || recommendedIds.includes(normalizedId)) {
+      return;
+    }
+
+    if (!lookup.has(normalizedId)) return;
+    recommendedIds.push(normalizedId);
+  };
+
+  const matchedRules = normalizeRules(rules)
+    .filter((rule) => rule.antecedent.every((id) => selectedIdSet.has(id)))
+    .sort((left, right) =>
+      (right.confidence - left.confidence)
+      || (right.lift - left.lift)
+      || (right.support - left.support),
+    );
+
+  matchedRules.forEach((rule) => {
+    rule.consequent.forEach(addIfValid);
+  });
+
+  if (recommendedIds.length < limit) {
+    const selectedBooks = selectedIds
+      .map((id) => lookup.get(id))
+      .filter(Boolean);
+    const selectedAuthors = [...new Set(selectedBooks.map((book) => book.author).filter(Boolean))];
+
+    availableBooks.forEach((book) => {
+      const datasetId = getBookRecommendationId(book);
+      if (
+        datasetId &&
+        !selectedIdSet.has(datasetId) &&
+        !recommendedIds.includes(datasetId) &&
+        selectedAuthors.includes(book.author)
+      ) {
+        recommendedIds.push(datasetId);
+      }
+    });
+  }
+
+  if (recommendedIds.length < limit) {
+    const selectedBooks = selectedIds
+      .map((id) => lookup.get(id))
+      .filter(Boolean);
+    const selectedCategories = [...new Set(selectedBooks.map((book) => book.category).filter(Boolean))];
+    const categoryCandidates = shuffleBooks(
+      availableBooks.filter((book) => {
+        const datasetId = getBookRecommendationId(book);
+        return (
+          datasetId &&
+          !selectedIdSet.has(datasetId) &&
+          !recommendedIds.includes(datasetId) &&
+          selectedCategories.includes(book.category)
+        );
+      }),
+    );
+
+    categoryCandidates.forEach((book) => {
+      if (recommendedIds.length < limit) {
+        addIfValid(getBookRecommendationId(book));
+      }
+    });
+  }
+
+  if (recommendedIds.length < limit) {
+    availableBooks.forEach((book) => {
+      if (recommendedIds.length < limit) {
+        addIfValid(getBookRecommendationId(book));
+      }
+    });
+  }
+
+  return recommendedIds.slice(0, limit);
+};
+
+export const getRecommendedBooksByIds = (bookIds, books) => {
+  const lookup = buildRecommendationLookup(books);
+  return (Array.isArray(bookIds) ? bookIds : [])
+    .map((bookId) => lookup.get(normalizeRecommendationId(bookId)))
+    .filter(Boolean);
 };
 
 // Get recommended books
@@ -180,8 +427,9 @@ export const generateInvoiceContent = (order, user, trackingUpdates = []) => {
   }
 
   invoiceText += "Payment Information:\n";
-  invoiceText += `Method: ${order.payment?.method || "Credit Card"}\n`;
-  invoiceText += `Transaction ID: ${order.payment?.transactionId || "N/A"}\n\n`;
+  const paymentInfo = getOrderPaymentInfo(order);
+  invoiceText += `Method: ${paymentInfo.method}\n`;
+  invoiceText += `Transaction ID: ${paymentInfo.transactionId}\n\n`;
 
   invoiceText += "Shipping Information:\n";
   invoiceText += `Method: ${method.title}\n`;

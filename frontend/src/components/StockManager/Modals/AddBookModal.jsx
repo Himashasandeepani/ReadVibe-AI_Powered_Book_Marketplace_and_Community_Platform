@@ -94,6 +94,22 @@ const BookModalBase = ({
                     />
                   </div>
                   <div className="col-md-6 mb-3">
+                    <label className="form-label">Dataset Book ID</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. BK-A102 or 2024X15"
+                      name="datasetBookId"
+                      value={newBook.datasetBookId || ""}
+                      onChange={onInputChange}
+                    />
+                    <small className="text-muted">
+                      Optional. Use this if your AI dataset needs a custom alphanumeric ID.
+                    </small>
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="col-md-6 mb-3">
                     <label className="form-label">Title *</label>
                     <input
                       type="text"

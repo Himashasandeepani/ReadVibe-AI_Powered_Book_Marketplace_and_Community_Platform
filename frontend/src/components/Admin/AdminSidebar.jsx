@@ -1,10 +1,12 @@
 import React from "react";
 
-const AdminSidebar = ({ activeTab, onTabChange }) => {
+const AdminSidebar = ({ activeTab, onTabChange, liveChatCount }) => {
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: "tachometer-alt" },
     { id: "users", label: "User Management", icon: "users" },
     { id: "posts", label: "Community Posts", icon: "comments" },
+    { id: "home-community-posts", label: "Home Community Posts", icon: "home" },
+    { id: "live-chat", label: "Live Chat", icon: "comment-dots" },
     { id: "analytics", label: "Analytics", icon: "chart-bar" },
     { id: "status", label: "Manage Status", icon: "list" },
     { id: "system", label: "System Settings", icon: "cog" },
@@ -22,6 +24,9 @@ const AdminSidebar = ({ activeTab, onTabChange }) => {
             >
               <i className={`fas fa-${tab.icon} me-2`}></i>
               {tab.label}
+              {tab.id === "live-chat" && liveChatCount > 0 && (
+                <span className="badge bg-primary ms-2">{liveChatCount}</span>
+              )}
             </button>
           </li>
         ))}

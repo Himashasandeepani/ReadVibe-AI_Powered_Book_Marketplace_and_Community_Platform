@@ -1,6 +1,18 @@
 import React from "react";
 import { getStatusBadgeClass } from "./utils";
 
+const formatTimestamp = (value) => {
+  if (!value) return "Recently";
+
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString();
+  } catch {
+    return String(value);
+  }
+};
+
 const PostsTable = ({ posts, onViewPost, onDeletePost }) => {
   return (
     <div className="admin-dashboard-card">
@@ -9,7 +21,8 @@ const PostsTable = ({ posts, onViewPost, onDeletePost }) => {
           <thead>
             <tr>
               <th>Post ID</th>
-              <th>User</th>
+              <th>Posted By</th>
+              <th>Title</th>
               <th>Content Preview</th>
               <th>Category</th>
               <th>Likes</th>
@@ -24,11 +37,9 @@ const PostsTable = ({ posts, onViewPost, onDeletePost }) => {
               <tr key={post.id}>
                 <td>{post.id}</td>
                 <td>
-                  {/* Fix: Extract user name from object if needed */}
-                  {typeof post.user === "object"
-                    ? post.user.name || "Unknown"
-                    : post.user}
+                  {post.postedBy || post.user || "Unknown"}
                 </td>
+                <td>{post.title || "-"}</td>
                 <td>
                   <div className="post-preview">
                     {post.content.substring(0, 100)}...
@@ -44,7 +55,7 @@ const PostsTable = ({ posts, onViewPost, onDeletePost }) => {
                     {post.status}
                   </span>
                 </td>
-                <td>{post.timestamp}</td>
+                <td>{post.postedOn || formatTimestamp(post.timestamp)}</td>
                 <td>
                   <div className="admin-action-buttons">
                     <button

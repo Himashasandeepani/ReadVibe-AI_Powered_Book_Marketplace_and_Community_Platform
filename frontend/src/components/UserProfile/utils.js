@@ -1,239 +1,316 @@
-// Format helpers
-import { formatPrice, formatDate, showNotification } from "../../utils/helpers";
-import { getCurrentUser } from "../../utils/auth";
+import { formatPrice, formatDate, showNotification, getAllBooks } from "../../utils/helpers";
+import { getCurrentUser, setCurrentUser } from "../../utils/auth";
+import { createBookRequestApi } from "../../utils/communityApi";
+import { fetchBookByIdApi } from "../StockManager/utils";
 
-// Sample books data
-export const books = [
-  {
-    id: 1,
-    title: "The Midnight Library",
-    author: "Matt Haig",
-    price: 6000.0,
-    category: "Fiction",
-    rating: 4.3,
-    reviews: 128,
-    inStock: true,
-    image: "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
-  },
-  {
-    id: 2,
-    title: "Project Hail Mary",
-    author: "Andy Weir",
-    price: 6500.0,
-    category: "Science Fiction",
-    rating: 4.8,
-    reviews: 95,
-    inStock: true,
-    image: "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
-  },
-  {
-    id: 3,
-    title: "Dune",
-    author: "Frank Herbert",
-    price: 5400.0,
-    category: "Science Fiction",
-    rating: 4.0,
-    reviews: 210,
-    inStock: true,
-    image: "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
-  },
-];
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const BOOK_REVIEWS_UPDATED_EVENT = "book-reviews-updated";
+const bookReviewsCache = new Map();
 
-// Load user data
-export const loadUserData = (user) => {
-  // Load orders
-  const storedOrders = JSON.parse(localStorage.getItem("userOrders")) || [];
-  const userOrders = storedOrders.filter(
-    (order) => order.userId === user.id
-  );
+const handleApi = async (path, options = {}) => {
+  const { headers = {}, ...restOptions } = options;
 
-  // Load reviews
-  const storedReviews = JSON.parse(localStorage.getItem("userReviews")) || [];
-  const userReviews = storedReviews.filter(
-    (review) => review.userId === user.id
-  );
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...restOptions,
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+    },
+  });
 
-  // Load book requests
-  const storedRequests = JSON.parse(localStorage.getItem("bookRequests")) || [];
-  const userRequests = storedRequests.filter(
-    (request) => request.userId === user.id
-  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data?.error || data?.message || "Request failed";
+    throw new Error(message);
+  }
+  return data;
+};
 
-  // Calculate stats
-  const booksRead = userOrders.reduce(
-    (total, order) =>
-      total + order.items.reduce((sum, item) => sum + item.quantity, 0),
-    0
-  );
+export const books = getAllBooks();
 
-  const wishlistItems =
-    JSON.parse(localStorage.getItem(`wishlist_${user.id}`)) || [];
-  const communityPosts =
-    JSON.parse(localStorage.getItem("communityPosts")) || [];
-  const userPosts = communityPosts.filter(
-    (post) => post.user.name === user.name
-  );
+export const generateStarRating = (rating) => {
+  const safeRating = Number(rating) || 0;
+  return "*".repeat(Math.max(0, Math.min(5, Math.round(safeRating))));
+};
 
-  const userStats = {
-    booksRead,
-    reviewsWritten: userReviews.length,
-    wishlistCount: wishlistItems.length,
-    communityPosts: userPosts.length,
-    myBookRequests: userRequests.length,
-  };
-
-  // Load recent activity
-  const recentActivity = loadRecentActivity(userOrders, userReviews);
+const normalizeOrder = (order) => {
+  const items = Array.isArray(order?.items) ? order.items : [];
+  const shippingAddress = order?.shippingAddress || {};
 
   return {
-    orders: userOrders,
-    reviews: userReviews,
-    bookRequests: userRequests,
-    userStats,
-    recentActivity,
+    ...order,
+    items,
+    totals: {
+      subtotal: Number(order?.subtotal) || 0,
+      shipping: Number(order?.shippingCost) || 0,
+      tax: Number(order?.tax) || 0,
+      total: Number(order?.total) || 0,
+    },
+    orderDate: order?.orderDate || order?.createdAt,
+    shipping: {
+      ...shippingAddress,
+      estimatedDelivery:
+        shippingAddress?.estimatedDelivery ||
+        order?.estimatedDelivery ||
+        order?.createdAt ||
+        new Date().toISOString(),
+    },
+    orderNumber: order?.id,
   };
 };
 
-// Load recent activity
-export const loadRecentActivity = (userOrders, userReviews) => {
-  const activities = [];
+const normalizeReview = (review) => ({
+  ...review,
+  bookId: review?.bookId?.toString?.() ?? String(review?.bookId ?? ""),
+  date: review?.date || review?.createdAt,
+});
 
-  // Add recent orders
-  userOrders.slice(0, 2).forEach((order) => {
-    activities.push({
-      type: "purchase",
-      text: `You purchased ${order.items.length} book(s)`,
-      time: formatDate(order.orderDate),
-      icon: "shoppingBag",
-    });
-  });
+const normalizeBookReviewList = (reviews = []) =>
+  reviews.map((review) => normalizeReview(review));
 
-  // Add recent reviews
-  userReviews.slice(0, 1).forEach((review) => {
-    activities.push({
-      type: "review",
-      text: `You reviewed "${review.bookTitle}"`,
-      time: formatDate(review.date),
-      icon: "star",
-    });
-  });
+const normalizeActivity = (activity) => ({
+  ...activity,
+  time: activity?.time ? formatDate(activity.time) : "Recently",
+});
 
-  // Sort by time (newest first)
-  return activities.sort((a, b) => new Date(b.time) - new Date(a.time));
+const normalizeBookRequest = (request) => ({
+  ...request,
+  userName: request?.userFullName || request?.username || "User",
+  userEmail: request?.userEmail || "",
+  dateRequested: request?.createdAt || request?.dateRequested,
+  dateUpdated: request?.updatedAt || request?.dateUpdated || request?.createdAt,
+  status:
+    typeof request?.status === "string"
+      ? request.status.charAt(0).toUpperCase() + request.status.slice(1).toLowerCase()
+      : request?.status || "Pending",
+  adminNotes: request?.adminNotes || request?.stock_managerNotes || "",
+});
+
+const getBookReviewDisplayName = (user) => user?.fullName || user?.name || user?.username || "Reader";
+
+const emitBookReviewsUpdated = () => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(BOOK_REVIEWS_UPDATED_EVENT));
 };
 
-// Generate star rating HTML
-export const generateStarRating = (rating) => {
-  let starsHTML = "";
-  for (let i = 1; i <= 5; i++) {
-    if (i <= rating) {
-      starsHTML += '<i class="fas fa-star text-warning"></i>';
-    } else if (i - 0.5 === rating) {
-      starsHTML += '<i class="fas fa-star-half-alt text-warning"></i>';
-    } else {
-      starsHTML += '<i class="far fa-star text-warning"></i>';
-    }
+export const getStoredBookReviews = () => {
+  return [...bookReviewsCache.values()].flat();
+};
+
+export const getBookReviewsForBook = (bookId) => {
+  const normalizedBookId = String(bookId ?? "");
+  return bookReviewsCache.get(normalizedBookId) || [];
+};
+
+export const loadBookReviewsForBook = async (bookId) => {
+  const normalizedBookId = String(bookId ?? "");
+  if (!normalizedBookId) return [];
+
+  const book = await fetchBookByIdApi(normalizedBookId);
+  const reviews = normalizeBookReviewList(book?.reviewsList || []);
+  bookReviewsCache.set(normalizedBookId, reviews);
+  emitBookReviewsUpdated();
+  return reviews;
+};
+
+export const updateBookReviewCache = (review, book, user) => {
+  if (!review) return;
+
+  try {
+    const normalizedReview = {
+      id: review.id ?? `review-${Date.now()}`,
+      bookId: String(review.bookId ?? book?.id ?? ""),
+      bookTitle: book?.title || review.bookTitle || "",
+      bookAuthor: book?.author || review.bookAuthor || "",
+      bookImage: book?.image || review.bookImage || "",
+      rating: review.rating ?? 0,
+      title: review.title || "",
+      text: review.text || review.comment || "",
+      recommend: Boolean(review.recommend),
+      date: review.date || review.createdAt || new Date().toISOString(),
+      userName: review.userName || getBookReviewDisplayName(user),
+    };
+
+    const normalizedBookId = String(normalizedReview.bookId || "");
+    const existingReviews = bookReviewsCache.get(normalizedBookId) || [];
+    const nextReviews = [
+      normalizedReview,
+      ...existingReviews.filter((item) => String(item.id) !== String(normalizedReview.id)),
+    ];
+
+    bookReviewsCache.set(normalizedBookId, nextReviews);
+    emitBookReviewsUpdated();
+  } catch (error) {
+    console.error("Failed to update book review cache", error);
   }
-  return starsHTML;
 };
 
-// Update user profile
-export const updateUserProfile = (user, updatedData) => {
-  const updatedUser = {
-    ...user,
-    ...updatedData,
+const normalizeIdentityValue = (value) => {
+  if (value === null || value === undefined) return "";
+  return String(value).trim().toLowerCase();
+};
+
+const getUserCommunityPostCount = (user) => {
+  if (!user?.id && !user?.username && !user?.name && !user?.fullName) {
+    return 0;
+  }
+
+  try {
+    const storedPosts = JSON.parse(localStorage.getItem("communityPosts")) || [];
+    const adminPosts = JSON.parse(localStorage.getItem("adminCommunityPosts")) || [];
+    const posts = Array.isArray(storedPosts) && storedPosts.length > 0 ? storedPosts : adminPosts;
+
+    const userIdentifiers = new Set(
+      [
+        user.id,
+        user.username,
+        user.name,
+        user.fullName,
+        user.userFullName,
+      ]
+        .filter(Boolean)
+        .map(normalizeIdentityValue),
+    );
+
+    return posts.filter((post) => {
+      const postIdentifiers = [
+        post?.userId,
+        post?.username,
+        post?.user,
+        post?.userFullName,
+        post?.userDisplay?.name,
+        post?.userDisplay?.avatar,
+      ]
+        .filter(Boolean)
+        .map(normalizeIdentityValue);
+
+      return postIdentifiers.some((identifier) => userIdentifiers.has(identifier));
+    }).length;
+  } catch {
+    return 0;
+  }
+};
+
+export const loadUserData = async (user) => {
+  if (!user?.id) {
+    return {
+      orders: [],
+      reviews: [],
+      bookRequests: [],
+      userStats: {
+        booksRead: 0,
+        reviewsWritten: 0,
+        wishlistCount: 0,
+        communityPosts: 0,
+        myBookRequests: 0,
+      },
+      recentActivity: [],
+    };
+  }
+
+  const data = await handleApi(`/api/profile?userId=${encodeURIComponent(user.id)}`, {
+    headers: { "x-user-id": user.id },
+  });
+
+  return {
+    orders: (data.orders || []).map(normalizeOrder),
+    reviews: (data.reviews || []).map(normalizeReview),
+    bookRequests: (data.bookRequests || []).map(normalizeBookRequest),
+    recentActivity: (data.recentActivity || []).map(normalizeActivity),
+    userStats: {
+      ...(data.userStats || {
+        booksRead: 0,
+        reviewsWritten: 0,
+        wishlistCount: 0,
+        communityPosts: 0,
+        myBookRequests: 0,
+      }),
+      communityPosts: getUserCommunityPostCount(user),
+    },
   };
-
-  localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-  return updatedUser;
 };
 
-// Submit book request
-export const submitBookRequest = (user, requestData) => {
-  const newRequest = {
-    id: Date.now(),
+export const updateUserProfile = async (user, updatedData) => {
+  const data = await handleApi("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify({
+      userId: user.id,
+      fullName: updatedData.name,
+      email: updatedData.email,
+      username: updatedData.username,
+    }),
+    headers: { "x-user-id": user.id },
+  });
+
+  setCurrentUser(data.user);
+  return data.user;
+};
+
+export const submitBookRequest = async (user, requestData) =>
+  createBookRequestApi({
     userId: user.id,
-    userName: user.name,
-    userEmail: user.email,
     bookTitle: requestData.title,
     author: requestData.author,
     isbn: requestData.isbn,
     category: requestData.category,
     reason: requestData.reason,
-    status: "Pending",
-    dateRequested: new Date().toISOString(),
-    dateUpdated: new Date().toISOString(),
-  };
-
-  const storedRequests = JSON.parse(localStorage.getItem("bookRequests")) || [];
-  storedRequests.push(newRequest);
-  localStorage.setItem("bookRequests", JSON.stringify(storedRequests));
-
-  return newRequest;
-};
-
-// Submit review
-export const submitReview = (user, book, reviewData, orderId = null) => {
-  const reviewId = "REV_" + Date.now();
-  const newReview = {
-    id: reviewId,
-    bookId: (reviewData.bookId ?? book.id).toString(),
-    bookTitle: book.title,
-    bookAuthor: book.author,
-    bookImage: book.image,
-    userId: user.id,
-    userName: user.name,
-    userAvatar: user.avatar || user.name.substring(0, 2).toUpperCase(),
-    rating: reviewData.rating,
-    title: (reviewData.title || "").trim(),
-    text: reviewData.text.trim(),
-    recommend: reviewData.recommend,
-    date: new Date().toISOString(),
-    helpfulVotes: 0,
-    verifiedPurchase: true,
-    orderId: orderId,
-  };
-
-  // Save to book reviews
-  const bookReviews = JSON.parse(localStorage.getItem("bookReviews")) || [];
-  bookReviews.push(newReview);
-  localStorage.setItem("bookReviews", JSON.stringify(bookReviews));
-
-  // Save to user reviews
-  const userReviews = JSON.parse(localStorage.getItem("userReviews")) || [];
-  userReviews.push({
-    ...newReview,
-    id: "USER_" + reviewId,
   });
-  localStorage.setItem("userReviews", JSON.stringify(userReviews));
 
-  return { ...newReview, id: "USER_" + reviewId };
-};
+export const submitReview = async (user, book, reviewData, orderId = null) => {
+  const data = await handleApi("/api/profile/reviews", {
+    method: "POST",
+    body: JSON.stringify({
+      userId: user.id,
+      bookId: reviewData.bookId ?? book.id,
+      rating: reviewData.rating,
+      title: reviewData.title || "",
+      text: reviewData.text.trim(),
+      recommend: reviewData.recommend,
+      orderId,
+    }),
+    headers: { "x-user-id": user.id },
+  });
 
-// Delete review
-export const deleteReview = (reviewId, userId) => {
-  // Update user reviews
-  const userReviews = JSON.parse(localStorage.getItem("userReviews")) || [];
-  const filteredUserReviews = userReviews.filter(
-    (review) => review.id !== reviewId
+  const savedReview = normalizeReview(data.review);
+  updateBookReviewCache(
+    {
+      ...savedReview,
+      title: reviewData.title || savedReview.title,
+      text: reviewData.text || savedReview.text,
+      recommend: reviewData.recommend,
+      rating: reviewData.rating ?? savedReview.rating,
+      userName: getBookReviewDisplayName(user),
+      bookId: savedReview.bookId || book?.id,
+      bookTitle: book?.title,
+      bookAuthor: book?.author,
+      bookImage: book?.image,
+    },
+    book,
+    user,
   );
-  localStorage.setItem("userReviews", JSON.stringify(filteredUserReviews));
 
-  // Also remove from book reviews
-  const bookReviews = JSON.parse(localStorage.getItem("bookReviews")) || [];
-  const reviewToDelete = userReviews.find((r) => r.id === reviewId);
-  if (reviewToDelete) {
-    const filteredBookReviews = bookReviews.filter(
-      (r) => !(r.bookId === reviewToDelete.bookId && r.userId === userId)
-    );
-    localStorage.setItem("bookReviews", JSON.stringify(filteredBookReviews));
-  }
+  return savedReview;
 };
 
-// Find unreviewed items in an order
+export const deleteReview = async (reviewId, userId) => {
+  await handleApi(`/api/profile/reviews/${reviewId}?userId=${encodeURIComponent(userId)}`, {
+    method: "DELETE",
+    headers: { "x-user-id": userId },
+  });
+  for (const [bookId, reviews] of bookReviewsCache.entries()) {
+    const nextReviews = reviews.filter((review) => String(review.id) !== String(reviewId));
+    if (nextReviews.length !== reviews.length) {
+      bookReviewsCache.set(bookId, nextReviews);
+    }
+  }
+  emitBookReviewsUpdated();
+};
+
 export const findUnreviewedItems = (order, userReviews) => {
-  return order.items.filter((item) => {
-    return !userReviews.some((review) => review.bookId === item.id.toString());
+  const items = Array.isArray(order?.items) ? order.items : [];
+  return items.filter((item) => {
+    const itemBookId = String(item.bookId ?? item.id ?? "");
+    return !userReviews.some((review) => String(review.bookId) === itemBookId);
   });
 };
 

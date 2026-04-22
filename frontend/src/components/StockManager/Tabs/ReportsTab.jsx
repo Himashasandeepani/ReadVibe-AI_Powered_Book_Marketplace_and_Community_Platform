@@ -69,6 +69,18 @@ const ReportsTab = ({
                   </strong>
                 </div>
                 <div className="d-flex justify-content-between py-2 border-bottom">
+                  <span>Total Sales Count:</span>
+                  <strong className="text-primary">
+                    {inventoryStats.totalSalesCount}
+                  </strong>
+                </div>
+                <div className="d-flex justify-content-between py-2 border-bottom">
+                  <span>Total Profit Earned:</span>
+                  <strong className="text-success">
+                    {formatCurrency(inventoryStats.totalProfitEarned)}
+                  </strong>
+                </div>
+                <div className="d-flex justify-content-between py-2 border-bottom">
                   <span>Low Stock Items:</span>
                   <strong className="text-warning">
                     {inventoryStats.lowStockItems}

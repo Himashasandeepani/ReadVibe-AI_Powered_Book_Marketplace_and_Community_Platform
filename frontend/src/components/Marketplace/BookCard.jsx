@@ -12,10 +12,12 @@ import {
   faTag,
 } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
+import createBookCoverPlaceholder from "../../utils/imagePlaceholders";
 
 const BookCard = ({
   book,
   isLoggedIn,
+  actionsDisabled = false,
   isInWishlist,
   onViewDetails,
   onAddToWishlist,
@@ -36,8 +38,7 @@ const BookCard = ({
           alt={book.title}
           onError={(e) => {
             e.target.onerror = null;
-            e.target.src =
-              "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover";
+            e.target.src = createBookCoverPlaceholder();
           }}
         />
         {!book.inStock && (
@@ -96,6 +97,9 @@ const BookCard = ({
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
+                if (actionsDisabled) {
+                  return;
+                }
                 if (isLoggedIn) {
                   onAddToWishlist(book.id, e);
                 } else {
@@ -103,6 +107,8 @@ const BookCard = ({
                 }
               }}
               className="book-action-btn"
+              disabled={actionsDisabled}
+              title={actionsDisabled ? "Not available for admin or stock manager accounts" : ""}
             >
               <FontAwesomeIcon
                 icon={
@@ -121,6 +127,9 @@ const BookCard = ({
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (actionsDisabled) {
+                      return;
+                    }
                     if (isLoggedIn) {
                       onAddToCart(book.id, e);
                     } else {
@@ -139,6 +148,9 @@ const BookCard = ({
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (actionsDisabled) {
+                      return;
+                    }
                     if (isLoggedIn) {
                       onBuyNow(book.id, e);
                     } else {
@@ -146,6 +158,7 @@ const BookCard = ({
                     }
                   }}
                   className="book-action-btn"
+                  disabled={actionsDisabled}
                 >
                   <FontAwesomeIcon icon={faTruck} className="me-1" />
                 </Button>

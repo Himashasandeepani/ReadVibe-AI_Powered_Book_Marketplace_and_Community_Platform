@@ -48,9 +48,8 @@ const OrderHistory = ({ orders, onBack, onReviewOrder, onViewDetails }) => {
                         Order #{order.orderNumber || order.id}
                       </h6>
                       <p className="card-text text-muted mb-1">
-                        {formatDate(order.orderDate)} • {order.items.length}{" "}
-                        item(s) •
-                        <strong> {formatPrice(order.totals.total)}</strong>
+                        {formatDate(order.orderDate)} • {(order.items || []).length} item(s) •
+                        <strong> {formatPrice(order.totals?.total || order.total || 0)}</strong>
                       </p>
                       <Badge bg="success">{order.status}</Badge>
                     </div>
@@ -59,7 +58,7 @@ const OrderHistory = ({ orders, onBack, onReviewOrder, onViewDetails }) => {
                         Est. Delivery
                       </small>
                       <small className="text-muted">
-                        {formatDate(order.shipping.estimatedDelivery)}
+                        {formatDate(order.shipping?.estimatedDelivery || order.orderDate)}
                       </small>
                     </div>
                   </div>

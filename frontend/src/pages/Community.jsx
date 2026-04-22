@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../styles/pages/Community.css";
@@ -12,6 +12,17 @@ import PostCard from "../components/Community/PostCard";
 import Sidebar from "../components/Community/Sidebar";
 import CreatePostModal from "../components/Community/CreatePostModal";
 import RequestBookModal from "../components/Community/RequestBookModal";
+import {
+  fetchCommunityPostsApi,
+  fetchCommunityPostWithCommentsApi,
+  createCommunityPostApi,
+  toggleCommunityPostLikeApi,
+  addCommunityCommentApi,
+  createBookRequestApi,
+  emitCommunityPostsUpdated,
+} from "../utils/communityApi";
+import { fetchBooksFromApi } from "../components/StockManager/utils";
+import { isPrivilegedUser } from "../utils/auth";
 
 const createDefaultCommunityPosts = () => [
   {
@@ -64,6 +75,29 @@ const createDefaultCommunityPosts = () => [
   },
 ];
 
+const DEFAULT_REQUEST_CATEGORIES = [
+  "Fiction",
+  "Science Fiction",
+  "Fantasy",
+  "Mystery",
+  "Romance",
+  "Non-Fiction",
+  "Biography",
+  "Self-Help",
+  "Other",
+];
+
+const getStoredCategories = () => {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const stored = JSON.parse(window.localStorage.getItem("categories"));
+    return Array.isArray(stored) ? stored : [];
+  } catch {
+    return [];
+  }
+};
+
 const getStoredCurrentUser = () => {
   const storedUser = localStorage.getItem("currentUser");
   if (!storedUser) {
@@ -77,41 +111,78 @@ const getStoredCurrentUser = () => {
   }
 };
 
-const getStoredCommunityPosts = () => {
-  const storedPosts = localStorage.getItem("communityPosts");
-  if (!storedPosts) {
-    return null;
-  }
-
-  try {
-    const parsedPosts = JSON.parse(storedPosts);
-    return Array.isArray(parsedPosts) ? parsedPosts : null;
-  } catch {
-    return null;
-  }
+const humanizeUsername = (username) => {
+  if (!username) return "User";
+  return username
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 };
 
-const getInitialCommunityPosts = () => {
-  const storedPosts = getStoredCommunityPosts();
-  if (Array.isArray(storedPosts)) {
-    return storedPosts;
-  }
+const mapApiPostToUi = (post) => {
+  if (!post) return null;
 
-  return createDefaultCommunityPosts();
+  const username = post.username || (post.userId ? `user_${post.userId}` : "user");
+  const name = post.userFullName || humanizeUsername(username);
+  const avatar = name.substring(0, 2).toUpperCase();
+
+  return {
+    id: String(post.id),
+    user: username,
+    title: post.title || "",
+    content: post.content,
+    category: post.category || "Discussion",
+    bookReference: post.bookTitle || null,
+    image: "",
+    likes: typeof post.likesCount === "number" ? post.likesCount : 0,
+    comments: typeof post.commentsCount === "number" ? post.commentsCount : 0,
+    status: !post.status || post.status.toLowerCase() === "active" ? "Active" : post.status,
+    timestamp: post.createdAt || new Date().toISOString(),
+    commentsList: [],
+    likedBy: Array.isArray(post.likedByUserIds)
+      ? post.likedByUserIds
+          .map((id) => Number(id))
+          .filter((id) => Number.isInteger(id) && id > 0)
+      : [],
+    userDisplay: {
+      name,
+      avatar,
+    },
+  };
+};
+
+const mapApiCommentToUi = (comment) => {
+  if (!comment) return null;
+
+  const username = comment.username || (comment.userId ? `user_${comment.userId}` : "user");
+  const name = comment.userFullName || comment.userDisplay?.name || humanizeUsername(username);
+  const avatar = name.substring(0, 2).toUpperCase();
+
+  return {
+    id: comment.id,
+    user: username,
+    content: comment.content,
+    timestamp: comment.createdAt || new Date().toISOString(),
+    userDisplay: {
+      name,
+      avatar,
+    },
+  };
 };
 
 const Community = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(() => getStoredCurrentUser());
-  const [communityPosts, setCommunityPosts] = useState(() =>
-    getInitialCommunityPosts(),
-  );
+  const [communityPosts, setCommunityPosts] = useState([]);
 
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [showRequestBookModal, setShowRequestBookModal] = useState(false);
+  const [postTitle, setPostTitle] = useState("");
   const [postContent, setPostContent] = useState("");
   const [postCategory, setPostCategory] = useState("Discussion");
-  const [selectedBook, setSelectedBook] = useState("");
+  const [bookName, setBookName] = useState("");
+  const [requestCategories, setRequestCategories] = useState(DEFAULT_REQUEST_CATEGORIES);
+  const postContentRef = useRef(null);
   const [commentInputs, setCommentInputs] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
 
@@ -124,40 +195,29 @@ const Community = () => {
     reason: "",
   });
 
-  const topContributors = [
-    { name: "John Doe", avatar: "JD", posts: 124 },
-    { name: "Sarah Johnson", avatar: "SJ", posts: 98 },
-    { name: "Mike Brown", avatar: "MB", posts: 76 },
+  const postCategories = [
+    "Discussion",
+    "Book Review",
+    "Recommendation",
+    "Question",
   ];
 
   const popularTags = [
-    "#Fantasy",
-    "#SciFi",
-    "#Mystery",
-    "#Romance",
-    "#Classics",
-    "#Biography",
-    "#SelfHelp",
-    "#Thriller",
+    ...postCategories,
   ];
 
   useEffect(() => {
-    const syncCommunityPostsFromStorage = () => {
-      const storedPosts = getStoredCommunityPosts();
-      if (Array.isArray(storedPosts)) {
-        setCommunityPosts(storedPosts);
-      } else {
-        setCommunityPosts(createDefaultCommunityPosts());
-      }
-    };
-
     const handleStorageChange = (event) => {
       if (event.key === "currentUser") {
         setCurrentUser(getStoredCurrentUser());
       }
 
-      if (event.key === "communityPosts") {
-        syncCommunityPostsFromStorage();
+      if (event.key === "categories") {
+        const storedCategories = getStoredCategories();
+        setRequestCategories((current) => {
+          const next = new Set([...DEFAULT_REQUEST_CATEGORIES, ...storedCategories, ...current]);
+          return [...next].sort((left, right) => left.localeCompare(right));
+        });
       }
     };
 
@@ -165,19 +225,86 @@ const Community = () => {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
-  // Function to generate unique post ID
-  const generatePostId = () => {
-    try {
-      const posts = JSON.parse(localStorage.getItem("communityPosts")) || [];
-      if (posts.length > 0 && posts[0].id) {
-        const lastId = parseInt(posts[0].id.substring(1)) || posts.length;
-        return `P${String(lastId + 1).padStart(3, "0")}`;
+  useEffect(() => {
+    const loadRequestCategories = async () => {
+      try {
+        const apiBooks = await fetchBooksFromApi();
+        const apiCategories = apiBooks
+          .map((book) => book.category)
+          .filter(Boolean)
+          .map((category) => String(category).trim());
+
+        const storedCategories = getStoredCategories();
+        const next = new Set([
+          ...DEFAULT_REQUEST_CATEGORIES,
+          ...storedCategories,
+          ...apiCategories,
+        ]);
+
+        setRequestCategories([...next].sort((left, right) => left.localeCompare(right)));
+      } catch (error) {
+        console.error("Failed to load request categories", error);
       }
-    } catch (error) {
-      console.error("Error generating post ID:", error);
-    }
-    return `P${String((communityPosts.length || 0) + 1).padStart(3, "0")}`;
-  };
+    };
+
+    void loadRequestCategories();
+  }, []);
+
+  useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        const posts = await fetchCommunityPostsApi();
+        const mapped = await Promise.all(
+          posts.map(async (post) => {
+            const basePost = mapApiPostToUi(post);
+            if (!basePost) return null;
+
+            try {
+              const details = await fetchCommunityPostWithCommentsApi(post.id);
+              const comments = Array.isArray(details.comments) ? details.comments : [];
+
+              return {
+                ...basePost,
+                comments: Number(details.post?.commentsCount) || comments.length || basePost.comments,
+                commentsList: comments.map(mapApiCommentToUi),
+              };
+            } catch {
+              return basePost;
+            }
+          }),
+        );
+        const nextPosts = mapped.filter((post) => post !== null);
+        setCommunityPosts(nextPosts);
+
+        try {
+          const adminPosts = nextPosts.map((p) => {
+            const { userDisplay, commentsList, likedBy, ...rest } = p;
+            return rest;
+          });
+          localStorage.setItem(
+            "adminCommunityPosts",
+            JSON.stringify(adminPosts),
+          );
+        } catch (err) {
+          console.error("Error syncing adminCommunityPosts from API:", err);
+        }
+      } catch (err) {
+        console.error("Failed to load community posts from API, using defaults", err);
+        setCommunityPosts(createDefaultCommunityPosts());
+      }
+    };
+
+    const handleCommunityPostsUpdated = () => {
+      loadPosts();
+    };
+
+    loadPosts();
+    window.addEventListener("community-posts-updated", handleCommunityPostsUpdated);
+
+    return () => {
+      window.removeEventListener("community-posts-updated", handleCommunityPostsUpdated);
+    };
+  }, []);
 
   // Safe function to get user avatar
   const getUserAvatar = (user) => {
@@ -225,6 +352,32 @@ const Community = () => {
     return "User";
   };
 
+  const topContributors = useMemo(() => {
+    const contributorMap = new Map();
+
+    communityPosts.forEach((post) => {
+      const name = getUserName(post);
+      const avatar = getUserAvatar(post);
+      const key = post.userId || post.user || name;
+      const existing = contributorMap.get(key) || {
+        name,
+        avatar,
+        posts: 0,
+      };
+
+      contributorMap.set(key, {
+        ...existing,
+        name,
+        avatar,
+        posts: existing.posts + 1,
+      });
+    });
+
+    return Array.from(contributorMap.values())
+      .sort((a, b) => b.posts - a.posts || a.name.localeCompare(b.name))
+      .slice(0, 3);
+  }, [communityPosts]);
+
   // Enhanced function to check if user can create post
   const canCreatePost = () => {
     if (!currentUser) {
@@ -232,6 +385,12 @@ const Community = () => {
         canProceed: false,
         message: "Please login to create posts",
         redirectTo: "/login",
+      };
+    }
+    if (isPrivilegedUser()) {
+      return {
+        canProceed: false,
+        message: "Admin and stock manager accounts cannot create community posts",
       };
     }
     return { canProceed: true };
@@ -246,6 +405,12 @@ const Community = () => {
         redirectTo: "/login",
       };
     }
+    if (isPrivilegedUser()) {
+      return {
+        canProceed: false,
+        message: "Admin and stock manager accounts cannot like, comment, or share posts",
+      };
+    }
     return { canProceed: true };
   };
 
@@ -258,10 +423,16 @@ const Community = () => {
         redirectTo: "/login",
       };
     }
+    if (isPrivilegedUser()) {
+      return {
+        canProceed: false,
+        message: "Admin and stock manager accounts cannot create book requests",
+      };
+    }
     return { canProceed: true };
   };
 
-  const handleCreatePost = () => {
+  const handleCreatePost = async () => {
     const check = canCreatePost();
     if (!check.canProceed) {
       if (window.confirm(`${check.message}. Do you want to login now?`)) {
@@ -270,73 +441,65 @@ const Community = () => {
       return;
     }
 
-    if (!postContent.trim()) {
+    const currentContent = postContentRef.current?.value ?? postContent;
+    const trimmedContent = currentContent.trim();
+
+    if (!trimmedContent) {
       alert("Please enter post content");
       return;
     }
 
-    // Generate new post with Admin Panel compatible structure
-    const newPost = {
-      id: generatePostId(),
-      user:
-        currentUser.username ||
-        currentUser.name?.toLowerCase().replace(/\s+/g, "_") ||
-        "user",
-      content: postContent,
-      category: postCategory,
-      bookReference: selectedBook !== "Select a book..." ? selectedBook : null,
-      image: "", // In real app, handle image upload
-      likes: 0,
-      comments: 0,
-      status: "Active",
-      timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
-      commentsList: [],
-      likedBy: [],
-      // For community page display
-      userDisplay: {
-        name: currentUser.name || currentUser.username || "User",
-        avatar: currentUser.name
-          ? currentUser.name.substring(0, 2).toUpperCase()
-          : "US",
-      },
-    };
+    try {
+      const createdPost = await createCommunityPostApi({
+        userId: currentUser.id,
+        title: postTitle.trim(),
+        content: trimmedContent,
+        category: postCategory,
+        bookTitle: bookName || undefined,
+      });
 
-    // Get existing posts and add new one at the beginning
-    const existingPosts =
-      JSON.parse(localStorage.getItem("communityPosts")) || [];
-    const updatedPosts = [newPost, ...existingPosts];
+      const uiPostFromApi = mapApiPostToUi(createdPost);
+      const uiPost = {
+        ...uiPostFromApi,
+        title: uiPostFromApi.title || postContent,
+        bookReference: bookName || uiPostFromApi.bookReference,
+      };
 
-    // Update state and localStorage
-    setCommunityPosts(updatedPosts);
-    localStorage.setItem("communityPosts", JSON.stringify(updatedPosts));
+      setCommunityPosts((prev) => [uiPost, ...prev]);
 
-    // Update Admin Panel data if it exists
-    const adminPanelPosts =
-      JSON.parse(localStorage.getItem("adminCommunityPosts")) || [];
-    const adminPost = {
-      ...newPost,
-      // Remove community-specific display fields for admin panel
-      userDisplay: undefined,
-    };
-    const updatedAdminPosts = [adminPost, ...adminPanelPosts];
-    localStorage.setItem(
-      "adminCommunityPosts",
-      JSON.stringify(updatedAdminPosts),
-    );
+      try {
+        const adminPosts =
+          JSON.parse(localStorage.getItem("adminCommunityPosts")) || [];
+        const { userDisplay, commentsList, likedBy, ...adminPost } = uiPost;
+        const updatedAdminPosts = [adminPost, ...adminPosts];
+        localStorage.setItem(
+          "adminCommunityPosts",
+          JSON.stringify(updatedAdminPosts),
+        );
+      } catch (error) {
+        console.error("Error updating admin panel posts from created post:", error);
+      }
 
-    // Reset form
-    setPostContent("");
-    setPostCategory("Discussion");
-    setSelectedBook("");
-    setShowCreatePostModal(false);
+      setPostTitle("");
+      setPostContent("");
+      setPostCategory("Discussion");
+      setBookName("");
+      setShowCreatePostModal(false);
+      if (postContentRef.current) {
+        postContentRef.current.value = "";
+      }
 
-    // Show success message
-    alert(
-      "Post created successfully! It will now appear in the Admin Panel for review.",
-    );
+      alert(
+        "Post created successfully! It will now appear in the Admin Panel for review.",
+      );
+      emitCommunityPostsUpdated();
+    } catch (error) {
+      console.error("Failed to create post:", error);
+      alert(error.message || "Failed to create post. Please try again.");
+    }
   };
 
-  const handleLikePost = (postId) => {
+  const handleLikePost = async (postId) => {
     const check = canInteract();
     if (!check.canProceed) {
       if (window.confirm(`${check.message}. Do you want to login now?`)) {
@@ -345,43 +508,48 @@ const Community = () => {
       return;
     }
 
-    const updatedPosts = communityPosts.map((post) => {
-      if (post.id === postId) {
-        const userIndex = post.likedBy.indexOf(currentUser.id);
+    const numericId = Number(postId);
+    if (!Number.isFinite(numericId)) {
+      console.error("Invalid postId for like:", postId);
+      return;
+    }
 
-        if (userIndex === -1) {
-          // Add like
-          const updatedPost = {
-            ...post,
-            likes: post.likes + 1,
-            likedBy: [...post.likedBy, currentUser.id],
-          };
+    try {
+      const result = await toggleCommunityPostLikeApi({
+        userId: currentUser.id,
+        postId: numericId,
+      });
 
-          // Also update in admin posts
-          updatePostInAdminPanel(updatedPost);
+      setCommunityPosts((prev) =>
+        prev.map((post) => {
+          if (post.id === postId || Number(post.id) === numericId) {
+            const likedBySet = new Set(post.likedBy || []);
+            if (result?.liked) {
+              likedBySet.add(currentUser.id);
+            } else {
+              likedBySet.delete(currentUser.id);
+            }
 
-          return updatedPost;
-        } else {
-          // Remove like
-          const newLikedBy = [...post.likedBy];
-          newLikedBy.splice(userIndex, 1);
-          const updatedPost = {
-            ...post,
-            likes: post.likes - 1,
-            likedBy: newLikedBy,
-          };
+            const updatedPost = {
+              ...post,
+              likes:
+                typeof result?.likesCount === "number"
+                  ? result.likesCount
+                  : post.likes,
+              likedBy: Array.from(likedBySet),
+            };
 
-          // Also update in admin posts
-          updatePostInAdminPanel(updatedPost);
-
-          return updatedPost;
-        }
-      }
-      return post;
-    });
-
-    setCommunityPosts(updatedPosts);
-    localStorage.setItem("communityPosts", JSON.stringify(updatedPosts));
+            updatePostInAdminPanel(updatedPost);
+            return updatedPost;
+          }
+          return post;
+        }),
+      );
+      emitCommunityPostsUpdated();
+    } catch (error) {
+      console.error("Failed to toggle like:", error);
+      alert(error.message || "Failed to update like. Please try again.");
+    }
   };
 
   // Helper function to update post in admin panel storage
@@ -406,7 +574,7 @@ const Community = () => {
     }
   };
 
-  const handleAddComment = (postId, commentText) => {
+  const handleAddComment = async (postId, commentText) => {
     const check = canInteract();
     if (!check.canProceed) {
       if (window.confirm(`${check.message}. Do you want to login now?`)) {
@@ -418,46 +586,44 @@ const Community = () => {
     const comment = commentText || "";
     if (!comment.trim()) return;
 
-    const updatedPosts = communityPosts.map((post) => {
-      if (post.id === postId) {
-        const newComment = {
-          user:
-            currentUser.username ||
-            currentUser.name?.toLowerCase().replace(/\s+/g, "_") ||
-            "user",
-          content: comment,
-          timestamp: new Date()
-            .toISOString()
-            .replace("T", " ")
-            .substring(0, 19),
-          // For community display
-          userDisplay: {
-            name: currentUser.name || currentUser.username || "User",
-            avatar: currentUser.name
-              ? currentUser.name.substring(0, 2).toUpperCase()
-              : "US",
-          },
-        };
+    const numericId = Number(postId);
+    if (!Number.isFinite(numericId)) {
+      console.error("Invalid postId for comment:", postId);
+      return;
+    }
 
-        const updatedPost = {
-          ...post,
-          comments: post.comments + 1,
-          commentsList: [newComment, ...post.commentsList],
-        };
+    try {
+      const comments = await addCommunityCommentApi({
+        userId: currentUser.id,
+        postId: numericId,
+        content: comment,
+      });
 
-        // Also update in admin posts
-        updatePostInAdminPanel(updatedPost);
+      const mappedComments = comments
+        .map(mapApiCommentToUi)
+        .filter((c) => c !== null);
 
-        return updatedPost;
-      }
-      return post;
-    });
+      setCommunityPosts((prev) =>
+        prev.map((post) => {
+          if (post.id === postId || Number(post.id) === numericId) {
+            const updatedPost = {
+              ...post,
+              comments: mappedComments.length,
+              commentsList: mappedComments,
+            };
+            updatePostInAdminPanel(updatedPost);
+            return updatedPost;
+          }
+          return post;
+        }),
+      );
 
-    setCommunityPosts(updatedPosts);
-    localStorage.setItem("communityPosts", JSON.stringify(updatedPosts));
-
-    // Clear comment input
-    setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
+      setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
+      emitCommunityPostsUpdated();
+    } catch (error) {
+      console.error("Failed to add comment:", error);
+      alert(error.message || "Failed to add comment. Please try again.");
+    }
   };
 
   // Enhanced modal open handlers with login check
@@ -512,7 +678,7 @@ const Community = () => {
     }
   };
 
-  const handleRequestBook = () => {
+  const handleRequestBook = async () => {
     const check = canRequestBook();
     if (!check.canProceed) {
       if (window.confirm(`${check.message}. Do you want to login now?`)) {
@@ -526,36 +692,30 @@ const Community = () => {
       return;
     }
 
-    const bookRequests = JSON.parse(localStorage.getItem("bookRequests")) || [];
-    const newRequest = {
-      id: Date.now(),
-      userId: currentUser.id,
-      userName: currentUser.name,
-      userEmail: currentUser.email,
-      bookTitle: requestForm.title,
-      author: requestForm.author,
-      isbn: requestForm.isbn,
-      category: requestForm.category,
-      reason: requestForm.reason,
-      status: "Pending",
-      dateRequested: new Date().toISOString(),
-      dateUpdated: new Date().toISOString(),
-    };
+    try {
+      await createBookRequestApi({
+        userId: currentUser.id,
+        bookTitle: requestForm.title,
+        author: requestForm.author,
+        isbn: requestForm.isbn,
+        category: requestForm.category,
+        reason: requestForm.reason,
+      });
 
-    bookRequests.push(newRequest);
-    localStorage.setItem("bookRequests", JSON.stringify(bookRequests));
+      setRequestForm({
+        title: "",
+        author: "",
+        isbn: "",
+        category: "",
+        reason: "",
+      });
+      setShowRequestBookModal(false);
 
-    // Reset form
-    setRequestForm({
-      title: "",
-      author: "",
-      isbn: "",
-      category: "",
-      reason: "",
-    });
-    setShowRequestBookModal(false);
-
-    alert("Book request submitted successfully!");
+      alert("Book request submitted successfully!");
+    } catch (error) {
+      console.error("Failed to submit book request:", error);
+      alert(error.message || "Failed to submit book request. Please try again.");
+    }
   };
 
   const handleTagClick = (tag) => {
@@ -615,6 +775,7 @@ const Community = () => {
                     key={post.id}
                     post={post}
                     currentUser={currentUser}
+                      actionsDisabled={isPrivilegedUser()}
                     onLike={handleLikePost}
                     onToggleComments={toggleComments}
                     onAddComment={handleAddComment}
@@ -647,10 +808,15 @@ const Community = () => {
         setShowCreatePostModal={setShowCreatePostModal}
         postContent={postContent}
         setPostContent={setPostContent}
+        postContentRef={postContentRef}
+        postTitle={postTitle}
+        setPostTitle={setPostTitle}
         postCategory={postCategory}
         setPostCategory={setPostCategory}
-        selectedBook={selectedBook}
-        setSelectedBook={setSelectedBook}
+        postCategories={postCategories}
+        popularTags={popularTags}
+        bookName={bookName}
+        setBookName={setBookName}
         handleCreatePost={handleCreatePost}
       />
 
@@ -660,6 +826,7 @@ const Community = () => {
         setShowRequestBookModal={setShowRequestBookModal}
         requestForm={requestForm}
         setRequestForm={setRequestForm}
+        categories={requestCategories}
         handleRequestBook={handleRequestBook}
       />
 

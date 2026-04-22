@@ -1,52 +1,22 @@
-// Books data
-export const books = [
-  {
-    id: 1,
-    title: "The Midnight Library",
-    author: "Matt Haig",
-    price: 6000.00,
-    category: "Fiction",
-    rating: 4.3,
-    reviews: 128,
-    inStock: true,
-    image: "/assets/The_Midnight_Library.jpeg"
-  },
-  {
-    id: 2,
-    title: "Project Hail Mary",
-    author: "Andy Weir",
-    price: 6500.00,
-    category: "Science Fiction",
-    rating: 4.8,
-    reviews: 95,
-    inStock: true,
-    image: "/assets/project_hail_mary.jpg"
-  },
-  {
-    id: 3,
-    title: "Dune",
-    author: "Frank Herbert",
-    price: 5400.00,
-    category: "Science Fiction",
-    rating: 4.0,
-    reviews: 210,
-    inStock: true,
-    image: "/assets/dune.jpg"
-  },
-  {
-    id: 4,
-    title: "The Hobbit",
-    author: "J.R.R. Tolkien",
-    price: 3500.00,
-    category: "Fantasy",
-    rating: 4.9,
-    reviews: 305,
-    inStock: false,
-    image: "/assets/the_hobbit.jpg"
-  }
-];
+import { addWishlistItemApi } from "./wishlistApi";
 
-// Return inventory books from localStorage; fallback to seed list
+const normalizeUser = (user) => {
+  if (!user || typeof user !== "object") return null;
+
+  const resolvedId =
+    user.id ??
+    user.userId ??
+    user.user_id ??
+    user.userID ??
+    null;
+
+  return {
+    ...user,
+    id: resolvedId !== null && resolvedId !== undefined ? Number(resolvedId) : null,
+  };
+};
+
+// Return inventory books from localStorage
 export const getAllBooks = () => {
   try {
     const stored = JSON.parse(localStorage.getItem("stockBooks")) || [];
@@ -63,12 +33,12 @@ export const getAllBooks = () => {
       price: Number(book.price) || 0,
     }));
 
-    if (mapped.length) return mapped;
+    return mapped;
   } catch (error) {
     console.error("Error reading stockBooks:", error);
   }
 
-  return books;
+  return [];
 };
 
 // Cart functions
@@ -82,7 +52,7 @@ export const updateCart = (cart) => {
 
 export const addToCart = (bookId, quantity = 1) => {
   const cart = getCart()
-  const book = books.find(b => b.id === bookId)
+  const book = getAllBooks().find(b => b.id === bookId)
 
   if (!book) return
 
@@ -135,19 +105,21 @@ export const searchBooks = (query, booksArray = getAllBooks()) => {
   );
 };
 
-// Add this function to your existing helpers.js file
-export const addToWishlist = (bookId, userId) => {
-  const wishlistKey = `wishlist_${userId}`;
-  const currentWishlist = JSON.parse(localStorage.getItem(wishlistKey)) || [];
-  const catalog = getAllBooks();
-  const book = catalog.find((b) => b.id === bookId);
+// Add or sync wishlist entry via backend API
+export const addToWishlist = async (bookId, userId) => {
+  const normalizedUserId = Number(userId);
+  const normalizedBookId = Number(bookId);
 
-  if (book && !currentWishlist.some((item) => item.id === bookId)) {
-    currentWishlist.push(book);
-    localStorage.setItem(wishlistKey, JSON.stringify(currentWishlist));
-    return true;
+  if (!normalizedUserId || !normalizedBookId) {
+    throw new Error("userId and bookId are required");
   }
-  return false;
+
+  return addWishlistItemApi({
+    userId: normalizedUserId,
+    bookId: normalizedBookId,
+    priority: 3,
+    notes: "",
+  });
 };
 
 
@@ -159,6 +131,8 @@ export const addToWishlist = (bookId, userId) => {
 // Filter books function
 export const filterBooks = (filters, booksArray) => {
   let filtered = [...booksArray];
+  const minRating = Number(filters.minRating) || 0;
+  const minReviews = Number(filters.minReviews) || 0;
 
   if (filters.category && filters.category !== 'all') {
     filtered = filtered.filter(book => book.category === filters.category);
@@ -172,8 +146,12 @@ export const filterBooks = (filters, booksArray) => {
     filtered = filtered.filter(book => book.price <= filters.maxPrice);
   }
 
-  if (filters.minRating) {
-    filtered = filtered.filter(book => book.rating >= filters.minRating);
+  if (minRating > 0) {
+    filtered = filtered.filter((book) => Number(book.rating) >= minRating);
+  }
+
+  if (minReviews > 0) {
+    filtered = filtered.filter((book) => Number(book.reviews) >= minReviews);
   }
 
   if (filters.inStock) {
@@ -301,7 +279,7 @@ export const updateBookRating = (bookId, rating) => {
 
 //wishlist
 export const getWishlistCount = () => {
-  const user = JSON.parse(localStorage.getItem('currentUser'));
+  const user = normalizeUser(JSON.parse(localStorage.getItem('currentUser')));
   if (!user) return 0;
 
   const wishlist = JSON.parse(localStorage.getItem(`wishlist_${user.id}`)) || [];
@@ -312,11 +290,11 @@ export const getWishlistCount = () => {
 
 // Authentication utilities
 export const getCurrentUser = () => {
-  return JSON.parse(localStorage.getItem('currentUser'))
+  return normalizeUser(JSON.parse(localStorage.getItem('currentUser')))
 }
 
 export const setCurrentUser = (user) => {
-  localStorage.setItem('currentUser', JSON.stringify(user))
+  localStorage.setItem('currentUser', JSON.stringify(normalizeUser(user)))
 }
 
 export const logout = () => {

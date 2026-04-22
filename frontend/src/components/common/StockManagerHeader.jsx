@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBookOpen,
@@ -19,8 +19,11 @@ import "../../styles/components/StockManagerHeaderFooter.css";
 const StockManagerHeader = () => {
   const [user, setUser] = useState(() => getCurrentUser());
   const [expanded, setExpanded] = useState(false);
+  const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const isOnStockManager = location.pathname === "/stock-manager";
+  const isAdminUser = user?.role === "admin";
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -116,15 +119,29 @@ const StockManagerHeader = () => {
                 </Dropdown.Header>
                 <Dropdown.Divider className="stock-manager-dropdown-divider" />
 
-                <Dropdown.Item
-                  as={Link}
-                  to="/stock-manager"
-                  className="stock-manager-dropdown-item"
-                  onClick={handleGoToStockManager}
-                >
-                  <FontAwesomeIcon icon={faTachometerAlt} className="me-2" />
-                  Stock Manager Dashboard
-                </Dropdown.Item>
+                {isAdminUser && (
+                  <Dropdown.Item
+                    as={Link}
+                    to="/admin-panel"
+                    className="stock-manager-dropdown-item"
+                    onClick={() => setExpanded(false)}
+                  >
+                    <FontAwesomeIcon icon={faTachometerAlt} className="me-2" />
+                    Admin Dashboard
+                  </Dropdown.Item>
+                )}
+
+                {!isOnStockManager && (
+                  <Dropdown.Item
+                    as={Link}
+                    to="/stock-manager"
+                    className="stock-manager-dropdown-item"
+                    onClick={handleGoToStockManager}
+                  >
+                    <FontAwesomeIcon icon={faTachometerAlt} className="me-2" />
+                    Stock Manager Dashboard
+                  </Dropdown.Item>
+                )}
 
                 <Dropdown.Item
                   onClick={handleGoToMainSite}

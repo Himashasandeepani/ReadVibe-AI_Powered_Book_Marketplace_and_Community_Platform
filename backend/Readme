@@ -1,0 +1,540 @@
+create table status (
+  id bigserial primary key,
+  status varchar(50) not null,   -- ACTIVE, INACTIVE, PENDING, PAID, etc.
+  is_active boolean default true
+);
+
+
+create table user_roles (
+  role_id bigserial primary key,
+  role_name varchar(50)
+);
+
+
+create table users (
+  user_id bigserial primary key,
+
+  role_id bigint,
+  status_id bigint,
+
+  full_name varchar(150),
+  email varchar(255),
+  username varchar(50),
+  password_hash text,
+
+  terms_accepted boolean,
+  terms_accepted_at timestamptz,
+
+  ai_email_opt_in boolean,
+  ai_email_opt_in_at timestamptz,
+
+  created_at timestamptz default now()
+);
+
+alter table users
+add constraint fk_users_role
+foreign key (role_id) references user_roles(role_id);
+
+alter table users
+add constraint fk_users_status
+foreign key (status_id) references status(id);
+
+
+create table categories (
+  category_id bigserial primary key,
+  category_name varchar(100),
+  status_id bigint,
+  created_at timestamptz default now()
+);
+
+alter table categories
+add constraint fk_categories_status
+foreign key (status_id) references status(id);
+
+create table authors (
+  author_id bigserial primary key,
+  author_name varchar(200),
+  status_id bigint,
+  created_at timestamptz default now()
+);
+
+alter table authors
+add constraint fk_authors_status
+foreign key (status_id) references status(id);
+
+
+create table publishers (
+  publisher_id bigserial primary key,
+
+  publisher_name varchar(200),
+  email varchar(255),
+  phone varchar(30),
+  address text,
+
+  status_id bigint,
+  created_at timestamptz default now()
+);
+
+alter table publishers
+add constraint fk_publishers_status
+foreign key (status_id) references status(id);
+
+
+create table books (
+  book_id bigserial primary key,
+
+  isbn varchar(20),
+  title varchar(300),
+
+  author_id bigint,
+  category_id bigint,
+  publisher_id bigint,
+
+  selling_price_lkr numeric(18,2),
+  cost_price_lkr numeric(18,2),
+  stock_quantity numeric(18,2),
+
+  description text,
+  publication_year int,
+  book_image_url text,
+
+  status_id bigint,
+  created_at timestamptz default now()
+);
+
+alter table books
+add constraint fk_books_author
+foreign key (author_id) references authors(author_id);
+
+alter table books
+add constraint fk_books_category
+foreign key (category_id) references categories(category_id);
+
+alter table books
+add constraint fk_books_publisher
+foreign key (publisher_id) references publishers(publisher_id);
+
+alter table books
+add constraint fk_books_status
+foreign key (status_id) references status(id);
+
+
+create table carts (
+  cart_id bigserial primary key,
+  user_id bigint,
+  status_id bigint,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+alter table carts
+add constraint fk_carts_user
+foreign key (user_id) references users(user_id);
+
+alter table carts
+add constraint fk_carts_status
+foreign key (status_id) references status(id);
+
+
+create table cart_items (
+  cart_item_id bigserial primary key,
+  cart_id bigint,
+  book_id bigint,
+  quantity numeric(18,2),
+  unit_price_lkr numeric(18,2),
+  created_at timestamptz default now()
+);
+
+alter table cart_items
+add constraint fk_cart_items_cart
+foreign key (cart_id) references carts(cart_id);
+
+alter table cart_items
+add constraint fk_cart_items_book
+foreign key (book_id) references books(book_id);
+
+
+create table orders (
+  order_id bigserial primary key,
+  user_id bigint,
+  cart_id bigint,
+  status_id bigint,
+
+  total_amount_lkr numeric(18,2),
+
+  full_name varchar(150),
+  email varchar(255),
+  phone varchar(30),
+  shipping_address text,
+
+  created_at timestamptz default now(),
+  paid_at timestamptz
+);
+
+alter table orders
+add constraint fk_orders_user
+foreign key (user_id) references users(user_id);
+
+alter table orders
+add constraint fk_orders_cart
+foreign key (cart_id) references carts(cart_id);
+
+alter table orders
+add constraint fk_orders_status
+foreign key (status_id) references status(id);
+
+
+create table order_items (
+  order_item_id bigserial primary key,
+  order_id bigint,
+  book_id bigint,
+  quantity numeric(18,2),
+  unit_price_lkr numeric(18,2),
+  line_total_lkr numeric(18,2)
+);
+
+alter table order_items
+add constraint fk_order_items_order
+foreign key (order_id) references orders(order_id);
+
+alter table order_items
+add constraint fk_order_items_book
+foreign key (book_id) references books(book_id);
+
+
+create table payments (
+  payment_id bigserial primary key,
+  order_id bigint,
+  status_id bigint,
+  amount_lkr numeric(18,2),
+  payment_method varchar(50),
+  provider_reference varchar(255),
+  created_at timestamptz default now()
+);
+
+alter table payments
+add constraint fk_payments_order
+foreign key (order_id) references orders(order_id);
+
+alter table payments
+add constraint fk_payments_status
+foreign key (status_id) references status(id);
+
+
+
+create table book_reviews (
+  review_id bigserial primary key,
+  book_id bigint,
+  user_id bigint,
+  rating int,
+  review_text text,
+  is_recommended boolean,
+  status_id bigint,
+  created_at timestamptz default now(),
+  updated_at timestamptz
+);
+
+alter table book_reviews
+add constraint fk_book_reviews_book
+foreign key (book_id) references books(book_id);
+
+alter table book_reviews
+add constraint fk_book_reviews_user
+foreign key (user_id) references users(user_id);
+
+alter table book_reviews
+add constraint fk_book_reviews_status
+foreign key (status_id) references status(id);
+
+
+create table book_wishlist (
+  wishlist_id bigserial primary key,
+  user_id bigint,
+  book_id bigint,
+  status_id bigint,
+  created_at timestamptz default now()
+);
+
+alter table book_wishlist
+add constraint fk_book_wishlist_user
+foreign key (user_id) references users(user_id);
+
+alter table book_wishlist
+add constraint fk_book_wishlist_book
+foreign key (book_id) references books(book_id);
+
+alter table book_wishlist
+add constraint fk_book_wishlist_status
+foreign key (status_id) references status(id);
+
+
+create table status (
+  id bigserial primary key,
+  status varchar(50) not null,   -- ACTIVE, INACTIVE, PENDING, PAID, etc.
+  is_active boolean default true
+);
+
+
+create table user_roles (
+  role_id bigserial primary key,
+  role_name varchar(50)
+);
+
+
+create table users (
+  user_id bigserial primary key,
+
+  role_id bigint,
+  status_id bigint,
+
+  full_name varchar(150),
+  email varchar(255),
+  username varchar(50),
+  password_hash text,
+
+  terms_accepted boolean,
+  terms_accepted_at timestamptz,
+
+  ai_email_opt_in boolean,
+  ai_email_opt_in_at timestamptz,
+
+  created_at timestamptz default now()
+);
+
+alter table users
+add constraint fk_users_role
+foreign key (role_id) references user_roles(role_id);
+
+alter table users
+add constraint fk_users_status
+foreign key (status_id) references status(id);
+
+
+create table categories (
+  category_id bigserial primary key,
+  category_name varchar(100),
+  status_id bigint,
+  created_at timestamptz default now()
+);
+
+alter table categories
+add constraint fk_categories_status
+foreign key (status_id) references status(id);
+
+create table authors (
+  author_id bigserial primary key,
+  author_name varchar(200),
+  status_id bigint,
+  created_at timestamptz default now()
+);
+
+alter table authors
+add constraint fk_authors_status
+foreign key (status_id) references status(id);
+
+
+create table publishers (
+  publisher_id bigserial primary key,
+
+  publisher_name varchar(200),
+  email varchar(255),
+  phone varchar(30),
+  address text,
+
+  status_id bigint,
+  created_at timestamptz default now()
+);
+
+alter table publishers
+add constraint fk_publishers_status
+foreign key (status_id) references status(id);
+
+
+create table books (
+  book_id bigserial primary key,
+
+  isbn varchar(20),
+  title varchar(300),
+
+  author_id bigint,
+  category_id bigint,
+  publisher_id bigint,
+
+  selling_price_lkr numeric(18,2),
+  cost_price_lkr numeric(18,2),
+  stock_quantity numeric(18,2),
+
+  description text,
+  publication_year int,
+  book_image_url text,
+
+  status_id bigint,
+  created_at timestamptz default now()
+);
+
+alter table books
+add constraint fk_books_author
+foreign key (author_id) references authors(author_id);
+
+alter table books
+add constraint fk_books_category
+foreign key (category_id) references categories(category_id);
+
+alter table books
+add constraint fk_books_publisher
+foreign key (publisher_id) references publishers(publisher_id);
+
+alter table books
+add constraint fk_books_status
+foreign key (status_id) references status(id);
+
+
+create table carts (
+  cart_id bigserial primary key,
+  user_id bigint,
+  status_id bigint,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+alter table carts
+add constraint fk_carts_user
+foreign key (user_id) references users(user_id);
+
+alter table carts
+add constraint fk_carts_status
+foreign key (status_id) references status(id);
+
+
+create table cart_items (
+  cart_item_id bigserial primary key,
+  cart_id bigint,
+  book_id bigint,
+  quantity numeric(18,2),
+  unit_price_lkr numeric(18,2),
+  created_at timestamptz default now()
+);
+
+alter table cart_items
+add constraint fk_cart_items_cart
+foreign key (cart_id) references carts(cart_id);
+
+alter table cart_items
+add constraint fk_cart_items_book
+foreign key (book_id) references books(book_id);
+
+
+create table orders (
+  order_id bigserial primary key,
+  user_id bigint,
+  cart_id bigint,
+  status_id bigint,
+
+  total_amount_lkr numeric(18,2),
+
+  full_name varchar(150),
+  email varchar(255),
+  phone varchar(30),
+  shipping_address text,
+
+  created_at timestamptz default now(),
+  paid_at timestamptz
+);
+
+alter table orders
+add constraint fk_orders_user
+foreign key (user_id) references users(user_id);
+
+alter table orders
+add constraint fk_orders_cart
+foreign key (cart_id) references carts(cart_id);
+
+alter table orders
+add constraint fk_orders_status
+foreign key (status_id) references status(id);
+
+
+create table order_items (
+  order_item_id bigserial primary key,
+  order_id bigint,
+  book_id bigint,
+  quantity numeric(18,2),
+  unit_price_lkr numeric(18,2),
+  line_total_lkr numeric(18,2)
+);
+
+alter table order_items
+add constraint fk_order_items_order
+foreign key (order_id) references orders(order_id);
+
+alter table order_items
+add constraint fk_order_items_book
+foreign key (book_id) references books(book_id);
+
+
+create table payments (
+  payment_id bigserial primary key,
+  order_id bigint,
+  status_id bigint,
+  amount_lkr numeric(18,2),
+  payment_method varchar(50),
+  provider_reference varchar(255),
+  created_at timestamptz default now()
+);
+
+alter table payments
+add constraint fk_payments_order
+foreign key (order_id) references orders(order_id);
+
+alter table payments
+add constraint fk_payments_status
+foreign key (status_id) references status(id);
+
+
+
+create table book_reviews (
+  review_id bigserial primary key,
+  book_id bigint,
+  user_id bigint,
+  rating int,
+  review_text text,
+  is_recommended boolean,
+  status_id bigint,
+  created_at timestamptz default now(),
+  updated_at timestamptz
+);
+
+alter table book_reviews
+add constraint fk_book_reviews_book
+foreign key (book_id) references books(book_id);
+
+alter table book_reviews
+add constraint fk_book_reviews_user
+foreign key (user_id) references users(user_id);
+
+alter table book_reviews
+add constraint fk_book_reviews_status
+foreign key (status_id) references status(id);
+
+
+create table book_wishlist (
+  wishlist_id bigserial primary key,
+  user_id bigint,
+  book_id bigint,
+  status_id bigint,
+  created_at timestamptz default now()
+);
+
+alter table book_wishlist
+add constraint fk_book_wishlist_user
+foreign key (user_id) references users(user_id);
+
+alter table book_wishlist
+add constraint fk_book_wishlist_book
+foreign key (book_id) references books(book_id);
+
+alter table book_wishlist
+add constraint fk_book_wishlist_status
+foreign key (status_id) references status(id);
+
+

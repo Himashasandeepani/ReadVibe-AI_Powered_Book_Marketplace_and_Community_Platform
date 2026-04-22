@@ -16,8 +16,9 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 // In WishlistItem.jsx, EditItemModal.jsx, etc.
 import { renderPriorityStars, formatPrice } from "./utils.jsx";
+import createBookCoverPlaceholder from "../../utils/imagePlaceholders";
 
-const WishlistItem = ({ item, onRemove, onAddToCart, onEditItem }) => {
+const WishlistItem = ({ item, onRemove, onAddToCart, onEditItem, actionsDisabled = false }) => {
   return (
     <Col lg={4} md={6} key={item.id} className="mb-4">
       <Card className="wishlist-card h-100">
@@ -46,8 +47,7 @@ const WishlistItem = ({ item, onRemove, onAddToCart, onEditItem }) => {
             className="wishlist-book-image"
             onError={(e) => {
               e.target.onerror = null;
-              e.target.src =
-                "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover";
+              e.target.src = createBookCoverPlaceholder();
             }}
           />
           {!item.inStock && (
@@ -148,8 +148,8 @@ const WishlistItem = ({ item, onRemove, onAddToCart, onEditItem }) => {
                 variant="primary"
                 size="sm"
                 onClick={() => onAddToCart(item.id)}
-                disabled={!item.inStock}
-                title={item.inStock ? "Add to cart" : "Out of stock"}
+                disabled={!item.inStock || actionsDisabled}
+                title={actionsDisabled ? "Not available for this account" : item.inStock ? "Add to cart" : "Out of stock"}
               >
                 <FontAwesomeIcon icon={faCartPlus} className="me-1" />
                 {item.inStock ? "Buy" : "Out"}

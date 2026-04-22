@@ -20,10 +20,11 @@ import {
   generateStarRating,
   addToWishlist,
   showNotification,
+  getUserWishlist,
 } from "../../utils/helpers";
 import { addItem, setCart } from "../../store/slices/cartSlice";
 
-const BookCard = ({ book, currentUser, onViewDetails }) => {
+const BookCard = ({ book, currentUser, onViewDetails, actionsDisabled = false, rank = null }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -31,26 +32,38 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
 
   const isInWishlist = (bookId) => {
     if (!currentUser) return false;
-    const wishlist =
-      JSON.parse(localStorage.getItem(`wishlist_${currentUser.id}`)) || [];
+    const wishlist = getUserWishlist();
     return wishlist.some((item) => item.id === bookId);
   };
 
-  const handleAddToWishlist = (e) => {
+  const handleAddToWishlist = async (e) => {
     e.stopPropagation();
+
+    if (actionsDisabled) {
+      showNotification("Admin and stock manager accounts cannot use wishlist actions.", "warning");
+      return;
+    }
 
     if (!isLoggedIn()) {
       navigate("/login");
       return;
     }
 
-    addToWishlist(book.id, currentUser.id);
-    window.dispatchEvent(new CustomEvent("wishlist-updated"));
-    showNotification("Book added to wishlist!", "success");
+    try {
+      await addToWishlist(book.id, currentUser.id);
+      showNotification("Book added to wishlist!", "success");
+    } catch (error) {
+      showNotification(error.message || "Failed to add to wishlist", "danger");
+    }
   };
 
   const handleAddToCart = (e) => {
     e.stopPropagation();
+
+    if (actionsDisabled) {
+      showNotification("Admin and stock manager accounts cannot add books to cart.", "warning");
+      return;
+    }
 
     if (!isLoggedIn()) {
       navigate("/login");
@@ -77,6 +90,11 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
 
   const handleBuyNow = (e) => {
     e.stopPropagation();
+
+    if (actionsDisabled) {
+      showNotification("Admin and stock manager accounts cannot buy books.", "warning");
+      return;
+    }
 
     if (!isLoggedIn()) {
       navigate("/login");
@@ -156,6 +174,12 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
       </div>
 
       <div className="book-info">
+        {rank !== null && rank !== undefined && (
+          <Badge bg="dark" className="mb-2">
+            Rank #{rank}
+          </Badge>
+        )}
+
         {book.rating >= 4.5 && (
           <Badge bg="warning" className="mb-2">
             <FontAwesomeIcon icon={faStar} className="me-1" />
@@ -207,6 +231,7 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
               size="sm"
               onClick={handleAddToWishlist}
               className="book-action-btn"
+              disabled={actionsDisabled}
             >
               <FontAwesomeIcon
                 icon={isInWishlist(book.id) ? faHeart : faHeartRegular}
@@ -223,6 +248,7 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
                   size="sm"
                   onClick={handleAddToCart}
                   className="book-action-btn"
+                  disabled={actionsDisabled}
                 >
                   <FontAwesomeIcon icon={faShoppingCart} className="me-1" />
                 </Button>
@@ -234,6 +260,7 @@ const BookCard = ({ book, currentUser, onViewDetails }) => {
                   size="sm"
                   onClick={handleBuyNow}
                   className="book-action-btn"
+                  disabled={actionsDisabled}
                 >
                   <FontAwesomeIcon icon={faTruck} className="me-1" />
                 </Button>

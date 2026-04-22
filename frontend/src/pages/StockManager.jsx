@@ -14,12 +14,17 @@ import ReportsTab from "../components/StockManager/Tabs/ReportsTab";
 import PublishersTab from "../components/StockManager/Tabs/PublishersTab";
 import BookRequestsTab from "../components/StockManager/Tabs/BookRequestsTab";
 import PopularBooksTab from "../components/StockManager/Tabs/PopularBooksTab";
+import SupportMessagesTab from "../components/StockManager/Tabs/SupportMessagesTab";
 import AddBookModal, {
   EditBookModal,
 } from "../components/StockManager/Modals/AddBookModal";
 import AddPublisherModal from "../components/StockManager/Modals/AddPublisherModal";
 import TrackingModal from "../components/StockManager/Modals/TrackingModal";
 import RequestDetailsModal from "../components/StockManager/Modals/RequestDetailsModal";
+import {
+  fetchBookRequestsApi,
+  updateBookRequestStatusApi,
+} from "../utils/communityApi";
 
 // Import Utilities
 import {
@@ -32,7 +37,25 @@ import {
   initialStockBooks,
   initialStockOrders,
   initialPublishers,
+  fetchBooksFromApi,
+  fetchAllOrdersApi,
+  fetchPublishersFromApi,
+  createBookApi,
+  updateBookApi,
+  deleteBookApi,
+  createPublisherApi,
+  updatePublisherApi,
+  deletePublisherApi,
+  updateOrderStatusApi,
+  updateOrderTrackingApi,
 } from "../components/StockManager/utils";
+import {
+  addSupportReply,
+  getSupportMessages,
+  getSupportMessagesUpdatedEventName,
+  getUnreadSupportMessageCount,
+  loadSupportMessages,
+} from "../utils/supportMessages";
 
 const StockManager = () => {
   const navigate = useNavigate();
@@ -83,6 +106,7 @@ const StockManager = () => {
   });
 
   const [newBook, setNewBook] = useState({
+    datasetBookId: "",
     isbn: "",
     title: "",
     author: "",
@@ -133,30 +157,213 @@ const StockManager = () => {
   });
 
   const [publishers, setPublishers] = useState(() => {
-    if (typeof window === "undefined") return initialPublishers();
-    const stored = JSON.parse(window.localStorage.getItem("publishers"));
-    return stored || initialPublishers();
+    return [];
   });
 
   const [bookRequests, setBookRequests] = useState(() => {
-    if (typeof window === "undefined") return [];
-    return JSON.parse(window.localStorage.getItem("bookRequests")) || [];
+    return [];
   });
+  const [supportMessages, setSupportMessages] = useState([]);
+  const [replyDrafts, setReplyDrafts] = useState({});
+
+  const computeStockStatus = useCallback((stock, minStock) => {
+    const safeStock = Number.isFinite(stock) ? stock : 0;
+    const safeMin = Number.isFinite(minStock) ? minStock : 0;
+    if (safeStock === 0) return "Out of Stock";
+    if (safeStock <= safeMin) return "Low Stock";
+    return "In Stock";
+  }, []);
+
+  const normalizeBook = useCallback((book) => {
+    if (!book) return null;
+    const images = Array.isArray(book.images)
+      ? book.images
+      : book.images
+        ? book.images
+        : [];
+
+    const stockValue = Number(book.stock) || 0;
+    const minValue = Number(book.minStock ?? book.min_stock ?? 0);
+
+    return {
+      ...book,
+      datasetBookId: book.datasetBookId ?? book.dataset_book_id ?? "",
+      price: Number(book.price) || 0,
+      costPrice:
+        book.costPrice !== undefined
+          ? Number(book.costPrice)
+          : book.cost_price !== undefined
+            ? Number(book.cost_price)
+            : null,
+      stock: stockValue,
+      minStock: minValue,
+      maxStock: Number(book.maxStock ?? book.max_stock ?? 0),
+      status: book.status || computeStockStatus(stockValue, minValue),
+      images,
+      image: book.image || (Array.isArray(images) && images[0]) || "",
+    };
+  }, [computeStockStatus]);
+
+  const comparePopularBooks = useCallback((left, right) => {
+    const leftMonthlySales = Number(left.salesThisMonth) || 0;
+    const rightMonthlySales = Number(right.salesThisMonth) || 0;
+    if (rightMonthlySales !== leftMonthlySales) {
+      return rightMonthlySales - leftMonthlySales;
+    }
+
+    const leftTotalSales = Number(left.totalSales) || 0;
+    const rightTotalSales = Number(right.totalSales) || 0;
+    if (rightTotalSales !== leftTotalSales) {
+      return rightTotalSales - leftTotalSales;
+    }
+
+    const leftStock = Number(left.stock) || 0;
+    const rightStock = Number(right.stock) || 0;
+    if (leftStock !== rightStock) {
+      return leftStock - rightStock;
+    }
+
+    return String(left.title || "").localeCompare(String(right.title || ""));
+  }, []);
+
+  const getRankedPopularBooks = useCallback((books) => {
+    return [...books]
+      .sort(comparePopularBooks)
+      .slice(0, 12)
+      .map((book, index) => ({
+        ...book,
+        rank: index + 1,
+      }));
+  }, [comparePopularBooks]);
+
+  const persistBooks = useCallback((books) => {
+    setStockBooks(books);
+    localStorage.setItem("stockBooks", JSON.stringify(books));
+    window.dispatchEvent(new Event("storage"));
+  }, []);
+
+  const persistPublishers = useCallback((items) => {
+    setPublishers(items);
+    localStorage.setItem("publishers", JSON.stringify(items));
+    window.dispatchEvent(new Event("storage"));
+  }, []);
+
+  const refreshPublishersFromApi = useCallback(async () => {
+    try {
+      const apiPublishers = await fetchPublishersFromApi();
+      const normalized = Array.isArray(apiPublishers)
+        ? apiPublishers.map((publisher) => ({
+            ...publisher,
+            status: publisher.status || "Active",
+            booksSupplied: Number(publisher.booksSupplied || 0),
+          }))
+        : [];
+      persistPublishers(normalized);
+    } catch (error) {
+      console.error("Failed to refresh publishers from API", error);
+    }
+  }, [persistPublishers]);
+
+  const persistOrders = useCallback((orders) => {
+    setStockOrders(orders);
+    localStorage.setItem("stockOrders", JSON.stringify(orders));
+    window.dispatchEvent(new Event("storage"));
+  }, []);
+
+  useEffect(() => {
+    const loadBooksFromApi = async () => {
+      try {
+        const apiBooks = await fetchBooksFromApi();
+        if (Array.isArray(apiBooks) && apiBooks.length) {
+          const normalized = apiBooks.map((b) => normalizeBook(b)).filter(Boolean);
+          persistBooks(normalized);
+        }
+      } catch (error) {
+        console.error("Failed to load books from API", error);
+      }
+    };
+
+    loadBooksFromApi();
+  }, [normalizeBook, persistBooks]);
+
+  const normalizeOrder = useCallback((order) => {
+    const itemsArray = Array.isArray(order.items) ? order.items : [];
+    const itemCount =
+      order.itemCount ??
+      itemsArray.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+
+    return {
+      ...order,
+      customer: order.customer || "Customer",
+      customerEmail: order.customerEmail || "",
+      items: itemCount,
+      itemsList: itemsArray,
+      total: Number(order.total) || 0,
+      status: order.status || "Processing",
+      orderDate: order.orderDate || order.createdAt,
+    };
+  }, []);
+
+  const normalizeBookRequest = useCallback((request) => {
+    if (!request) return null;
+
+    const normalizedStatus =
+      typeof request.status === "string"
+        ? request.status.charAt(0).toUpperCase() + request.status.slice(1).toLowerCase()
+        : "Pending";
+
+    return {
+      ...request,
+      userName: request.userFullName || request.username || "User",
+      userEmail: request.userEmail || "",
+      dateRequested: request.createdAt || request.dateRequested || new Date().toISOString(),
+      dateUpdated: request.updatedAt || request.dateUpdated || request.createdAt || new Date().toISOString(),
+      status: normalizedStatus,
+    };
+  }, []);
+
+  useEffect(() => {
+    const loadOrdersFromApi = async () => {
+      try {
+        const apiOrders = await fetchAllOrdersApi();
+        if (Array.isArray(apiOrders)) {
+          persistOrders(apiOrders.map(normalizeOrder));
+        }
+      } catch (error) {
+        console.error("Failed to load orders from API", error);
+      }
+    };
+
+    loadOrdersFromApi();
+  }, [normalizeOrder, persistOrders]);
+
+  const loadBookRequestsFromApi = useCallback(async () => {
+    try {
+      const apiRequests = await fetchBookRequestsApi();
+      if (Array.isArray(apiRequests)) {
+        const normalized = apiRequests.map((request) => normalizeBookRequest(request)).filter(Boolean);
+        setBookRequests(normalized);
+        localStorage.setItem("bookRequests", JSON.stringify(normalized));
+        window.dispatchEvent(new Event("storage"));
+      }
+    } catch (error) {
+      console.error("Failed to load book requests from API", error);
+    }
+  }, [normalizeBookRequest]);
+
+  useEffect(() => {
+    void loadBookRequestsFromApi();
+  }, [loadBookRequestsFromApi]);
+
+  useEffect(() => {
+    void refreshPublishersFromApi();
+  }, [refreshPublishersFromApi]);
 
   const loadAllData = useCallback(() => {
     if (typeof window === "undefined") return;
 
-    const storedRequests =
-      JSON.parse(window.localStorage.getItem("bookRequests")) || [];
-    setBookRequests(storedRequests);
-
     const storedBooks = JSON.parse(window.localStorage.getItem("stockBooks"));
     if (storedBooks) setStockBooks(storedBooks);
-
-    const storedPublishers = JSON.parse(
-      window.localStorage.getItem("publishers"),
-    );
-    if (storedPublishers) setPublishers(storedPublishers);
 
     const storedOrders = JSON.parse(window.localStorage.getItem("stockOrders"));
     if (storedOrders) setStockOrders(storedOrders);
@@ -172,9 +379,7 @@ const StockManager = () => {
 
       if (
         e.key === "stockBooks" ||
-        e.key === "publishers" ||
         e.key === "stockOrders" ||
-        e.key === "bookRequests" ||
         e.key === "authors"
       ) {
         loadAllData();
@@ -194,6 +399,29 @@ const StockManager = () => {
     },
     [loadAllData, setCurrentUser],
   );
+
+  useEffect(() => {
+    const handleBookRequestsUpdated = () => {
+      void loadBookRequestsFromApi();
+    };
+
+    window.addEventListener("book-requests-updated", handleBookRequestsUpdated);
+    return () => {
+      window.removeEventListener("book-requests-updated", handleBookRequestsUpdated);
+    };
+  }, [loadBookRequestsFromApi]);
+
+  useEffect(() => {
+    const handleSupportMessagesUpdated = () => {
+      void loadSupportMessages().then((messages) => setSupportMessages(messages));
+    };
+
+    window.addEventListener(getSupportMessagesUpdatedEventName(), handleSupportMessagesUpdated);
+    void loadSupportMessages().then((messages) => setSupportMessages(messages));
+    return () => {
+      window.removeEventListener(getSupportMessagesUpdatedEventName(), handleSupportMessagesUpdated);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -222,7 +450,7 @@ const StockManager = () => {
   }, [currentUser, navigate, handleStorageChange]);
 
   // Calculate statistics
-  const inventoryStats = calculateInventoryStats(stockBooks);
+  const inventoryStats = calculateInventoryStats(stockBooks, stockOrders);
   const orderStats = calculateOrderStats(stockOrders);
   const requestStats = calculateRequestStats(bookRequests);
 
@@ -236,6 +464,32 @@ const StockManager = () => {
 
   const handleTabChange = (tab) => {
     navigate(`${location.pathname}?tab=${tab}`);
+  };
+
+  const handleReplyDraftChange = (messageId, value) => {
+    setReplyDrafts((prev) => ({
+      ...prev,
+      [messageId]: value,
+    }));
+  };
+
+  const handleReplyMessage = async (messageId) => {
+    const replyText = replyDrafts[messageId] || "";
+    const reply = await addSupportReply(messageId, replyText, {
+      name: currentUser?.name || currentUser?.fullName || "Stock Manager",
+      role: currentUser?.role || "stock",
+    });
+
+    if (!reply) {
+      showNotification("Please write a reply before sending.", "info");
+      return;
+    }
+
+    setReplyDrafts((prev) => ({
+      ...prev,
+      [messageId]: "",
+    }));
+    showNotification("Reply sent to the customer.", "success");
   };
 
   const resetPublisherForm = () => {
@@ -310,6 +564,7 @@ const StockManager = () => {
 
   const resetBookForm = () => {
     setNewBook({
+      datasetBookId: "",
       isbn: "",
       title: "",
       author: "",
@@ -382,10 +637,9 @@ const StockManager = () => {
     });
   };
 
-  const handleAddBook = (e) => {
+  const handleAddBook = async (e) => {
     e.preventDefault();
 
-    // Validate form
     if (
       !newBook.isbn ||
       !newBook.title ||
@@ -397,33 +651,29 @@ const StockManager = () => {
       return;
     }
 
-    // Calculate status
-    let status;
-    if (parseInt(newBook.stock) === 0) {
-      status = "Out of Stock";
-    } else if (parseInt(newBook.stock) <= parseInt(newBook.minStock)) {
-      status = "Low Stock";
-    } else {
-      status = "In Stock";
-    }
+    const stockValue = parseInt(newBook.stock, 10);
+    const minValue = parseInt(newBook.minStock, 10);
+    const status = computeStockStatus(stockValue, minValue);
 
-    const newBookObj = {
-      id: Date.now(),
+    const payload = {
+      datasetBookId: newBook.datasetBookId,
       isbn: newBook.isbn,
       title: newBook.title,
       author: newBook.author,
       category: newBook.category,
       price: parseFloat(newBook.price),
       costPrice:
-        parseFloat(newBook.costPrice) || parseFloat(newBook.price) * 0.6,
-      stock: parseInt(newBook.stock),
-      minStock: parseInt(newBook.minStock),
-      maxStock: parseInt(newBook.maxStock),
-      status: status,
+        newBook.costPrice !== undefined && newBook.costPrice !== ""
+          ? parseFloat(newBook.costPrice)
+          : parseFloat(newBook.price) * 0.6,
+      stock: stockValue,
+      minStock: minValue,
+      maxStock: parseInt(newBook.maxStock, 10),
+      status,
       description: newBook.description,
       publisher: newBook.publisher,
-      publicationYear: parseInt(newBook.publicationYear),
-      pages: parseInt(newBook.pages),
+      publicationYear: parseInt(newBook.publicationYear, 10),
+      pages: parseInt(newBook.pages, 10),
       language: newBook.language,
       weight: newBook.weight,
       dimensions: newBook.dimensions,
@@ -431,31 +681,30 @@ const StockManager = () => {
       image:
         newBook.image ||
         (Array.isArray(newBook.images) ? newBook.images[0] : ""),
-      lastRestocked: new Date().toISOString().split("T")[0],
+      featured: false,
       salesThisMonth: 0,
       totalSales: 0,
-      featured: false,
-      createdAt: new Date().toISOString(),
     };
 
-    const updatedBooks = [...stockBooks, newBookObj];
-    setStockBooks(updatedBooks);
-    localStorage.setItem("stockBooks", JSON.stringify(updatedBooks));
+    try {
+      const created = await createBookApi(payload);
+      const normalized = normalizeBook(created);
+      const updatedBooks = [...stockBooks, normalized];
+      persistBooks(updatedBooks);
+      await refreshPublishersFromApi();
 
-    // Reset form
-    resetBookForm();
-
-    setShowAddBookModal(false);
-    showNotification("Book added successfully!", "success");
-    window.dispatchEvent(new Event("storage"));
+      resetBookForm();
+      setShowAddBookModal(false);
+      showNotification("Book added successfully!", "success");
+    } catch (error) {
+      showNotification(error.message || "Failed to add book", "danger");
+    }
   };
 
-  const handleUpdateBook = (e) => {
+  const handleUpdateBook = async (e) => {
     e.preventDefault();
 
-    if (!editingBookId) {
-      return;
-    }
+    if (!editingBookId) return;
 
     if (
       !newBook.isbn ||
@@ -468,59 +717,54 @@ const StockManager = () => {
       return;
     }
 
-    let status;
-    if (parseInt(newBook.stock) === 0) {
-      status = "Out of Stock";
-    } else if (parseInt(newBook.stock) <= parseInt(newBook.minStock)) {
-      status = "Low Stock";
-    } else {
-      status = "In Stock";
-    }
+    const stockValue = parseInt(newBook.stock, 10);
+    const minValue = parseInt(newBook.minStock, 10);
+    const status = computeStockStatus(stockValue, minValue);
 
-    const existingBook = stockBooks.find((b) => b.id === editingBookId);
-    if (!existingBook) {
-      return;
-    }
-
-    const updatedBook = {
-      ...existingBook,
+    const payload = {
+      datasetBookId: newBook.datasetBookId,
       isbn: newBook.isbn,
       title: newBook.title,
       author: newBook.author,
       category: newBook.category,
       price: parseFloat(newBook.price),
       costPrice:
-        parseFloat(newBook.costPrice) || parseFloat(newBook.price) * 0.6,
-      stock: parseInt(newBook.stock),
-      minStock: parseInt(newBook.minStock),
-      maxStock: parseInt(newBook.maxStock),
+        newBook.costPrice !== undefined && newBook.costPrice !== ""
+          ? parseFloat(newBook.costPrice)
+          : parseFloat(newBook.price) * 0.6,
+      stock: stockValue,
+      minStock: minValue,
+      maxStock: parseInt(newBook.maxStock, 10),
       status,
       description: newBook.description,
       publisher: newBook.publisher,
-      publicationYear: parseInt(newBook.publicationYear),
-      pages: parseInt(newBook.pages),
+      publicationYear: parseInt(newBook.publicationYear, 10),
+      pages: parseInt(newBook.pages, 10),
       language: newBook.language,
       weight: newBook.weight,
       dimensions: newBook.dimensions,
-      images: newBook.images || existingBook.images || [],
+      images: newBook.images || [],
       image:
         newBook.image ||
         (Array.isArray(newBook.images) && newBook.images[0]) ||
-        existingBook.image ||
-        (Array.isArray(existingBook.images) ? existingBook.images[0] : ""),
+        "",
     };
 
-    const updatedBooks = stockBooks.map((book) =>
-      book.id === editingBookId ? updatedBook : book,
-    );
+    try {
+      const updated = await updateBookApi(editingBookId, payload);
+      const normalized = normalizeBook(updated);
+      const updatedBooks = stockBooks.map((book) =>
+        book.id === editingBookId ? normalized : book,
+      );
 
-    setStockBooks(updatedBooks);
-    localStorage.setItem("stockBooks", JSON.stringify(updatedBooks));
-
-    resetBookForm();
-    setShowAddBookModal(false);
-    showNotification("Book updated successfully!", "success");
-    window.dispatchEvent(new Event("storage"));
+      persistBooks(updatedBooks);
+      await refreshPublishersFromApi();
+      resetBookForm();
+      setShowAddBookModal(false);
+      showNotification("Book updated successfully!", "success");
+    } catch (error) {
+      showNotification(error.message || "Failed to update book", "danger");
+    }
   };
 
   const handleAddPublisher = (e) => {
@@ -531,49 +775,54 @@ const StockManager = () => {
       return;
     }
 
-    if (editingPublisherId) {
-      const updatedPublishers = publishers.map((publisher) =>
-        publisher.id === editingPublisherId
-          ? {
-              ...publisher,
-              name: newPublisher.name,
-              email: newPublisher.email,
-              phone: newPublisher.phone,
-              address: newPublisher.address,
-            }
-          : publisher,
-      );
+    const submit = async () => {
+      try {
+        if (editingPublisherId) {
+          const updatedPublisher = await updatePublisherApi(editingPublisherId, {
+            name: newPublisher.name,
+            email: newPublisher.email,
+            phone: newPublisher.phone,
+            address: newPublisher.address,
+          });
 
-      setPublishers(updatedPublishers);
-      localStorage.setItem("publishers", JSON.stringify(updatedPublishers));
-      showNotification("Publisher updated successfully!", "success");
-    } else {
-      const newPublisherObj = {
-        id: `PUB${String(publishers.length + 1).padStart(3, "0")}`,
-        name: newPublisher.name,
-        email: newPublisher.email,
-        phone: newPublisher.phone,
-        address: newPublisher.address,
-        booksSupplied: 0,
-        status: "Active",
-        rating: 5,
-        paymentTerms: "30 days",
-        leadTime: "7",
-        lastOrder: null,
-        createdAt: new Date().toISOString(),
-      };
+          const updatedPublishers = publishers.map((publisher) =>
+            publisher.id === editingPublisherId
+              ? {
+                  ...publisher,
+                  ...updatedPublisher,
+                  status: publisher.status || "Active",
+                }
+              : publisher,
+          );
+          persistPublishers(updatedPublishers);
+          showNotification("Publisher updated successfully!", "success");
+        } else {
+          const createdPublisher = await createPublisherApi({
+            name: newPublisher.name,
+            email: newPublisher.email,
+            phone: newPublisher.phone,
+            address: newPublisher.address,
+          });
 
-      const updatedPublishers = [...publishers, newPublisherObj];
-      setPublishers(updatedPublishers);
-      localStorage.setItem("publishers", JSON.stringify(updatedPublishers));
-      showNotification("Publisher added successfully!", "success");
-    }
+          persistPublishers([
+            ...publishers,
+            {
+              ...createdPublisher,
+              status: "Active",
+            },
+          ]);
+          showNotification("Publisher added successfully!", "success");
+        }
 
-    resetPublisherForm();
+        resetPublisherForm();
+        setShowAddPublisherModal(false);
+        handleTabChange("publishers");
+      } catch (error) {
+        showNotification(error.message || "Failed to save publisher", "danger");
+      }
+    };
 
-    setShowAddPublisherModal(false);
-    handleTabChange("publishers");
-    window.dispatchEvent(new Event("storage"));
+    void submit();
   };
 
   const handleEditPublisher = (publisher) => {
@@ -598,11 +847,19 @@ const StockManager = () => {
         "Are you sure you want to delete this book from inventory?",
       )
     ) {
-      const updatedBooks = stockBooks.filter((book) => book.id !== bookId);
-      setStockBooks(updatedBooks);
-      localStorage.setItem("stockBooks", JSON.stringify(updatedBooks));
-      showNotification("Book deleted successfully", "success");
-      window.dispatchEvent(new Event("storage"));
+      const remove = async () => {
+        try {
+          await deleteBookApi(bookId);
+          const updatedBooks = stockBooks.filter((book) => book.id !== bookId);
+          persistBooks(updatedBooks);
+          await refreshPublishersFromApi();
+          showNotification("Book deleted successfully", "success");
+        } catch (error) {
+          showNotification(error.message || "Failed to delete book", "danger");
+        }
+      };
+
+      remove();
     }
   };
 
@@ -610,6 +867,7 @@ const StockManager = () => {
     const book = stockBooks.find((b) => b.id === bookId);
     if (book) {
       setNewBook({
+        datasetBookId: book.datasetBookId || "",
         isbn: book.isbn,
         title: book.title,
         author: book.author,
@@ -635,32 +893,30 @@ const StockManager = () => {
   };
 
   const handleRestockBook = (bookId, quantity) => {
-    const updatedBooks = stockBooks.map((book) => {
-      if (book.id === bookId) {
-        const newStock = book.stock + quantity;
-        let status = book.status;
-        if (newStock === 0) {
-          status = "Out of Stock";
-        } else if (newStock <= book.minStock) {
-          status = "Low Stock";
-        } else {
-          status = "In Stock";
-        }
+    const target = stockBooks.find((b) => b.id === bookId);
+    if (!target) return;
 
-        return {
-          ...book,
+    const newStock = target.stock + quantity;
+    const status = computeStockStatus(newStock, target.minStock);
+
+    const update = async () => {
+      try {
+        const updated = await updateBookApi(bookId, {
           stock: newStock,
-          status: status,
-          lastRestocked: new Date().toISOString().split("T")[0],
-        };
+          status,
+        });
+        const normalized = normalizeBook(updated);
+        const updatedBooks = stockBooks.map((book) =>
+          book.id === bookId ? normalized : book,
+        );
+        persistBooks(updatedBooks);
+        showNotification(`Restocked ${quantity} items`, "success");
+      } catch (error) {
+        showNotification(error.message || "Failed to restock", "danger");
       }
-      return book;
-    });
+    };
 
-    setStockBooks(updatedBooks);
-    localStorage.setItem("stockBooks", JSON.stringify(updatedBooks));
-    showNotification(`Restocked ${quantity} items`, "success");
-    window.dispatchEvent(new Event("storage"));
+    update();
   };
 
   const handleViewOrder = (orderId) => {
@@ -673,18 +929,21 @@ const StockManager = () => {
 
   const handleShipOrder = (orderId) => {
     if (window.confirm(`Mark order ${orderId} as shipped?`)) {
-      const updatedOrders = stockOrders.map((order) =>
-        order.id === orderId
-          ? {
-              ...order,
-              status: "Shipped",
-              shippedDate: new Date().toISOString().split("T")[0],
-            }
-          : order,
-      );
-      setStockOrders(updatedOrders);
-      localStorage.setItem("stockOrders", JSON.stringify(updatedOrders));
-      showNotification(`Order ${orderId} marked as shipped`, "success");
+      const update = async () => {
+        try {
+          const updated = await updateOrderStatusApi(orderId, "Shipped");
+          const normalized = normalizeOrder(updated);
+          const updatedOrders = stockOrders.map((order) =>
+            String(order.id) === String(orderId) ? normalized : order,
+          );
+          persistOrders(updatedOrders);
+          showNotification(`Order ${orderId} marked as shipped`, "success");
+        } catch (error) {
+          showNotification(error.message || "Failed to update order", "danger");
+        }
+      };
+
+      void update();
     }
   };
 
@@ -709,43 +968,31 @@ const StockManager = () => {
       return;
     }
 
-    const trackingUpdates =
-      JSON.parse(localStorage.getItem("orderTrackingUpdates")) || [];
+    const save = async () => {
+      try {
+        const updated = await updateOrderTrackingApi(selectedOrder.id, {
+          status: trackingUpdate.status,
+          note: trackingUpdate.note,
+          location: trackingUpdate.location,
+          courier: trackingUpdate.courier,
+          trackingNumber: trackingUpdate.trackingNumber,
+          updatedBy: currentUser?.name,
+        });
+        const normalized = normalizeOrder(updated);
 
-    const newTrackingUpdate = {
-      orderId: selectedOrder.id,
-      status: trackingUpdate.status,
-      note: trackingUpdate.note,
-      location: trackingUpdate.location,
-      courier: trackingUpdate.courier,
-      trackingNumber: trackingUpdate.trackingNumber,
-      timestamp: new Date().toISOString(),
-      updatedBy: currentUser.name,
+        const updatedOrders = stockOrders.map((order) =>
+          String(order.id) === String(selectedOrder.id) ? normalized : order,
+        );
+
+        persistOrders(updatedOrders);
+        setShowTrackingModal(false);
+        showNotification("Tracking updated successfully!", "success");
+      } catch (error) {
+        showNotification(error.message || "Failed to update tracking", "danger");
+      }
     };
 
-    trackingUpdates.push(newTrackingUpdate);
-    localStorage.setItem(
-      "orderTrackingUpdates",
-      JSON.stringify(trackingUpdates),
-    );
-
-    // Update order status
-    const updatedOrders = stockOrders.map((order) =>
-      order.id === selectedOrder.id
-        ? {
-            ...order,
-            status: trackingUpdate.status,
-            courier: trackingUpdate.courier,
-            trackingNumber: trackingUpdate.trackingNumber,
-          }
-        : order,
-    );
-
-    setStockOrders(updatedOrders);
-    localStorage.setItem("stockOrders", JSON.stringify(updatedOrders));
-
-    setShowTrackingModal(false);
-    showNotification("Tracking updated successfully!", "success");
+    void save();
   };
 
   const handleContactPublisher = (publisherId) => {
@@ -757,10 +1004,18 @@ const StockManager = () => {
 
   const handleDeletePublisher = (publisherId) => {
     if (window.confirm("Are you sure you want to delete this publisher?")) {
-      const updatedPublishers = publishers.filter((p) => p.id !== publisherId);
-      setPublishers(updatedPublishers);
-      localStorage.setItem("publishers", JSON.stringify(updatedPublishers));
-      showNotification("Publisher deleted successfully", "success");
+      const remove = async () => {
+        try {
+          await deletePublisherApi(publisherId);
+          const updatedPublishers = publishers.filter((p) => p.id !== publisherId);
+          persistPublishers(updatedPublishers);
+          showNotification("Publisher deleted successfully", "success");
+        } catch (error) {
+          showNotification(error.message || "Failed to delete publisher", "danger");
+        }
+      };
+
+      void remove();
     }
   };
 
@@ -774,62 +1029,62 @@ const StockManager = () => {
   };
 
   const handleApproveRequest = (requestId, notes = "") => {
-    const updatedRequests = bookRequests.map((request) => {
-      if (request.id === requestId) {
-        return {
-          ...request,
-          status: "Approved",
-          stock_managerNotes: notes || request.stock_managerNotes,
-          dateUpdated: new Date().toISOString(),
-          updatedBy: currentUser.name,
-        };
+    const approve = async () => {
+      try {
+        await updateBookRequestStatusApi(requestId, "Approved");
+        await loadBookRequestsFromApi();
+        setShowRequestDetailsModal(false);
+        showNotification("Request approved successfully!", "success");
+      } catch (error) {
+        showNotification(error.message || "Failed to approve request", "danger");
       }
-      return request;
-    });
+    };
 
-    setBookRequests(updatedRequests);
-    localStorage.setItem("bookRequests", JSON.stringify(updatedRequests));
-    setShowRequestDetailsModal(false);
-    showNotification("Request approved successfully!", "success");
+    void approve();
   };
 
   const handleRejectRequest = (requestId, notes = "") => {
-    const updatedRequests = bookRequests.map((request) => {
-      if (request.id === requestId) {
-        return {
-          ...request,
-          status: "Rejected",
-          stock_managerNotes: notes || request.stock_managerNotes,
-          dateUpdated: new Date().toISOString(),
-          updatedBy: currentUser.name,
-        };
+    const reject = async () => {
+      try {
+        await updateBookRequestStatusApi(requestId, "Rejected");
+        await loadBookRequestsFromApi();
+        setShowRequestDetailsModal(false);
+        showNotification("Request rejected", "warning");
+      } catch (error) {
+        showNotification(error.message || "Failed to reject request", "danger");
       }
-      return request;
-    });
+    };
 
-    setBookRequests(updatedRequests);
-    localStorage.setItem("bookRequests", JSON.stringify(updatedRequests));
-    setShowRequestDetailsModal(false);
-    showNotification("Request rejected", "warning");
+    void reject();
   };
 
   const toggleFeaturedBook = (bookId) => {
-    const updatedBooks = stockBooks.map((book) =>
-      book.id === bookId ? { ...book, featured: !book.featured } : book,
-    );
+    const target = stockBooks.find((b) => b.id === bookId);
+    if (!target) return;
 
-    setStockBooks(updatedBooks);
-    localStorage.setItem("stockBooks", JSON.stringify(updatedBooks));
+    const nextFeatured = !target.featured;
 
-    const book = updatedBooks.find((b) => b.id === bookId);
-    showNotification(
-      book.featured
-        ? "Book marked as featured for home page"
-        : "Book removed from featured",
-      "success",
-    );
+    const toggle = async () => {
+      try {
+        const updated = await updateBookApi(bookId, { featured: nextFeatured });
+        const normalized = normalizeBook(updated);
+        const updatedBooks = stockBooks.map((book) =>
+          book.id === bookId ? normalized : book,
+        );
+        persistBooks(updatedBooks);
 
-    window.dispatchEvent(new Event("storage"));
+        showNotification(
+          nextFeatured
+            ? "Book marked as featured for home page"
+            : "Book removed from featured",
+          "success",
+        );
+      } catch (error) {
+        showNotification(error.message || "Failed to update book", "danger");
+      }
+    };
+
+    toggle();
   };
 
   const handlePrintReport = () => {
@@ -997,15 +1252,22 @@ const StockManager = () => {
       case "popular-books":
         return (
           <PopularBooksTab
-            popularBooks={[...stockBooks]
-              .sort((a, b) => b.salesThisMonth - a.salesThisMonth)
-              .slice(0, 12)}
+            popularBooks={getRankedPopularBooks(stockBooks)}
             featuredBooks={stockBooks.filter((book) => book.featured)}
             inventoryStats={inventoryStats}
             onEditBook={handleEditBook}
             onRestockBook={handleRestockBook}
             onToggleFeatured={toggleFeaturedBook}
             onChangeTab={handleTabChange}
+          />
+        );
+      case "messages":
+        return (
+          <SupportMessagesTab
+            messages={supportMessages}
+            replyDrafts={replyDrafts}
+            onReplyDraftChange={handleReplyDraftChange}
+            onReplyMessage={handleReplyMessage}
           />
         );
       default:
@@ -1061,6 +1323,7 @@ const StockManager = () => {
             inventoryStats={inventoryStats}
             orderStats={orderStats}
             requestStats={requestStats}
+            supportMessageCount={getUnreadSupportMessageCount()}
           />
 
           <div className="col-lg-10">

@@ -1,44 +1,49 @@
-import React, { useState } from "react";
-import { Modal, Button, Form } from "react-bootstrap";
+import React, { useEffect, useState } from "react";
+import { Modal } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faComment } from "@fortawesome/free-solid-svg-icons";
+import { getCurrentUser } from "../../utils/auth";
+import LiveChatThreadList from "../LiveChat/LiveChatThreadList";
+import {
+  getLiveChatThread,
+  getLiveChatUpdatedEventName,
+  resolveLiveChatThread,
+  sendLiveChatMessage,
+} from "../../utils/liveChat";
 
-const LiveChatModal = ({ show, onHide }) => {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      sender: "support",
-      message: "Hello! How can I help you today?",
-      timestamp: new Date().toISOString(),
-    },
-  ]);
-  const [newMessage, setNewMessage] = useState("");
+const LiveChatModal = ({ show, onHide, order }) => {
+  const [thread, setThread] = useState(null);
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
+  const refreshThread = () => {
+    if (!show || !order) return;
+    const user = getCurrentUser();
+    if (!user) return;
 
-    const userMessage = {
-      id: messages.length + 1,
-      sender: "user",
-      message: newMessage,
-      timestamp: new Date().toISOString(),
-    };
+    const resolved = resolveLiveChatThread({ order, user });
+    setThread(resolved || getLiveChatThread(order.id, user.id));
+  };
 
-    setMessages([...messages, userMessage]);
-    setNewMessage("");
+  useEffect(() => {
+    refreshThread();
+  }, [show, order]);
 
-    // Simulate auto-reply after 1 second
-    setTimeout(() => {
-      const autoReply = {
-        id: messages.length + 2,
-        sender: "support",
-        message:
-          "Thanks for your message. Our support team will review your query and get back to you shortly.",
-        timestamp: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, autoReply]);
-    }, 1000);
+  useEffect(() => {
+    const handleUpdate = () => refreshThread();
+    window.addEventListener(getLiveChatUpdatedEventName(), handleUpdate);
+    return () => window.removeEventListener(getLiveChatUpdatedEventName(), handleUpdate);
+  }, [show, order]);
+
+  const handleSendMessage = (threadItem, message) => {
+    const user = getCurrentUser();
+    if (!user || !order) return false;
+    sendLiveChatMessage({
+      order,
+      user,
+      senderRole: "user",
+      senderName: user.name || user.fullName || user.username || "User",
+      message,
+    });
+    return true;
   };
 
   return (
@@ -50,54 +55,18 @@ const LiveChatModal = ({ show, onHide }) => {
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <div
-          className="chat-container"
-          style={{ height: "400px", overflowY: "auto" }}
-        >
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`message ${msg.sender === "user" ? "message-user" : "message-support"}`}
-              style={{
-                textAlign: msg.sender === "user" ? "right" : "left",
-                marginBottom: "10px",
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor:
-                    msg.sender === "user" ? "#007bff" : "#e9ecef",
-                  color: msg.sender === "user" ? "white" : "black",
-                  padding: "8px 12px",
-                  borderRadius: "15px",
-                  display: "inline-block",
-                  maxWidth: "70%",
-                }}
-              >
-                {msg.message}
-              </div>
-              <div className="text-muted small mt-1">
-                {new Date(msg.timestamp).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-        <Form onSubmit={handleSendMessage} className="mt-3">
-          <div className="input-group">
-            <Form.Control
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type your message..."
-            />
-            <Button variant="primary" type="submit">
-              Send
-            </Button>
-          </div>
-        </Form>
+        {thread ? (
+          <LiveChatThreadList
+            title="Live Chat Support"
+            description="Chat with support in real time. Admin replies will appear here automatically."
+            threads={[thread]}
+            emptyTitle="No live chat thread yet"
+            emptyDescription="Start a conversation to open a live support thread."
+            currentRole="user"
+            onSendMessage={handleSendMessage}
+            sendButtonLabel="Send"
+          />
+        ) : null}
       </Modal.Body>
     </Modal>
   );

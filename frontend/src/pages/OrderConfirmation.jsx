@@ -7,6 +7,12 @@ import { useDispatch } from "react-redux";
 import { getCurrentUser } from "../utils/auth";
 import { showNotification } from "../utils/helpers";
 import { addItem } from "../store/slices/cartSlice";
+import { getOrderApi, getOrdersApi } from "../utils/orderApi";
+import { getOrderPaymentConfirmationKey } from "../components/Checkout/utils";
+import { createSupportMessage } from "../utils/supportMessages";
+import { fetchBooksFromApi } from "../components/StockManager/utils";
+import { addCartItemApi } from "../utils/cartApi";
+import { BOOK_RECOMMENDATION_RULES } from "../data/recommendationRules";
 
 // Import Components
 import ProgressSteps from "../components/common/ProgressSteps";
@@ -21,18 +27,15 @@ import SupportOptions from "../components/OrderConfirmation/SupportOptions";
 import RecommendedBooks from "../components/OrderConfirmation/RecommendedBooks";
 import TrackOrderModal from "../components/OrderConfirmation/TrackOrderModal";
 import ContactSupportModal from "../components/OrderConfirmation/ContactSupportModal";
-import LiveChatModal from "../components/OrderConfirmation/LiveChatModal";
 
 // Import Utilities
 import {
-  getOrderById,
-  getLatestUserOrder,
-  getTrackingUpdates,
-  getOrderedCategories,
-  getRecommendedBooks,
+  getOrderedDatasetBookIds,
+  getRecommendedBookIds,
+  getRecommendedBooksByIds,
   calculateEstimatedDates,
   downloadInvoice,
-  addSupportRequest,
+  getTrackingUpdates,
   shippingMethods,
 } from "../components/OrderConfirmation/utils";
 
@@ -42,85 +45,146 @@ const OrderConfirmation = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [books, setBooks] = useState([]);
 
   // Modal states
   const [showTrackModal, setShowTrackModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
-  const [showLiveChat, setShowLiveChat] = useState(false);
-
-  // Sample books data
-  const books = useMemo(
-    () => [
-      {
-        id: 1,
-        title: "The Midnight Library",
-        author: "Matt Haig",
-        price: 6000.0,
-        category: "Fiction",
-        rating: 4.3,
-        reviews: 128,
-        inStock: true,
-        image:
-          "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
-      },
-      {
-        id: 2,
-        title: "Project Hail Mary",
-        author: "Andy Weir",
-        price: 6500.0,
-        category: "Science Fiction",
-        rating: 4.8,
-        reviews: 95,
-        inStock: true,
-        image:
-          "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
-      },
-      {
-        id: 3,
-        title: "Dune",
-        author: "Frank Herbert",
-        price: 5400.0,
-        category: "Science Fiction",
-        rating: 4.0,
-        reviews: 210,
-        inStock: true,
-        image:
-          "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
-      },
-      {
-        id: 4,
-        title: "The Hobbit",
-        author: "J.R.R. Tolkien",
-        price: 3500.0,
-        category: "Fantasy",
-        rating: 4.9,
-        reviews: 305,
-        inStock: false,
-        image:
-          "https://via.placeholder.com/200x300/DBEAFE/1E3A5F?text=Book+Cover",
-      },
-    ],
-    [],
-  );
 
   const currentUser = useMemo(() => getCurrentUser(), []);
   const orderId = searchParams.get("orderId");
 
-  const order = useMemo(() => {
-    if (!currentUser) return null;
-    return orderId ? getOrderById(orderId) : getLatestUserOrder();
+  const recommendationRules = BOOK_RECOMMENDATION_RULES;
+
+  const getStoredPaymentConfirmation = (targetOrderId) => {
+    try {
+      const key = getOrderPaymentConfirmationKey(targetOrderId);
+      const stored = JSON.parse(
+        localStorage.getItem(key) || sessionStorage.getItem(key) || "null",
+      );
+
+      if (!stored) return null;
+      if (targetOrderId && String(stored.orderId) !== String(targetOrderId)) {
+        return null;
+      }
+
+      return stored;
+    } catch {
+      return null;
+    }
+  };
+
+  const buildOrderState = (fetchedOrder, fallbackOrderId) => {
+    const paymentConfirmation =
+      getStoredPaymentConfirmation(fetchedOrder?.id || fallbackOrderId) || {};
+
+    return {
+      id: fetchedOrder.id,
+      orderNumber: fetchedOrder.orderNumber || fetchedOrder.id,
+      orderDate:
+        fetchedOrder.orderDate ||
+        fetchedOrder.createdAt ||
+        fetchedOrder.updatedAt ||
+        paymentConfirmation.timestamp ||
+        new Date().toISOString(),
+      createdAt: fetchedOrder.createdAt,
+      updatedAt: fetchedOrder.updatedAt,
+      payment: {
+        method:
+          fetchedOrder.payment?.method ||
+          fetchedOrder.paymentMethod ||
+          paymentConfirmation.method ||
+          "Credit Card",
+        transactionId:
+          fetchedOrder.payment?.transactionId ||
+          fetchedOrder.transactionId ||
+          paymentConfirmation.transactionId ||
+          null,
+      },
+      items:
+        fetchedOrder.items?.map((item) => ({
+          id: item.bookId,
+          title: item.title || item.bookTitle || item.bookName || item.productName || "Book",
+          author: item.author || item.bookAuthor || item.productAuthor || "",
+          quantity: item.quantity,
+          price: item.unitPrice,
+          image: item.image,
+        })) || [],
+      shipping: fetchedOrder.shippingAddress || {},
+      trackingUpdates: fetchedOrder.trackingUpdates || [],
+      totals: {
+        subtotal: fetchedOrder.subtotal,
+        shipping: fetchedOrder.shippingCost,
+        tax: fetchedOrder.tax,
+        total: fetchedOrder.total,
+      },
+    };
+  };
+
+  useEffect(() => {
+    const loadOrder = async () => {
+      if (!currentUser) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        if (orderId) {
+          const fetched = await getOrderApi(currentUser.id, orderId);
+          if (fetched) {
+            setOrder(buildOrderState(fetched, orderId));
+          }
+        } else {
+          const orders = await getOrdersApi(currentUser.id);
+          const first = orders[0];
+          if (first) {
+            setOrder(buildOrderState(first, first.id));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load order", err);
+        showNotification(err.message || "Failed to load order", "danger");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOrder();
   }, [currentUser, orderId]);
 
-  const trackingUpdates = useMemo(() => {
-    if (!order) return [];
-    return getTrackingUpdates(order.id);
-  }, [order]);
+  useEffect(() => {
+    const loadBooks = async () => {
+      try {
+        const apiBooks = await fetchBooksFromApi();
+        setBooks(Array.isArray(apiBooks) ? apiBooks : []);
+      } catch (error) {
+        console.error("Failed to load books for recommendations", error);
+        setBooks([]);
+      }
+    };
+
+    loadBooks();
+  }, []);
+
+  useEffect(() => {
+    if (order && searchParams.get("view") === "tracking") {
+      setShowTrackModal(true);
+    }
+  }, [order, searchParams]);
+
+  const trackingUpdates =
+    order?.trackingUpdates?.length > 0
+      ? order.trackingUpdates
+      : getTrackingUpdates(order?.id);
 
   const recommendedBooks = useMemo(() => {
     if (!order) return [];
-    const orderedCategories = getOrderedCategories(order, books);
-    return getRecommendedBooks(orderedCategories, books, 4);
-  }, [order, books]);
+    const selectedBookIds = getOrderedDatasetBookIds(order, books);
+    const recommendedBookIds = getRecommendedBookIds(selectedBookIds, recommendationRules, books, 4);
+    return getRecommendedBooksByIds(recommendedBookIds, books);
+  }, [order, books, recommendationRules]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -140,19 +204,43 @@ const OrderConfirmation = () => {
     const book = books.find((b) => b.id === bookId);
     if (!book) return;
 
-    dispatch(
-      addItem({
-        id: book.id,
-        title: book.title,
-        author: book.author,
-        price: book.price,
-        image: book.image,
-        quantity,
-        stock: book.stock,
-      }),
-    );
+    const addBookToCart = async () => {
+      try {
+        const items = await addCartItemApi(user.id, book.id, quantity);
+        const normalizedItems = Array.isArray(items)
+          ? items.map((item) => ({
+              id: item.bookId,
+              quantity: item.quantity,
+              title: item.title,
+              price: item.price,
+              image: item.image,
+              stock: item.stock,
+            }))
+          : [];
 
-    showNotification("Book added to cart!", "success");
+        if (normalizedItems.length > 0) {
+          dispatch({ type: "cart/setCart", payload: normalizedItems });
+        } else {
+          dispatch(
+            addItem({
+              id: book.id,
+              title: book.title,
+              author: book.author,
+              price: book.price,
+              image: book.image,
+              quantity,
+              stock: book.stock,
+            }),
+          );
+        }
+
+        showNotification("Book added to cart!", "success");
+      } catch (error) {
+        showNotification(error.message || "Failed to add book to cart.", "danger");
+      }
+    };
+
+    addBookToCart();
   };
 
   // Handle invoice download
@@ -169,14 +257,31 @@ const OrderConfirmation = () => {
   };
 
   // Handle support request
-  const handleSupportRequest = (message) => {
+  const handleSupportRequest = async (message) => {
     const user = getCurrentUser();
     if (!user || !order) return;
 
-    addSupportRequest(order, user, message);
-    alert("Your support request has been submitted. We will contact you soon.");
-    setShowSupportModal(false);
+    try {
+      await createSupportMessage({ order, user, message });
+      showNotification("Your support request has been sent.", "success");
+      setShowSupportModal(false);
+    } catch (error) {
+      showNotification(error.message || "Failed to send your support request.", "danger");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="order-confirmation-page">
+        <Container className="mt-5">
+          <div className="form-container text-center py-5">
+            <FontAwesomeIcon icon={faBookOpen} size="3x" className="mb-3 text-muted" />
+            <h4>Loading order...</h4>
+          </div>
+        </Container>
+      </div>
+    );
+  }
 
   if (!order) {
     return (
@@ -278,7 +383,6 @@ const OrderConfirmation = () => {
                   <SupportOptions
                     onViewOrderStatus={() => setShowTrackModal(true)}
                     onContactSupport={() => setShowSupportModal(true)}
-                    onLiveChat={() => setShowLiveChat(true)}
                   />
                 </Col>
               </Row>
@@ -311,10 +415,6 @@ const OrderConfirmation = () => {
         onSubmit={handleSupportRequest}
       />
 
-      <LiveChatModal
-        show={showLiveChat}
-        onHide={() => setShowLiveChat(false)}
-      />
     </div>
   );
 };

@@ -13,7 +13,6 @@ const readCartFromStorage = () => {
 
 const emitCartEvent = () => {
   try {
-    window.dispatchEvent(new Event("storage"));
     window.dispatchEvent(new CustomEvent("cart-updated"));
   } catch {
     // no-op if events fail
