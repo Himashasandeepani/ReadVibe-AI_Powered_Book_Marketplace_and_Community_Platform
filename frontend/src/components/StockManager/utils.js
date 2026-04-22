@@ -175,6 +175,53 @@ export const sortBooks = (books, sortConfig) => {
 };
 
 // Calculate statistics
+export const calculateBookSalesMetrics = (stockBooks, stockOrders = []) => {
+  const metricsByBookId = new Map(
+    stockBooks.map((book) => [Number(book?.id), {
+      salesThisMonth: 0,
+      totalSales: 0,
+      monthlyRevenue: 0,
+    }]),
+  );
+
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  for (const order of stockOrders) {
+    const orderDate = new Date(order?.createdAt || order?.orderDate || null);
+    const isCurrentMonth =
+      !Number.isNaN(orderDate.getTime()) &&
+      orderDate.getMonth() === currentMonth &&
+      orderDate.getFullYear() === currentYear;
+
+    const items = Array.isArray(order?.itemsList)
+      ? order.itemsList
+      : Array.isArray(order?.items)
+        ? order.items
+        : [];
+
+    for (const item of items) {
+      const bookId = Number(item?.bookId ?? item?.book_id);
+      const quantity = Number(item?.quantity) || 0;
+      if (!bookId || quantity <= 0 || !metricsByBookId.has(bookId)) continue;
+
+      const entry = metricsByBookId.get(bookId);
+      entry.totalSales += quantity;
+
+      if (isCurrentMonth) {
+        entry.salesThisMonth += quantity;
+        const lineTotal = Number(item?.lineTotal ?? item?.line_total);
+        entry.monthlyRevenue += Number.isFinite(lineTotal)
+          ? lineTotal
+          : (Number(item?.unitPrice ?? item?.unit_price) || 0) * quantity;
+      }
+    }
+  }
+
+  return metricsByBookId;
+};
+
 export const calculateInventoryStats = (stockBooks, stockOrders = []) => {
   const isLowStockBook = (book) => {
     const stock = Number(book?.stock) || 0;
@@ -186,9 +233,8 @@ export const calculateInventoryStats = (stockBooks, stockOrders = []) => {
     return Number.isFinite(minStock) && minStock > 0 && stock <= minStock;
   };
 
-  const booksById = new Map(
-    stockBooks.map((book) => [Number(book?.id), book]),
-  );
+  const booksById = new Map(stockBooks.map((book) => [Number(book?.id), book]));
+  const salesMetricsByBookId = calculateBookSalesMetrics(stockBooks, stockOrders);
 
   const orderSales = stockOrders.flatMap((order) => {
     const items = Array.isArray(order?.itemsList)
@@ -210,22 +256,20 @@ export const calculateInventoryStats = (stockBooks, stockOrders = []) => {
     });
   });
 
-  const hasOrderItemSales = orderSales.some((item) => item.quantity > 0);
-  const totalSalesCount = hasOrderItemSales
-    ? orderSales.reduce((sum, item) => sum + item.quantity, 0)
-    : stockBooks.reduce((sum, book) => sum + (Number(book.totalSales) || 0), 0);
+  const totalSalesCount = [...salesMetricsByBookId.values()].reduce(
+    (sum, item) => sum + item.totalSales,
+    0,
+  );
 
-  const totalProfitEarned = hasOrderItemSales
-    ? orderSales.reduce(
-        (sum, item) => sum + ((item.unitPrice - item.costPrice) * item.quantity),
-        0,
-      )
-    : stockBooks.reduce(
-        (sum, book) =>
-          sum +
-          (((Number(book.price) || 0) - (Number(book.costPrice) || 0)) * (Number(book.totalSales) || 0)),
-        0,
-      );
+  const totalMonthlySales = [...salesMetricsByBookId.values()].reduce(
+    (sum, item) => sum + item.salesThisMonth,
+    0,
+  );
+
+  const totalProfitEarned = orderSales.reduce(
+    (sum, item) => sum + ((item.unitPrice - item.costPrice) * item.quantity),
+    0,
+  );
 
   return {
     totalBooks: stockBooks.length,
@@ -239,7 +283,7 @@ export const calculateInventoryStats = (stockBooks, stockOrders = []) => {
     totalSalesCount,
     totalProfitEarned,
     featuredBooks: stockBooks.filter((book) => book.featured).length,
-    totalMonthlySales: stockBooks.reduce((sum, book) => sum + book.salesThisMonth, 0),
+    totalMonthlySales,
   };
 };
 

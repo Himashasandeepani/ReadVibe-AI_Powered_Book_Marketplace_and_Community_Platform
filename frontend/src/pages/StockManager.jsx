@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../styles/pages/StockManager.css";
@@ -31,6 +31,7 @@ import {
   calculateInventoryStats,
   calculateOrderStats,
   calculateRequestStats,
+  calculateBookSalesMetrics,
   filterBooks,
   sortBooks,
   showNotification,
@@ -235,6 +236,30 @@ const StockManager = () => {
         rank: index + 1,
       }));
   }, [comparePopularBooks]);
+
+  const salesMetricsByBookId = useMemo(
+    () => calculateBookSalesMetrics(stockBooks, stockOrders),
+    [stockBooks, stockOrders],
+  );
+
+  const booksWithSalesMetrics = useMemo(
+    () =>
+      stockBooks.map((book) => {
+        const metrics = salesMetricsByBookId.get(Number(book.id)) || {
+          salesThisMonth: 0,
+          totalSales: 0,
+          monthlyRevenue: 0,
+        };
+
+        return {
+          ...book,
+          salesThisMonth: metrics.salesThisMonth,
+          totalSales: metrics.totalSales,
+          monthlyRevenue: metrics.monthlyRevenue,
+        };
+      }),
+    [salesMetricsByBookId, stockBooks],
+  );
 
   const persistBooks = useCallback((books) => {
     setStockBooks(books);
@@ -450,7 +475,7 @@ const StockManager = () => {
   }, [currentUser, navigate, handleStorageChange]);
 
   // Calculate statistics
-  const inventoryStats = calculateInventoryStats(stockBooks, stockOrders);
+  const inventoryStats = calculateInventoryStats(booksWithSalesMetrics, stockOrders);
   const orderStats = calculateOrderStats(stockOrders);
   const requestStats = calculateRequestStats(bookRequests);
 
@@ -1193,7 +1218,7 @@ const StockManager = () => {
         return (
           <InventoryTab
             stats={inventoryStats}
-            books={sortBooks(filterBooks(stockBooks, searchQuery), sortConfig)}
+            books={sortBooks(filterBooks(booksWithSalesMetrics, searchQuery), sortConfig)}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onSort={handleSort}
@@ -1220,7 +1245,7 @@ const StockManager = () => {
           <ReportsTab
             inventoryStats={inventoryStats}
             orderStats={orderStats}
-            stockBooks={stockBooks}
+            stockBooks={booksWithSalesMetrics}
             onPrint={handlePrintReport}
             onExport={handleExportReport}
           />
@@ -1252,8 +1277,8 @@ const StockManager = () => {
       case "popular-books":
         return (
           <PopularBooksTab
-            popularBooks={getRankedPopularBooks(stockBooks)}
-            featuredBooks={stockBooks.filter((book) => book.featured)}
+            popularBooks={getRankedPopularBooks(booksWithSalesMetrics)}
+            featuredBooks={booksWithSalesMetrics.filter((book) => book.featured)}
             inventoryStats={inventoryStats}
             onEditBook={handleEditBook}
             onRestockBook={handleRestockBook}

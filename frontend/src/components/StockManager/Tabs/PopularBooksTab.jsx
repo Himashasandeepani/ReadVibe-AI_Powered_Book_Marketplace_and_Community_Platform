@@ -22,15 +22,19 @@ const PopularBooksTab = ({
   onChangeTab,
 }) => {
   const monthlySales = popularBooks.reduce(
-    (sum, book) => sum + book.salesThisMonth,
+    (sum, book) => sum + (Number(book.salesThisMonth) || 0),
     0,
   );
   const totalSales = popularBooks.reduce(
-    (sum, book) => sum + book.totalSales,
+    (sum, book) => sum + (Number(book.totalSales) || 0),
     0,
   );
   const monthlyRevenue = popularBooks.reduce(
-    (sum, book) => sum + book.price * book.salesThisMonth,
+    (sum, book) =>
+      sum +
+      (Number.isFinite(Number(book.monthlyRevenue))
+        ? Number(book.monthlyRevenue)
+        : (Number(book.price) || 0) * (Number(book.salesThisMonth) || 0)),
     0,
   );
 
