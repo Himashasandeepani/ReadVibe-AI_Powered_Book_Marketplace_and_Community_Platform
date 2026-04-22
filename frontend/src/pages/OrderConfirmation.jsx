@@ -11,6 +11,7 @@ import { getOrderApi, getOrdersApi } from "../utils/orderApi";
 import { getOrderPaymentConfirmationKey } from "../components/Checkout/utils";
 import { createSupportMessage } from "../utils/supportMessages";
 import { fetchBooksFromApi } from "../components/StockManager/utils";
+import { addCartItemApi } from "../utils/cartApi";
 import { BOOK_RECOMMENDATION_RULES } from "../data/recommendationRules";
 
 // Import Components
@@ -203,19 +204,43 @@ const OrderConfirmation = () => {
     const book = books.find((b) => b.id === bookId);
     if (!book) return;
 
-    dispatch(
-      addItem({
-        id: book.id,
-        title: book.title,
-        author: book.author,
-        price: book.price,
-        image: book.image,
-        quantity,
-        stock: book.stock,
-      }),
-    );
+    const addBookToCart = async () => {
+      try {
+        const items = await addCartItemApi(user.id, book.id, quantity);
+        const normalizedItems = Array.isArray(items)
+          ? items.map((item) => ({
+              id: item.bookId,
+              quantity: item.quantity,
+              title: item.title,
+              price: item.price,
+              image: item.image,
+              stock: item.stock,
+            }))
+          : [];
 
-    showNotification("Book added to cart!", "success");
+        if (normalizedItems.length > 0) {
+          dispatch({ type: "cart/setCart", payload: normalizedItems });
+        } else {
+          dispatch(
+            addItem({
+              id: book.id,
+              title: book.title,
+              author: book.author,
+              price: book.price,
+              image: book.image,
+              quantity,
+              stock: book.stock,
+            }),
+          );
+        }
+
+        showNotification("Book added to cart!", "success");
+      } catch (error) {
+        showNotification(error.message || "Failed to add book to cart.", "danger");
+      }
+    };
+
+    addBookToCart();
   };
 
   // Handle invoice download

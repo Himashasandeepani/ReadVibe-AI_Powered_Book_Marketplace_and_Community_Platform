@@ -60,7 +60,7 @@ const AISection = () => {
                     return;
                   }
 
-                  navigate("/Marketplace");
+                  navigate("/recommendations");
                 }}
               >
                 <FontAwesomeIcon icon={faArrowRight} className="me-2" />
