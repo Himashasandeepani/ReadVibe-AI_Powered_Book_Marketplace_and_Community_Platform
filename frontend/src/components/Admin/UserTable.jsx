@@ -60,6 +60,8 @@ const UserTable = ({ users, onEditUser, onDeleteUser, activeUserSubTab }) => {
                     <button
                       className="btn btn-sm btn-outline-danger"
                       onClick={() => onDeleteUser(user.id)}
+                      disabled={user.role === "admin"}
+                      title={user.role === "admin" ? "Admin account cannot be deleted" : "Delete user"}
                     >
                       <i className="fas fa-trash me-1"></i>Delete
                     </button>

@@ -77,8 +77,16 @@ const WishlistItem = ({ item, onRemove, onAddToCart, onEditItem, actionsDisabled
           <div className="wishlist-item-meta mb-3">
             <div className="wishlist-rating">
               <FontAwesomeIcon icon={faStar} className="text-warning" />
-              <span className="ms-1">{item.rating}</span>
-              <span className="text-muted ms-1">({item.reviews} reviews)</span>
+              {item.rating !== null && item.rating !== undefined ? (
+                <>
+                  <span className="ms-1">{Number(item.rating).toFixed(1)}</span>
+                  <span className="text-muted ms-1">
+                    ({Number(item.reviews) || 0} reviews)
+                  </span>
+                </>
+              ) : (
+                <span className="text-muted ms-1">No ratings yet</span>
+              )}
             </div>
             <Badge
               bg={item.inStock ? "success" : "danger"}

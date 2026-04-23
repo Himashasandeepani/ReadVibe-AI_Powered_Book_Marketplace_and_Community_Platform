@@ -350,6 +350,12 @@ const AdminPanel = () => {
   };
 
   const handleDeleteUser = (userId) => {
+    const userToDelete = users.find((user) => user.id === userId);
+    if (userToDelete?.role === "admin") {
+      alert("Admin account cannot be deleted. Only one admin account must remain in the system.");
+      return;
+    }
+
     if (
       window.confirm(
         "Are you sure you want to delete this user? This action cannot be undone.",
@@ -517,7 +523,14 @@ const AdminPanel = () => {
           />
         );
       default:
-        return <DashboardTab users={users} posts={posts} />;
+        return (
+          <DashboardTab
+            users={users}
+            posts={posts}
+            liveChatCount={liveChatThreads.length}
+            liveChatThreads={liveChatThreads}
+          />
+        );
     }
   };
 

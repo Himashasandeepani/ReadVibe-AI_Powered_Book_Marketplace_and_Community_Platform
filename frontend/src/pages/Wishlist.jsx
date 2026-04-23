@@ -20,6 +20,7 @@ import { sampleBooks, applyFilter, sortWishlist } from "../components/Wishlist/u
 import { showNotification, getAllBooks, getCurrentUser } from "../utils/helpers";
 import { isPrivilegedUser } from "../utils/auth";
 import { addItem, selectCartItems, setCart } from "../store/slices/cartSlice";
+import { fetchBooksFromApi } from "../components/StockManager/utils";
 import {
   fetchWishlistApi,
   addWishlistItemApi,
@@ -68,8 +69,8 @@ const Wishlist = () => {
           inStock:
             item.inStock ?? base.inStock ?? (base.stock !== undefined ? base.stock > 0 : true),
           price: Number(item.price ?? base.price ?? 0),
-          rating: item.rating || base.rating || 4.2,
-          reviews: item.reviews || base.reviews || base.totalSales || 0,
+          rating: item.rating ?? base.rating ?? null,
+          reviews: item.reviews ?? base.reviews ?? null,
           dateAdded: item.dateAdded || new Date().toISOString(),
         };
       });
@@ -79,7 +80,7 @@ const Wishlist = () => {
 
   // State management
   const [user, setUser] = useState(() => getCurrentUser());
-  const [allBooks, setAllBooks] = useState(() => getAllBooks());
+  const [allBooks, setAllBooks] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [currentFilter, setCurrentFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -97,6 +98,20 @@ const Wishlist = () => {
     category: "Fiction",
   });
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadBooks = async () => {
+      try {
+        const apiBooks = await fetchBooksFromApi();
+        setAllBooks(Array.isArray(apiBooks) ? apiBooks : []);
+      } catch (error) {
+        console.error("Failed to load books for wishlist", error);
+        setAllBooks(getAllBooks());
+      }
+    };
+
+    loadBooks();
+  }, []);
 
   useEffect(() => {
     const handleStorageChange = (event) => {

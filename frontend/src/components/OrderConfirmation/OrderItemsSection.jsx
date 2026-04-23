@@ -26,27 +26,37 @@ const OrderItemsSection = ({ items }) => {
       </h6>
       {items.map((item, index) => (
         <div key={index} className="order-item mb-3 pb-3 border-bottom">
-          <Row className="align-items-center">
-            <Col xs={5} md={4} lg={3}>
-              <img
-                src={item.image}
-                alt={item.title}
-                className="order-item-image img-fluid rounded"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = createBookCoverPlaceholder("Book", 60, 80);
-                }}
-                style={{ width: "180px", maxWidth: "180px", height: "180px", objectFit: "cover" }}
-              />
+          <Row className="align-items-stretch g-3">
+            <Col xs={12} md={4} lg={3} className="d-flex align-items-center justify-content-center">
+              <div className="w-100 d-flex justify-content-center">
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  className="order-item-image img-fluid rounded shadow-sm"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = createBookCoverPlaceholder("Book", 60, 80);
+                  }}
+                  style={{ width: "100%", maxWidth: "260px", height: "260px", objectFit: "cover" }}
+                />
+              </div>
             </Col>
-            <Col xs={7} md={5} lg={6}>
-              <h6 className="mb-1">{item.title}</h6>
-              {item.author ? <p className="text-muted mb-0">by {item.author}</p> : null}
-            </Col>
-            <Col xs={12} md={4} className="text-end mt-2 mt-md-0">
-              <div className="order-item-price">
-                {formatPrice(item.price * item.quantity)}
-                <div className="order-item-quantity">Qty: {item.quantity}</div>
+
+            <Col xs={12} md={8} lg={9} className="d-flex flex-column justify-content-center">
+              <div className="d-flex flex-column flex-md-row justify-content-between gap-3 align-items-md-start">
+                <div>
+                  <h6 className="mb-1 fw-semibold text-dark">{item.title}</h6>
+                  {item.author ? (
+                    <p className="text-muted mb-0">by {item.author}</p>
+                  ) : null}
+                </div>
+
+                <div className="text-md-end">
+                  <div className="order-item-price fw-semibold">
+                    {formatPrice(item.price * item.quantity)}
+                  </div>
+                  <div className="order-item-quantity">Qty: {item.quantity}</div>
+                </div>
               </div>
             </Col>
           </Row>

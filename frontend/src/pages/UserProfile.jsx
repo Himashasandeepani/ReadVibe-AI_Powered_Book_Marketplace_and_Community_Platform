@@ -112,6 +112,8 @@ const UserProfile = () => {
   // Modal data
   const [selectedBook, setSelectedBook] = useState(null);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [reviewQueue, setReviewQueue] = useState([]);
+  const [reviewBatchTotal, setReviewBatchTotal] = useState(0);
 
   const navigate = useNavigate();
 
@@ -286,14 +288,16 @@ const UserProfile = () => {
     if (!order) return;
 
     const unreviewedItems = findUnreviewedItems(order, myReviews);
+    const uniqueUnreviewedItems = [...new Map(
+      unreviewedItems.map((item) => [String(item.bookId ?? item.id), item]),
+    ).values()];
 
-    if (unreviewedItems.length === 0) {
+    if (uniqueUnreviewedItems.length === 0) {
       showNotification("All items in this order have been reviewed", "info");
       return;
     }
 
-    // For simplicity, review first unreviewed item
-    const firstUnreviewedItem = unreviewedItems[0];
+    const firstUnreviewedItem = uniqueUnreviewedItems[0];
     const bookId = firstUnreviewedItem?.bookId ?? firstUnreviewedItem?.id;
     const bookToReview = books.find((b) => String(b.id) === String(bookId)) || {
       id: bookId,
@@ -302,6 +306,8 @@ const UserProfile = () => {
       image: firstUnreviewedItem?.image || "",
     };
 
+    setReviewQueue(uniqueUnreviewedItems);
+    setReviewBatchTotal(uniqueUnreviewedItems.length);
     setSelectedBook(bookToReview);
     setSelectedOrderId(orderId);
     setShowReviewModal(true);
@@ -333,9 +339,31 @@ const UserProfile = () => {
     );
 
     await initializeUserData(user);
+
+    const remainingQueue = reviewQueue.slice(1);
+    if (remainingQueue.length > 0) {
+      const nextItem = remainingQueue[0];
+      const nextBookId = nextItem?.bookId ?? nextItem?.id;
+      const nextBook = books.find((b) => String(b.id) === String(nextBookId)) || {
+        id: nextBookId,
+        title: nextItem?.title || "Book",
+        author: nextItem?.author || "",
+        image: nextItem?.image || "",
+      };
+
+      setReviewQueue(remainingQueue);
+      setSelectedBook(nextBook);
+      setSelectedOrderId(selectedOrderId);
+      setShowReviewModal(true);
+      showNotification(`Review submitted for ${selectedBook.title}. Continue with the next item.`, "success");
+      return;
+    }
+
     setShowReviewModal(false);
     setSelectedBook(null);
     setSelectedOrderId(null);
+    setReviewQueue([]);
+    setReviewBatchTotal(0);
 
     showNotification("Review submitted successfully!", "success");
   };
@@ -528,6 +556,8 @@ const UserProfile = () => {
         onHide={() => setShowReviewModal(false)}
         book={selectedBook}
         onSubmit={handleSubmitReview}
+        reviewIndex={reviewBatchTotal - reviewQueue.length + 1}
+        reviewCount={reviewBatchTotal}
       />
     </div>
   );

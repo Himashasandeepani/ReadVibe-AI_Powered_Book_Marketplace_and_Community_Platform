@@ -1,6 +1,6 @@
 import React from "react";
 
-const StatsCards = ({ userStats, postStats }) => {
+const StatsCards = ({ userStats, postStats, liveChatStats }) => {
   const stats = [
     {
       number: userStats.total,
@@ -21,9 +21,9 @@ const StatsCards = ({ userStats, postStats }) => {
       color: "info",
     },
     {
-      number: postStats.flagged,
-      label: "Flagged Content",
-      icon: "flag",
+      number: liveChatStats.total,
+      label: "Live Chats",
+      icon: "comment-dots",
       color: "warning",
     },
   ];
