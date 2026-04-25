@@ -36,6 +36,7 @@ import { fetchBooksFromApi } from "../components/StockManager/utils";
 import {
   getSupportMessagesForUser,
   getSupportMessagesUpdatedEventName,
+  SUPPORT_MESSAGES_CACHE_KEY,
   loadSupportMessages,
 } from "../utils/supportMessages";
 import {
@@ -187,6 +188,15 @@ const UserProfile = () => {
       }
     };
 
+    const handleSupportMessagesStorage = (event) => {
+      if (event.key === SUPPORT_MESSAGES_CACHE_KEY) {
+        const currentUser = getCurrentUser();
+        if (currentUser) {
+          void refreshSupportMessages(currentUser);
+        }
+      }
+    };
+
     window.addEventListener("storage", handleStorageChange);
     window.addEventListener("focus", handleRefresh);
     window.addEventListener("wishlist-updated", handleRefresh);
@@ -194,6 +204,7 @@ const UserProfile = () => {
     window.addEventListener("book-requests-updated", handleRefresh);
     window.addEventListener(getSupportMessagesUpdatedEventName(), handleRefresh);
     window.addEventListener(getLiveChatUpdatedEventName(), handleRefresh);
+    window.addEventListener("storage", handleSupportMessagesStorage);
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
@@ -203,6 +214,7 @@ const UserProfile = () => {
       window.removeEventListener("book-requests-updated", handleRefresh);
       window.removeEventListener(getSupportMessagesUpdatedEventName(), handleRefresh);
       window.removeEventListener(getLiveChatUpdatedEventName(), handleRefresh);
+      window.removeEventListener("storage", handleSupportMessagesStorage);
     };
   }, [user, navigate]);
 

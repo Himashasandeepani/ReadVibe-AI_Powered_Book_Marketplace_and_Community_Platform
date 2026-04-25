@@ -54,6 +54,7 @@ import {
   addSupportReply,
   getSupportMessages,
   getSupportMessagesUpdatedEventName,
+  SUPPORT_MESSAGES_CACHE_KEY,
   getUnreadSupportMessageCount,
   loadSupportMessages,
 } from "../utils/supportMessages";
@@ -410,6 +411,10 @@ const StockManager = () => {
         loadAllData();
       }
 
+      if (e.key === SUPPORT_MESSAGES_CACHE_KEY) {
+        void loadSupportMessages().then((messages) => setSupportMessages(messages));
+      }
+
       if (e.key === "currentUser") {
         try {
           const updatedUser = JSON.parse(
@@ -437,16 +442,39 @@ const StockManager = () => {
   }, [loadBookRequestsFromApi]);
 
   useEffect(() => {
-    const handleSupportMessagesUpdated = () => {
+    const refreshSupportMessages = () => {
       void loadSupportMessages().then((messages) => setSupportMessages(messages));
     };
 
-    window.addEventListener(getSupportMessagesUpdatedEventName(), handleSupportMessagesUpdated);
+    const handleStorageUpdate = (event) => {
+      if (event.key === SUPPORT_MESSAGES_CACHE_KEY) {
+        refreshSupportMessages();
+      }
+    };
+
+    const handleFocus = () => {
+      refreshSupportMessages();
+    };
+
+    const pollId = window.setInterval(refreshSupportMessages, 15000);
+
+    window.addEventListener(getSupportMessagesUpdatedEventName(), refreshSupportMessages);
+    window.addEventListener("storage", handleStorageUpdate);
+    window.addEventListener("focus", handleFocus);
     void loadSupportMessages().then((messages) => setSupportMessages(messages));
     return () => {
-      window.removeEventListener(getSupportMessagesUpdatedEventName(), handleSupportMessagesUpdated);
+      window.clearInterval(pollId);
+      window.removeEventListener(getSupportMessagesUpdatedEventName(), refreshSupportMessages);
+      window.removeEventListener("storage", handleStorageUpdate);
+      window.removeEventListener("focus", handleFocus);
     };
   }, []);
+
+  useEffect(() => {
+    if (activeTab !== "messages") return;
+
+    void loadSupportMessages().then((messages) => setSupportMessages(messages));
+  }, [activeTab]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
