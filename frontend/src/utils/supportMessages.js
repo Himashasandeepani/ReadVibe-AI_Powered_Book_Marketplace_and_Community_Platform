@@ -1,5 +1,6 @@
 const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 const SUPPORT_MESSAGES_UPDATED_EVENT = "support-messages-updated";
+export const SUPPORT_MESSAGES_CACHE_KEY = "supportMessagesCache";
 let supportMessagesCache = [];
 
 const safeParse = (value, fallback) => {
@@ -70,10 +71,23 @@ const syncSupportMessagesCache = (messages) => {
   return supportMessagesCache;
 };
 
+export const getStoredSupportMessagesCache = () => (
+  Array.isArray(supportMessagesCache)
+    ? supportMessagesCache.map(normalizeSupportMessage)
+    : []
+);
+
 export const loadSupportMessages = async (userId = null) => {
   const query = userId ? `?userId=${encodeURIComponent(userId)}` : "";
   const data = await handleApi(`/api/support/messages${query}`);
-  return syncSupportMessagesCache(data.messages || []);
+
+  const messages = Array.isArray(data.messages) ? data.messages.map(normalizeSupportMessage) : [];
+
+  if (userId === null || userId === undefined || userId === "") {
+    return syncSupportMessagesCache(messages);
+  }
+
+  return messages;
 };
 
 export const getSupportMessages = () => supportMessagesCache;
@@ -108,6 +122,9 @@ export const createSupportMessage = async ({ order, user, message, type = "suppo
 
   const nextMessage = normalizeSupportMessage(data.message);
   supportMessagesCache = [nextMessage, ...supportMessagesCache.filter((item) => String(item.id) !== String(nextMessage.id))];
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(SUPPORT_MESSAGES_CACHE_KEY, JSON.stringify(supportMessagesCache));
+  }
   emitSupportMessagesUpdated();
   return nextMessage;
 };
@@ -128,6 +145,9 @@ export const addSupportReply = async (messageId, replyText, repliedBy = {}) => {
   supportMessagesCache = supportMessagesCache.map((item) =>
     String(item.id) === String(nextMessage.id) ? nextMessage : item,
   );
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(SUPPORT_MESSAGES_CACHE_KEY, JSON.stringify(supportMessagesCache));
+  }
   emitSupportMessagesUpdated();
   return nextMessage;
 };

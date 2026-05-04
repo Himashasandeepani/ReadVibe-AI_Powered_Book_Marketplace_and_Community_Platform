@@ -28,8 +28,8 @@ export const getAllBooks = () => {
         (Array.isArray(book.images) && book.images.length
           ? book.images[0]
           : "/assets/default_book.jpg"),
-      rating: book.rating || 4.2,
-      reviews: book.reviews || book.totalSales || 12,
+      rating: book.rating ?? null,
+      reviews: book.reviews ?? null,
       price: Number(book.price) || 0,
     }));
 

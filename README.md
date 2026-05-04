@@ -149,6 +149,22 @@ The application uses PostgreSQL with the following main entities:
 - **live_chat_threads** - Live support chat threads
 - **recommendation_rules** - Apriori rule data used by the recommendation engine
 
+#### AI Recommendation Retraining
+The recommendation engine is retrained periodically from the latest interaction data rather than learning online in real time. Use the scripts in [AI](AI) to refresh the model artifacts:
+
+```powershell
+# Run one retraining cycle now
+powershell -ExecutionPolicy Bypass -File .\AI\setup_retraining_schedule.ps1
+
+# Install a daily scheduled retraining task at 02:00
+powershell -ExecutionPolicy Bypass -File .\AI\setup_retraining_schedule.ps1 -Install -RunTime 02:00
+
+# Remove the scheduled task if needed
+Unregister-ScheduledTask -TaskName "ReadVibe Recommendation Retraining" -Confirm:$false
+```
+
+The retraining job reads [AI/amazon_books_reviews_merged_2014_2025.csv](AI/amazon_books_reviews_merged_2014_2025.csv), rebuilds the Apriori rules, and saves the latest model snapshot into the AI artifacts folder.
+
 ### Supplier & Requests
 - **suppliers** - Book suppliers
 - **book_requests** - User book requests

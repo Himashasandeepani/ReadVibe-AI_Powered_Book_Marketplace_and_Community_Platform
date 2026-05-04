@@ -8,7 +8,7 @@ import {
   faThumbsDown,
 } from "@fortawesome/free-solid-svg-icons";
 
-const AddReviewModal = ({ show, onHide, book, onSubmit }) => {
+const AddReviewModal = ({ show, onHide, book, onSubmit, reviewIndex = 1, reviewCount = 1 }) => {
   const [reviewData, setReviewData] = useState({
     rating: 5,
     text: "",
@@ -40,13 +40,18 @@ const AddReviewModal = ({ show, onHide, book, onSubmit }) => {
       <Modal.Header closeButton>
         <Modal.Title>
           <FontAwesomeIcon icon={faStar} className="me-2" />
-          Add Review
+          Add Review{reviewCount > 1 ? ` (${reviewIndex} of ${reviewCount})` : ""}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <>
           {/* Book Info Preview */}
           <div className="selected-book-preview mb-4">
+            {reviewCount > 1 && (
+              <p className="text-muted small mb-2">
+                Reviewing item {reviewIndex} of {reviewCount} in this order.
+              </p>
+            )}
             <Row className="align-items-center">
               <Col xs="auto">
                 <img

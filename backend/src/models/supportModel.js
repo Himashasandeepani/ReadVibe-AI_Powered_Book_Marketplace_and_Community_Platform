@@ -109,6 +109,10 @@ const mapLiveChatThread = (row) => ({
 });
 
 const buildSupportWhere = (userId) => {
+  if (userId === null || userId === undefined || userId === '') {
+    return { clause: '', params: [] };
+  }
+
   if (!Number.isInteger(Number(userId))) {
     return { clause: '', params: [] };
   }
@@ -216,6 +220,10 @@ export const getUnreadSupportMessageCount = async () => {
 };
 
 const buildThreadWhere = (userId) => {
+  if (userId === null || userId === undefined || userId === '') {
+    return { clause: '', params: [] };
+  }
+
   if (!Number.isInteger(Number(userId))) {
     return { clause: '', params: [] };
   }

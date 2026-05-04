@@ -45,16 +45,16 @@ const Footer = () => {
             <div className="footer-contact mb-3">
               <div className="contact-item">
                 <FontAwesomeIcon icon={faEnvelope} className="me-2" />
-                <span>support@readvibe.com</span>
+                <span>readvibe.noreply@gmail.com</span>
               </div>
               <div className="contact-item">
                 <FontAwesomeIcon icon={faPhone} className="me-2" />
-                <span>+94 (71) 355-4136</span>
+                <span>+94 (71) 456 7678</span>
               </div>
               <div className="contact-item">
                 <FontAwesomeIcon icon={faMapMarkerAlt} className="me-2" />
                 <span>
-                  No.106, Rekawa Road Netolpitiya, Tangalle, SriLanka.
+                  No.100, Colombo Road, Colombo, SriLanka.
                 </span>
               </div>
             </div>

@@ -90,6 +90,10 @@ export const deleteUserHandler = async (req, res, next) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    if (String(existingUser.role || '').toLowerCase() === 'admin') {
+      return res.status(403).json({ error: 'Admin account cannot be deleted' });
+    }
+
     await deleteUser(userId);
     res.json({ success: true });
   } catch (err) {

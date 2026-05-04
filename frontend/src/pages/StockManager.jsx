@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../styles/pages/StockManager.css";
@@ -31,6 +31,7 @@ import {
   calculateInventoryStats,
   calculateOrderStats,
   calculateRequestStats,
+  calculateBookSalesMetrics,
   filterBooks,
   sortBooks,
   showNotification,
@@ -53,6 +54,7 @@ import {
   addSupportReply,
   getSupportMessages,
   getSupportMessagesUpdatedEventName,
+  SUPPORT_MESSAGES_CACHE_KEY,
   getUnreadSupportMessageCount,
   loadSupportMessages,
 } from "../utils/supportMessages";
@@ -236,6 +238,30 @@ const StockManager = () => {
       }));
   }, [comparePopularBooks]);
 
+  const salesMetricsByBookId = useMemo(
+    () => calculateBookSalesMetrics(stockBooks, stockOrders),
+    [stockBooks, stockOrders],
+  );
+
+  const booksWithSalesMetrics = useMemo(
+    () =>
+      stockBooks.map((book) => {
+        const metrics = salesMetricsByBookId.get(Number(book.id)) || {
+          salesThisMonth: 0,
+          totalSales: 0,
+          monthlyRevenue: 0,
+        };
+
+        return {
+          ...book,
+          salesThisMonth: metrics.salesThisMonth,
+          totalSales: metrics.totalSales,
+          monthlyRevenue: metrics.monthlyRevenue,
+        };
+      }),
+    [salesMetricsByBookId, stockBooks],
+  );
+
   const persistBooks = useCallback((books) => {
     setStockBooks(books);
     localStorage.setItem("stockBooks", JSON.stringify(books));
@@ -385,6 +411,10 @@ const StockManager = () => {
         loadAllData();
       }
 
+      if (e.key === SUPPORT_MESSAGES_CACHE_KEY) {
+        void loadSupportMessages().then((messages) => setSupportMessages(messages));
+      }
+
       if (e.key === "currentUser") {
         try {
           const updatedUser = JSON.parse(
@@ -412,16 +442,39 @@ const StockManager = () => {
   }, [loadBookRequestsFromApi]);
 
   useEffect(() => {
-    const handleSupportMessagesUpdated = () => {
+    const refreshSupportMessages = () => {
       void loadSupportMessages().then((messages) => setSupportMessages(messages));
     };
 
-    window.addEventListener(getSupportMessagesUpdatedEventName(), handleSupportMessagesUpdated);
+    const handleStorageUpdate = (event) => {
+      if (event.key === SUPPORT_MESSAGES_CACHE_KEY) {
+        refreshSupportMessages();
+      }
+    };
+
+    const handleFocus = () => {
+      refreshSupportMessages();
+    };
+
+    const pollId = window.setInterval(refreshSupportMessages, 15000);
+
+    window.addEventListener(getSupportMessagesUpdatedEventName(), refreshSupportMessages);
+    window.addEventListener("storage", handleStorageUpdate);
+    window.addEventListener("focus", handleFocus);
     void loadSupportMessages().then((messages) => setSupportMessages(messages));
     return () => {
-      window.removeEventListener(getSupportMessagesUpdatedEventName(), handleSupportMessagesUpdated);
+      window.clearInterval(pollId);
+      window.removeEventListener(getSupportMessagesUpdatedEventName(), refreshSupportMessages);
+      window.removeEventListener("storage", handleStorageUpdate);
+      window.removeEventListener("focus", handleFocus);
     };
   }, []);
+
+  useEffect(() => {
+    if (activeTab !== "messages") return;
+
+    void loadSupportMessages().then((messages) => setSupportMessages(messages));
+  }, [activeTab]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -450,7 +503,7 @@ const StockManager = () => {
   }, [currentUser, navigate, handleStorageChange]);
 
   // Calculate statistics
-  const inventoryStats = calculateInventoryStats(stockBooks, stockOrders);
+  const inventoryStats = calculateInventoryStats(booksWithSalesMetrics, stockOrders);
   const orderStats = calculateOrderStats(stockOrders);
   const requestStats = calculateRequestStats(bookRequests);
 
@@ -1193,7 +1246,7 @@ const StockManager = () => {
         return (
           <InventoryTab
             stats={inventoryStats}
-            books={sortBooks(filterBooks(stockBooks, searchQuery), sortConfig)}
+            books={sortBooks(filterBooks(booksWithSalesMetrics, searchQuery), sortConfig)}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onSort={handleSort}
@@ -1220,7 +1273,7 @@ const StockManager = () => {
           <ReportsTab
             inventoryStats={inventoryStats}
             orderStats={orderStats}
-            stockBooks={stockBooks}
+            stockBooks={booksWithSalesMetrics}
             onPrint={handlePrintReport}
             onExport={handleExportReport}
           />
@@ -1252,8 +1305,8 @@ const StockManager = () => {
       case "popular-books":
         return (
           <PopularBooksTab
-            popularBooks={getRankedPopularBooks(stockBooks)}
-            featuredBooks={stockBooks.filter((book) => book.featured)}
+            popularBooks={getRankedPopularBooks(booksWithSalesMetrics)}
+            featuredBooks={booksWithSalesMetrics.filter((book) => book.featured)}
             inventoryStats={inventoryStats}
             onEditBook={handleEditBook}
             onRestockBook={handleRestockBook}

@@ -377,6 +377,8 @@ const OrderConfirmation = () => {
                     shipDate={shipDate}
                     deliveryDate={deliveryDate}
                     processingDays={processingDays}
+                    trackingUpdates={trackingUpdates}
+                    currentStatus={order?.status}
                   />
 
                   {/* Support Options */}
