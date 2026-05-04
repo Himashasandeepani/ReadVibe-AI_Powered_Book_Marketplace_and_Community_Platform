@@ -56,7 +56,8 @@ services:
     ports:
       - "5001:5000"
     env_file:
-      - ./backend/.env
+      - path: ./backend/.env
+        required: false
     environment:
       - NODE_ENV=development
       - PORT=5000
