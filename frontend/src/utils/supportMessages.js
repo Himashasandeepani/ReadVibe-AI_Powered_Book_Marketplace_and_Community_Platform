@@ -68,28 +68,14 @@ const normalizeSupportMessage = (message) => ({
 
 const syncSupportMessagesCache = (messages) => {
   supportMessagesCache = Array.isArray(messages) ? messages.map(normalizeSupportMessage) : [];
-
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(
-      SUPPORT_MESSAGES_CACHE_KEY,
-      JSON.stringify(supportMessagesCache),
-    );
-  }
-
   return supportMessagesCache;
 };
 
-export const getStoredSupportMessagesCache = () => {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const stored = window.localStorage.getItem(SUPPORT_MESSAGES_CACHE_KEY);
-    const parsed = JSON.parse(stored || "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
+export const getStoredSupportMessagesCache = () => (
+  Array.isArray(supportMessagesCache)
+    ? supportMessagesCache.map(normalizeSupportMessage)
+    : []
+);
 
 export const loadSupportMessages = async (userId = null) => {
   const query = userId ? `?userId=${encodeURIComponent(userId)}` : "";
